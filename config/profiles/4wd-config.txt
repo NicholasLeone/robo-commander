@@ -1,0 +1,30 @@
+fr_pwm = 19
+rr_pwm = 13
+fl_pwm = 6
+rl_pwm = 5
+
+fr_dir = 21
+rr_dir = 20
+fl_dir = 16
+rl_dir = 12
+
+fr_a = 24
+fr_b = 25
+rr_a = 18
+rr_b = 23
+
+fl_a = 27
+fl_b = 22
+rl_a = 4
+rl_b = 17
+
+debounce = 50
+PPR = 64
+gears = 90
+centerToWheelRadius = 0.219
+mode = 2
+maxSpeed = 14000
+#maxSpeed = 2.5
+
+dev_path = /dev/ttyS0
+baud = 115200
