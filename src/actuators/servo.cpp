@@ -12,29 +12,12 @@ using namespace std;
 #define SERVO_CHANNEL_1 4
 #define SERVO_CHANNEL_2 5
 
-// int convertAngRatio2Pulse(double ang_ratio);
-
-// int convertAngRatio2Pulse(double ang_ratio){
-//      double pulse;
-//      int dPulse;
-//
-//      dPulse = MAX_ANGLE_PWM_US - MIN_PWM_US;
-//
-//      // pulse = (double) (MAX_PWM_US - MIN_PWM_US) * spd_ratio + (double) MIN_PWM_US;
-//      pulse = (double) dPulse * spd_ratio + (double) MIN_PWM_US;
-//      //cout << "Converted Pulse: " << pulse << endl;
-//      return (int) pulse;
-// }
-
-
 int Servo::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id){
 
      if(protocol == PWM){
           this->params.channel = channel;
      }
-     else if(protocol == GPIO){
-          // this->params.direction_gpio[id].pinNum = channel;
-     }
+     else if(protocol == GPIO){}
 
      return 0;
 }
@@ -64,7 +47,6 @@ int Servo::setMidPulse(int pulse){
      return 0;
 }
 
-
 int Servo::setPulse(int pulse){
 
      int temp_channel, err;
@@ -80,9 +62,7 @@ int Servo::setPulse(int pulse){
      }
 
      return 0;
-
 }
-
 
 int Servo::setAngle(float desired_angle){
 
@@ -109,11 +89,9 @@ int Servo::setAngle(float desired_angle){
      range_pwm = (float) (my_max_pwm - my_min_pwm);
 
      slope = range_pwm / range_ang;
-
      pulse = slope * desired_angle + neutral_pwm;
 
      // Calculate the PWM Pulse value to writeOut
-     // pulse = convertSpdRatio2Pulse(fabs(spd_ratio));
      err = setPulse(pulse);
 
      this->params.current_angle = desired_angle;
@@ -148,12 +126,11 @@ int _initServos(int numServos, Motor** servos){
           return -4;
      }
 
-
      for(i = 0;i<numServos;i++){
           servos[i] = new Servo;
           this_servo = ((Servo*) servos[i]);
 
-          // Attach Peripheral Addresses to New Motor
+          // Attach Peripheral Addresses to New Servo
           servos[i]->attachPeripheral(PWM,pwmChannels[i], NULL);
 
           err = this_servo->setMaxAng(default_max_ang);
@@ -161,11 +138,6 @@ int _initServos(int numServos, Motor** servos){
           err = this_servo->setMaxPulse(default_max_pulse);
           err = this_servo->setMinPulse(default_min_pulse);
           err = this_servo->setMidPulse(default_mid_pulse);
-
-          // Set Initial Motor Direction
-          // ((SunfounderMotor*) motors[i])->setMotorDirection(MOTOR_DIRECTION_FORWARD);
-          // ((SunfounderMotor*) motors[i])->setSpeed(0);
-
      }
 
 

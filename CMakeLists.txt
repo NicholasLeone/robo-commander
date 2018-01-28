@@ -28,17 +28,20 @@ set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
 set(INCS_DIR "${PROJECT_SOURCE_DIR}/include")
 set(TEST_DIR "${PROJECT_SOURCE_DIR}/test")
 
-# ===========================
-#     Pre-Configure CMake
-# ===========================
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+# ============================================
+#       Find & Include Dependencies
+# ============================================
+# Find Armadillo
+find_package(LAPACK REQUIRED)
+find_package(BLAS REQUIRED)
+find_package(Armadillo REQUIRED)
 
-# ============================================
-#       Find & Include External Packages
-# ============================================
+# Find Boost Libraries
 find_package(Boost REQUIRED COMPONENTS system thread)
-find_package(pigpio REQUIRED)
 
+# Find pigpiod libraries
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/depends")
+find_package(pigpio REQUIRED)
 
 include_directories(
      include

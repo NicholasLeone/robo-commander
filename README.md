@@ -18,6 +18,7 @@ Dependencies:
 
 - pigpiod
 - Boost
+- Armadillo
 - OpenCV
 
 ### Developer Notes ###

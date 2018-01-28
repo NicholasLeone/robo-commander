@@ -31,7 +31,6 @@ typedef struct MOTOR_PARAMS{
      int pwm_val;
 } MOTOR_PARAMS;
 
-
 typedef struct SERVO_PARAMS{
      int channel;
      float max_angle;
@@ -41,9 +40,7 @@ typedef struct SERVO_PARAMS{
      int min_pulse;
      int zero_pulse;
      int current_pulse;
-
 } SERVO_PARAMS;
-
 
 /** SECTION:
 
@@ -89,7 +86,6 @@ typedef struct UDP_PARAMS{
      fd_set read_fds;
      fd_set write_fds;
      struct timeval tv;
-
 } UDP_PARAMS;
 
 
