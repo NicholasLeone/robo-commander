@@ -6,7 +6,7 @@
 
 #include <pigpiod_if2.h>
 #include "dc_motor.h"
-#include "../../include/Utilities/utils.h"
+#include "utils/utils.h"
 
 using namespace std;
 

@@ -30,9 +30,6 @@ int main(int argc, char *argv[]){
 
 
 /** TO COMPILE:
-
      g++ test_motors.cpp motor-driver.cpp -o TestMotor -lpigpiod_if2 -Wall -pthread
-
      g++ test_motors.cpp motor-driver.cpp ./pca9685/PWM-Driver-PCA9685.cpp ./pca9685/pwm-pca9685-user.c -o TestRC -lpigpiod_if2 -Wall -pthread -std=c++11
-
 */

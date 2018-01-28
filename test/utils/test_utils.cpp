@@ -14,10 +14,11 @@ using namespace std;
 int flag_exit = 0;
 int glb_count = 0;
 
-void funExit(int dummy){
+static void funExit(int dummy){
      glb_count++;
      printf("Signal Caught: Ctrl + Z %d Times \r\n",glb_count);
-     flag_exit = 1;
+     if(glb_count > 5)
+          flag_exit = 1;
 }
 
 
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]){
      int count = 0;
      attach_CtrlZ(funExit);
 
-     printf("Waiting...\r\n");
+     printf("Press Ctrl+Z to increment the Global Counter\r\n         Waiting for exit conditions (counter > 5)...\r\n");
      while(!flag_exit){
 
      }

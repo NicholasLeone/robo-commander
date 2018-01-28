@@ -2,13 +2,13 @@
 
 
 
-### Project Overview ###
+## Project Overview ##
 
 
 Packages used for Low-level control of electronics used for a variety of robotic applications, as well as algorithms for data fusion and controls.
 
 
-#### Version Summary ####
+### Version Summary ###
 
 Version 1.0.0
 
@@ -16,21 +16,77 @@ Language: C++
 
 Dependencies:
 
-1. pigpiod
-2. OpenCV
+- pigpiod
+- Boost
+- OpenCV
 
-#### Working Drivers ####
+### Developer Notes ###
 
-     1. PID
-     2. Serial
-     3. Utilities
-     4. Encoder
-     5. RazorIMU
-     6. 4WD
-     7. CameraStreamer
-     8. UDP
-     9. Motor
-     10. Servo
+
+#### CMakelists to make ####
+
+     - Actuators
+          - DC Motor
+          - Servo
+     - Communications
+          - UDP
+          - Serial
+     - Sensors
+          - Encoder
+          - IMU (MPU-9250)
+          - CameraStreamer
+     - Devices
+          - RazorIMU
+          - RoboClaw
+     - Filters
+          - EKF
+     - Controls
+          - PID
+     - Profiles
+          - 4WD
+
+#### Build-able Drivers ####
+
+     - Utilities
+
+#### Drivers to Re-package ####
+
+     - Actuators
+          - DC Motor
+          - Servo
+     - Communications
+          - UDP
+          - Serial
+     - Sensors
+          - Encoder
+          - IMU (MPU-9250)
+          - CameraStreamer
+     - Devices
+          - RazorIMU
+          - RoboClaw
+     - Filters
+          - EKF
+     - Controls
+          - PID
+     - Profiles
+          - 4WD
+
+#### Drivers to Test ####
+
+
+#### Drivers to create ####
+
+     - Devices
+          - MappyDot (LiDAR)
+          - PWM Driver Board (PCA-9685)
+
+     - Controls
+          - LiDAR-based Row following
+          - GPS waypoint-follower (pure pursuit)
+
+     - Filters
+          - RANSAC Line Smoother
+
 
 ### Developer Instructions ###
 
@@ -67,11 +123,12 @@ To Be Continued...
 
 #### TODOs (Double Check if still valid) ####
 
-     1. i2c base class for Rpi 3 system
-     2. combine SerialDev class with the functionality of the pigpiod serial functions used in RoboClaw class
-     3. convert DC_motor class to modular class setup using class inheritance (model code structure similar to Motors class)
-     4. Combine all base class code into one area in include folder
-     5. Organize filesystem for more modular project
+     -
+
+     - combine SerialDev class with the functionality of the pigpiod serial functions used in RoboClaw class
+     - convert DC_motor class to modular class setup using class inheritance (model code structure similar to Motors class)
+
+
 
 
 ### Maintainer ###
