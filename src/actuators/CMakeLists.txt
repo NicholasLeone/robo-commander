@@ -13,7 +13,7 @@ target_link_libraries(dcmotor utils ${LIBS})
 
 # Servo
 add_library(servo SHARED servo.cpp)
-target_link_libraries(servo ${LIBS})
+target_link_libraries(servo i2c ${LIBS})
 
 if(BUILD_TESTS)
 
@@ -31,11 +31,3 @@ if(BUILD_TESTS)
      target_link_libraries(test_servo servo)
 
 endif(BUILD_TESTS)
-
-
-if(VERBOSE)
-     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-     foreach(dir ${dirs})
-          message(STATUS "         included='${dir}'")
-     endforeach()
-endif(VERBOSE)

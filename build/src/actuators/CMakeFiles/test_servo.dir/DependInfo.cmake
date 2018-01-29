@@ -20,6 +20,8 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
   "/home/hunter/devel/robo-dev/build/src/actuators/CMakeFiles/servo.dir/DependInfo.cmake"
+  "/home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/i2c.dir/DependInfo.cmake"
+  "/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/utils.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

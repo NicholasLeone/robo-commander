@@ -90,6 +90,7 @@ servo_EXTERNAL_OBJECTS =
 
 ../lib/libservo.so: src/actuators/CMakeFiles/servo.dir/servo.cpp.o
 ../lib/libservo.so: src/actuators/CMakeFiles/servo.dir/build.make
+../lib/libservo.so: ../lib/libi2c.so
 ../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
@@ -100,6 +101,17 @@ servo_EXTERNAL_OBJECTS =
 ../lib/libservo.so: /usr/lib/libarmadillo.so
 ../lib/libservo.so: /usr/lib/liblapack.so
 ../lib/libservo.so: /usr/lib/libblas.so
+../lib/libservo.so: /usr/lib/libblas.so
+../lib/libservo.so: ../lib/libutils.so
+../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
+../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
+../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
+../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_date_time.so
+../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libboost_atomic.so
+../lib/libservo.so: /usr/lib/x86_64-linux-gnu/libpthread.so
+../lib/libservo.so: /usr/local/lib/libpigpiod_if2.so
+../lib/libservo.so: /usr/lib/libarmadillo.so
+../lib/libservo.so: /usr/lib/liblapack.so
 ../lib/libservo.so: /usr/lib/libblas.so
 ../lib/libservo.so: src/actuators/CMakeFiles/servo.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX shared library ../../../lib/libservo.so"

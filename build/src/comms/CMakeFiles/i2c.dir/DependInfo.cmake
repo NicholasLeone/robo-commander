@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/hunter/devel/robo-dev/src/utils/debug.cpp" "/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/debug.dir/debug.cpp.o"
+  "/home/hunter/devel/robo-dev/src/comms/i2c.cpp" "/home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/i2c.dir/i2c.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
@@ -12,13 +12,14 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "../include"
   "/usr/local/include"
-  "../include/utils"
-  "../src/utils/utils"
-  "../test/utils"
+  "../include/comms"
+  "../src/comms/comms"
+  "../test/comms"
   )
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
+  "/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/utils.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

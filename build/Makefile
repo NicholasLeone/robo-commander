@@ -163,6 +163,19 @@ test_servo/fast:
 .PHONY : test_servo/fast
 
 #=============================================================================
+# Target rules for targets named test_udp
+
+# Build rule for target.
+test_udp: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 test_udp
+.PHONY : test_udp
+
+# fast build rule for target.
+test_udp/fast:
+	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/build
+.PHONY : test_udp/fast
+
+#=============================================================================
 # Target rules for targets named serial
 
 # Build rule for target.
@@ -174,6 +187,19 @@ serial: cmake_check_build_system
 serial/fast:
 	$(MAKE) -f src/comms/CMakeFiles/serial.dir/build.make src/comms/CMakeFiles/serial.dir/build
 .PHONY : serial/fast
+
+#=============================================================================
+# Target rules for targets named i2c
+
+# Build rule for target.
+i2c: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 i2c
+.PHONY : i2c
+
+# fast build rule for target.
+i2c/fast:
+	$(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/build
+.PHONY : i2c/fast
 
 #=============================================================================
 # Target rules for targets named udp
@@ -200,19 +226,6 @@ test_serial: cmake_check_build_system
 test_serial/fast:
 	$(MAKE) -f src/comms/CMakeFiles/test_serial.dir/build.make src/comms/CMakeFiles/test_serial.dir/build
 .PHONY : test_serial/fast
-
-#=============================================================================
-# Target rules for targets named test_udp
-
-# Build rule for target.
-test_udp: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 test_udp
-.PHONY : test_udp
-
-# fast build rule for target.
-test_udp/fast:
-	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/build
-.PHONY : test_udp/fast
 
 #=============================================================================
 # Target rules for targets named test_roboclaw
@@ -345,32 +358,6 @@ ekf/fast:
 .PHONY : ekf/fast
 
 #=============================================================================
-# Target rules for targets named utils
-
-# Build rule for target.
-utils: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 utils
-.PHONY : utils
-
-# fast build rule for target.
-utils/fast:
-	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/build
-.PHONY : utils/fast
-
-#=============================================================================
-# Target rules for targets named debug
-
-# Build rule for target.
-debug: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 debug
-.PHONY : debug
-
-# fast build rule for target.
-debug/fast:
-	$(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/build
-.PHONY : debug/fast
-
-#=============================================================================
 # Target rules for targets named test_utils
 
 # Build rule for target.
@@ -382,6 +369,19 @@ test_utils: cmake_check_build_system
 test_utils/fast:
 	$(MAKE) -f src/utils/CMakeFiles/test_utils.dir/build.make src/utils/CMakeFiles/test_utils.dir/build
 .PHONY : test_utils/fast
+
+#=============================================================================
+# Target rules for targets named utils
+
+# Build rule for target.
+utils: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 utils
+.PHONY : utils
+
+# fast build rule for target.
+utils/fast:
+	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/build
+.PHONY : utils/fast
 
 #=============================================================================
 # Target rules for targets named test_4WD
@@ -421,10 +421,11 @@ help:
 	@echo "... servo"
 	@echo "... test_dcmotor"
 	@echo "... test_servo"
+	@echo "... test_udp"
 	@echo "... serial"
+	@echo "... i2c"
 	@echo "... udp"
 	@echo "... test_serial"
-	@echo "... test_udp"
 	@echo "... test_roboclaw"
 	@echo "... roboclaw"
 	@echo "... encoder"
@@ -435,9 +436,8 @@ help:
 	@echo "... pid"
 	@echo "... test_ekf"
 	@echo "... ekf"
-	@echo "... utils"
-	@echo "... debug"
 	@echo "... test_utils"
+	@echo "... utils"
 	@echo "... test_4WD"
 	@echo "... 4WD"
 .PHONY : help

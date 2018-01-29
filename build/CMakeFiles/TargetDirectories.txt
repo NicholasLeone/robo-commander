@@ -9,11 +9,12 @@
 /home/hunter/devel/robo-dev/build/src/actuators/CMakeFiles/test_dcmotor.dir
 /home/hunter/devel/robo-dev/build/src/actuators/CMakeFiles/test_servo.dir
 /home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/edit_cache.dir
+/home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/test_udp.dir
 /home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/serial.dir
+/home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/i2c.dir
 /home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/rebuild_cache.dir
 /home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/udp.dir
 /home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/test_serial.dir
-/home/hunter/devel/robo-dev/build/src/comms/CMakeFiles/test_udp.dir
 /home/hunter/devel/robo-dev/build/src/devices/CMakeFiles/edit_cache.dir
 /home/hunter/devel/robo-dev/build/src/devices/CMakeFiles/rebuild_cache.dir
 /home/hunter/devel/robo-dev/build/src/devices/CMakeFiles/test_roboclaw.dir
@@ -33,10 +34,9 @@
 /home/hunter/devel/robo-dev/build/src/filters/CMakeFiles/edit_cache.dir
 /home/hunter/devel/robo-dev/build/src/filters/CMakeFiles/ekf.dir
 /home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/edit_cache.dir
-/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/utils.dir
-/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/rebuild_cache.dir
-/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/debug.dir
 /home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/test_utils.dir
+/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/rebuild_cache.dir
+/home/hunter/devel/robo-dev/build/src/utils/CMakeFiles/utils.dir
 /home/hunter/devel/robo-dev/build/src/profiles/CMakeFiles/edit_cache.dir
 /home/hunter/devel/robo-dev/build/src/profiles/CMakeFiles/rebuild_cache.dir
 /home/hunter/devel/robo-dev/build/src/profiles/CMakeFiles/test_4WD.dir

@@ -10,10 +10,6 @@ include_directories(${INCS_DIR}/utils utils)
 add_library(utils SHARED utils.cpp)
 target_link_libraries(utils ${LIBS})
 
-# Debugging Utilities
-add_library(debug SHARED debug.cpp)
-target_link_libraries(debug ${LIBS})
-
 if(BUILD_TESTS)
      if(VERBOSE)
      message(STATUS "------------ Building utility tests")

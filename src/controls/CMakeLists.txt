@@ -23,10 +23,3 @@ if(BUILD_TESTS)
      target_link_libraries(test_pid pid udp dcmotor encoder)
 
 endif(BUILD_TESTS)
-
-if(VERBOSE)
-     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-     foreach(dir ${dirs})
-          message(STATUS "         included='${dir}'")
-     endforeach()
-endif(VERBOSE)

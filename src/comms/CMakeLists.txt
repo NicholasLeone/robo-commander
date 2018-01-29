@@ -11,9 +11,13 @@ include_directories(${INCS_DIR}/comms comms)
 add_library(serial SHARED serial.cpp)
 target_link_libraries(serial utils ${LIBS})
 
+# i2c
+add_library(i2c SHARED i2c.cpp)
+target_link_libraries(i2c utils ${LIBS})
+
 # UDP
 add_library(udp SHARED udp.cpp)
-target_link_libraries(udp ${LIBS})
+target_link_libraries(udp utils ${LIBS})
 
 if(BUILD_TESTS)
 
@@ -31,11 +35,3 @@ if(BUILD_TESTS)
      target_link_libraries(test_udp udp)
 
 endif(BUILD_TESTS)
-
-
-if(VERBOSE)
-     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-     foreach(dir ${dirs})
-          message(STATUS "         included='${dir}'")
-     endforeach()
-endif(VERBOSE)

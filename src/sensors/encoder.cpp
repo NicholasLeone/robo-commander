@@ -20,7 +20,6 @@ static int transits[16] = {
 
 Encoder::Encoder(int myPi, int Apin, int Bpin, int indexPin, int pulsePerRev, int encGearRatio, int filterNoise, int mode, ENC_CB_t cb_func){
 
-
      this->_pi = myPi;
      params.pinA = Apin;
      params.pinB = Bpin;
@@ -55,13 +54,10 @@ Encoder::Encoder(int myPi, int Apin, int Bpin, int indexPin, int pulsePerRev, in
      params.cb_id_a = callback_ex(_pi, Apin, EITHER_EDGE, _cb, this);
      params.cb_id_b = callback_ex(_pi, Bpin, EITHER_EDGE, _cb, this);
 
-
      // Attach Interrupt to 'Index' pin if it is specified
      if(params.pinIndex != -1)
           params.cb_id_index = callback_ex(_pi, indexPin, RISING_EDGE, _cbIndex, this);
-
 }
-
 
 void Encoder::_cb(int pi, unsigned gpio, unsigned level, uint32_t tick, void* myEnc){
      Encoder* tmpEnc = (Encoder*) myEnc;
@@ -108,7 +104,6 @@ void Encoder::_cbIndex(int pi, unsigned gpio, unsigned level, uint32_t tick, voi
      //float curRev = (float) self->numRev;
 
 }
-
 
 int Encoder::getPosition(){
     if(params.mode == ENCODER_MODE_DETENT)
@@ -168,8 +163,6 @@ void Encoder::_moving_average(Encoder* tmpEnc, float sample,int* i,float* tmp_su
           *i = 0;
      }
 }
-
-
 
 /** TODO:
      Ensure proper deletion of memory and any other system critical services

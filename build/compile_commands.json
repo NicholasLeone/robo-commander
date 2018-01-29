@@ -21,8 +21,18 @@
 },
 {
   "directory": "/home/hunter/devel/robo-dev/build/src/comms",
+  "command": "/usr/bin/c++    -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/comms -I/home/hunter/devel/robo-dev/src/comms/comms -I/home/hunter/devel/robo-dev/test/comms    -std=gnu++11 -o CMakeFiles/test_udp.dir/__/__/test/comms/test_udp.cpp.o -c /home/hunter/devel/robo-dev/test/comms/test_udp.cpp",
+  "file": "/home/hunter/devel/robo-dev/test/comms/test_udp.cpp"
+},
+{
+  "directory": "/home/hunter/devel/robo-dev/build/src/comms",
   "command": "/usr/bin/c++   -Dserial_EXPORTS -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/comms -I/home/hunter/devel/robo-dev/src/comms/comms -I/home/hunter/devel/robo-dev/test/comms  -fPIC   -std=gnu++11 -o CMakeFiles/serial.dir/serial.cpp.o -c /home/hunter/devel/robo-dev/src/comms/serial.cpp",
   "file": "/home/hunter/devel/robo-dev/src/comms/serial.cpp"
+},
+{
+  "directory": "/home/hunter/devel/robo-dev/build/src/comms",
+  "command": "/usr/bin/c++   -Di2c_EXPORTS -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/comms -I/home/hunter/devel/robo-dev/src/comms/comms -I/home/hunter/devel/robo-dev/test/comms  -fPIC   -std=gnu++11 -o CMakeFiles/i2c.dir/i2c.cpp.o -c /home/hunter/devel/robo-dev/src/comms/i2c.cpp",
+  "file": "/home/hunter/devel/robo-dev/src/comms/i2c.cpp"
 },
 {
   "directory": "/home/hunter/devel/robo-dev/build/src/comms",
@@ -33,11 +43,6 @@
   "directory": "/home/hunter/devel/robo-dev/build/src/comms",
   "command": "/usr/bin/c++    -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/comms -I/home/hunter/devel/robo-dev/src/comms/comms -I/home/hunter/devel/robo-dev/test/comms    -std=gnu++11 -o CMakeFiles/test_serial.dir/__/__/test/comms/test_serial.cpp.o -c /home/hunter/devel/robo-dev/test/comms/test_serial.cpp",
   "file": "/home/hunter/devel/robo-dev/test/comms/test_serial.cpp"
-},
-{
-  "directory": "/home/hunter/devel/robo-dev/build/src/comms",
-  "command": "/usr/bin/c++    -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/comms -I/home/hunter/devel/robo-dev/src/comms/comms -I/home/hunter/devel/robo-dev/test/comms    -std=gnu++11 -o CMakeFiles/test_udp.dir/__/__/test/comms/test_udp.cpp.o -c /home/hunter/devel/robo-dev/test/comms/test_udp.cpp",
-  "file": "/home/hunter/devel/robo-dev/test/comms/test_udp.cpp"
 },
 {
   "directory": "/home/hunter/devel/robo-dev/build/src/devices",
@@ -91,18 +96,13 @@
 },
 {
   "directory": "/home/hunter/devel/robo-dev/build/src/utils",
-  "command": "/usr/bin/c++   -Dutils_EXPORTS -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/utils -I/home/hunter/devel/robo-dev/src/utils/utils -I/home/hunter/devel/robo-dev/test/utils  -fPIC   -o CMakeFiles/utils.dir/utils.cpp.o -c /home/hunter/devel/robo-dev/src/utils/utils.cpp",
-  "file": "/home/hunter/devel/robo-dev/src/utils/utils.cpp"
-},
-{
-  "directory": "/home/hunter/devel/robo-dev/build/src/utils",
-  "command": "/usr/bin/c++   -Ddebug_EXPORTS -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/utils -I/home/hunter/devel/robo-dev/src/utils/utils -I/home/hunter/devel/robo-dev/test/utils  -fPIC   -o CMakeFiles/debug.dir/debug.cpp.o -c /home/hunter/devel/robo-dev/src/utils/debug.cpp",
-  "file": "/home/hunter/devel/robo-dev/src/utils/debug.cpp"
-},
-{
-  "directory": "/home/hunter/devel/robo-dev/build/src/utils",
   "command": "/usr/bin/c++    -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/utils -I/home/hunter/devel/robo-dev/src/utils/utils -I/home/hunter/devel/robo-dev/test/utils    -o CMakeFiles/test_utils.dir/__/__/test/utils/test_utils.cpp.o -c /home/hunter/devel/robo-dev/test/utils/test_utils.cpp",
   "file": "/home/hunter/devel/robo-dev/test/utils/test_utils.cpp"
+},
+{
+  "directory": "/home/hunter/devel/robo-dev/build/src/utils",
+  "command": "/usr/bin/c++   -Dutils_EXPORTS -I/home/hunter/devel/robo-dev/include -I/usr/local/include -I/home/hunter/devel/robo-dev/include/utils -I/home/hunter/devel/robo-dev/src/utils/utils -I/home/hunter/devel/robo-dev/test/utils  -fPIC   -o CMakeFiles/utils.dir/utils.cpp.o -c /home/hunter/devel/robo-dev/src/utils/utils.cpp",
+  "file": "/home/hunter/devel/robo-dev/src/utils/utils.cpp"
 },
 {
   "directory": "/home/hunter/devel/robo-dev/build/src/profiles",

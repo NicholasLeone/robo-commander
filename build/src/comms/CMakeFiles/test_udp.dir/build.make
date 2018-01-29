@@ -91,6 +91,7 @@ test_udp_EXTERNAL_OBJECTS =
 ../bin/test_udp: src/comms/CMakeFiles/test_udp.dir/__/__/test/comms/test_udp.cpp.o
 ../bin/test_udp: src/comms/CMakeFiles/test_udp.dir/build.make
 ../bin/test_udp: ../lib/libudp.so
+../bin/test_udp: ../lib/libutils.so
 ../bin/test_udp: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../bin/test_udp: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../bin/test_udp: /usr/lib/x86_64-linux-gnu/libboost_chrono.so

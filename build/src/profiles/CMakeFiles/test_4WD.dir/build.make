@@ -95,8 +95,8 @@ test_4WD_EXTERNAL_OBJECTS =
 ../bin/test_4WD: ../lib/libencoder.so
 ../bin/test_4WD: ../lib/libdcmotor.so
 ../bin/test_4WD: ../lib/libpid.so
-../bin/test_4WD: ../lib/libutils.so
 ../bin/test_4WD: ../lib/libudp.so
+../bin/test_4WD: ../lib/libutils.so
 ../bin/test_4WD: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../bin/test_4WD: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../bin/test_4WD: /usr/lib/x86_64-linux-gnu/libboost_chrono.so

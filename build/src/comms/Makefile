@@ -111,6 +111,21 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
+src/comms/CMakeFiles/test_udp.dir/rule:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/test_udp.dir/rule
+.PHONY : src/comms/CMakeFiles/test_udp.dir/rule
+
+# Convenience name for target.
+test_udp: src/comms/CMakeFiles/test_udp.dir/rule
+
+.PHONY : test_udp
+
+# fast build rule for target.
+test_udp/fast:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/build
+.PHONY : test_udp/fast
+
+# Convenience name for target.
 src/comms/CMakeFiles/serial.dir/rule:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/serial.dir/rule
 .PHONY : src/comms/CMakeFiles/serial.dir/rule
@@ -124,6 +139,21 @@ serial: src/comms/CMakeFiles/serial.dir/rule
 serial/fast:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/serial.dir/build.make src/comms/CMakeFiles/serial.dir/build
 .PHONY : serial/fast
+
+# Convenience name for target.
+src/comms/CMakeFiles/i2c.dir/rule:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/i2c.dir/rule
+.PHONY : src/comms/CMakeFiles/i2c.dir/rule
+
+# Convenience name for target.
+i2c: src/comms/CMakeFiles/i2c.dir/rule
+
+.PHONY : i2c
+
+# fast build rule for target.
+i2c/fast:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/build
+.PHONY : i2c/fast
 
 # Convenience name for target.
 src/comms/CMakeFiles/udp.dir/rule:
@@ -154,21 +184,6 @@ test_serial: src/comms/CMakeFiles/test_serial.dir/rule
 test_serial/fast:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/test_serial.dir/build.make src/comms/CMakeFiles/test_serial.dir/build
 .PHONY : test_serial/fast
-
-# Convenience name for target.
-src/comms/CMakeFiles/test_udp.dir/rule:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/test_udp.dir/rule
-.PHONY : src/comms/CMakeFiles/test_udp.dir/rule
-
-# Convenience name for target.
-test_udp: src/comms/CMakeFiles/test_udp.dir/rule
-
-.PHONY : test_udp
-
-# fast build rule for target.
-test_udp/fast:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/build
-.PHONY : test_udp/fast
 
 __/__/test/comms/test_serial.o: __/__/test/comms/test_serial.cpp.o
 
@@ -223,6 +238,33 @@ __/__/test/comms/test_udp.s: __/__/test/comms/test_udp.cpp.s
 __/__/test/comms/test_udp.cpp.s:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/__/__/test/comms/test_udp.cpp.s
 .PHONY : __/__/test/comms/test_udp.cpp.s
+
+i2c.o: i2c.cpp.o
+
+.PHONY : i2c.o
+
+# target to build an object file
+i2c.cpp.o:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/i2c.cpp.o
+.PHONY : i2c.cpp.o
+
+i2c.i: i2c.cpp.i
+
+.PHONY : i2c.i
+
+# target to preprocess a source file
+i2c.cpp.i:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/i2c.cpp.i
+.PHONY : i2c.cpp.i
+
+i2c.s: i2c.cpp.s
+
+.PHONY : i2c.s
+
+# target to generate assembly for a file
+i2c.cpp.s:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/i2c.cpp.s
+.PHONY : i2c.cpp.s
 
 serial.o: serial.cpp.o
 
@@ -285,17 +327,21 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... test_udp"
 	@echo "... serial"
+	@echo "... i2c"
 	@echo "... rebuild_cache"
 	@echo "... udp"
 	@echo "... test_serial"
-	@echo "... test_udp"
 	@echo "... __/__/test/comms/test_serial.o"
 	@echo "... __/__/test/comms/test_serial.i"
 	@echo "... __/__/test/comms/test_serial.s"
 	@echo "... __/__/test/comms/test_udp.o"
 	@echo "... __/__/test/comms/test_udp.i"
 	@echo "... __/__/test/comms/test_udp.s"
+	@echo "... i2c.o"
+	@echo "... i2c.i"
+	@echo "... i2c.s"
 	@echo "... serial.o"
 	@echo "... serial.i"
 	@echo "... serial.s"

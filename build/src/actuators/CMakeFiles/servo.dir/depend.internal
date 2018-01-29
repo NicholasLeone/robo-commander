@@ -6,6 +6,7 @@ src/actuators/CMakeFiles/servo.dir/servo.cpp.o
  ../include/base/definitions.h
  ../include/base/params.h
  ../include/base/peripherals.h
+ ../include/comms/i2c.h
  /home/hunter/devel/robo-dev/src/actuators/servo.cpp
  /usr/local/include/pigpio.h
  /usr/local/include/pigpiod_if2.h

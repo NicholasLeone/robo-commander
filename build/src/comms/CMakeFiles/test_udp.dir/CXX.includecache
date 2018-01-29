@@ -28,6 +28,26 @@ base/params.h
 vector
 -
 
+../include/utils/utils.h
+stdio.h
+-
+stdlib.h
+-
+stdarg.h
+-
+unistd.h
+-
+vector
+-
+string.h
+-
+map
+-
+functional
+-
+base/params.h
+../include/utils/base/params.h
+
 /home/hunter/devel/robo-dev/test/comms/test_udp.cpp
 stdio.h
 -
@@ -61,4 +81,6 @@ sys/select.h
 -
 udp.h
 /home/hunter/devel/robo-dev/test/comms/udp.h
+utils/utils.h
+/home/hunter/devel/robo-dev/test/comms/utils/utils.h
 

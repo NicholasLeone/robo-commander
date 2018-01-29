@@ -90,6 +90,7 @@ udp_EXTERNAL_OBJECTS =
 
 ../lib/libudp.so: src/comms/CMakeFiles/udp.dir/udp.cpp.o
 ../lib/libudp.so: src/comms/CMakeFiles/udp.dir/build.make
+../lib/libudp.so: ../lib/libutils.so
 ../lib/libudp.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../lib/libudp.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../lib/libudp.so: /usr/lib/x86_64-linux-gnu/libboost_chrono.so

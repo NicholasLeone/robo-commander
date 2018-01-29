@@ -36,6 +36,10 @@ stdint.h
 params.h
 ../include/base/params.h
 
+../include/comms/i2c.h
+base/params.h
+../include/comms/base/params.h
+
 /home/hunter/devel/robo-dev/src/actuators/servo.cpp
 stdio.h
 -
@@ -47,6 +51,8 @@ pigpiod_if2.h
 -
 actuators/servo.h
 /home/hunter/devel/robo-dev/src/actuators/actuators/servo.h
+comms/i2c.h
+/home/hunter/devel/robo-dev/src/actuators/comms/i2c.h
 
 /usr/local/include/pigpio.h
 stdint.h

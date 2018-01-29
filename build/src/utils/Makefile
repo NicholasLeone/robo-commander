@@ -111,36 +111,6 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-src/utils/CMakeFiles/utils.dir/rule:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/utils.dir/rule
-.PHONY : src/utils/CMakeFiles/utils.dir/rule
-
-# Convenience name for target.
-utils: src/utils/CMakeFiles/utils.dir/rule
-
-.PHONY : utils
-
-# fast build rule for target.
-utils/fast:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/build
-.PHONY : utils/fast
-
-# Convenience name for target.
-src/utils/CMakeFiles/debug.dir/rule:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/debug.dir/rule
-.PHONY : src/utils/CMakeFiles/debug.dir/rule
-
-# Convenience name for target.
-debug: src/utils/CMakeFiles/debug.dir/rule
-
-.PHONY : debug
-
-# fast build rule for target.
-debug/fast:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/build
-.PHONY : debug/fast
-
-# Convenience name for target.
 src/utils/CMakeFiles/test_utils.dir/rule:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/test_utils.dir/rule
 .PHONY : src/utils/CMakeFiles/test_utils.dir/rule
@@ -154,6 +124,21 @@ test_utils: src/utils/CMakeFiles/test_utils.dir/rule
 test_utils/fast:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/test_utils.dir/build.make src/utils/CMakeFiles/test_utils.dir/build
 .PHONY : test_utils/fast
+
+# Convenience name for target.
+src/utils/CMakeFiles/utils.dir/rule:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/utils.dir/rule
+.PHONY : src/utils/CMakeFiles/utils.dir/rule
+
+# Convenience name for target.
+utils: src/utils/CMakeFiles/utils.dir/rule
+
+.PHONY : utils
+
+# fast build rule for target.
+utils/fast:
+	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/build
+.PHONY : utils/fast
 
 __/__/test/utils/test_utils.o: __/__/test/utils/test_utils.cpp.o
 
@@ -181,33 +166,6 @@ __/__/test/utils/test_utils.s: __/__/test/utils/test_utils.cpp.s
 __/__/test/utils/test_utils.cpp.s:
 	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/test_utils.dir/build.make src/utils/CMakeFiles/test_utils.dir/__/__/test/utils/test_utils.cpp.s
 .PHONY : __/__/test/utils/test_utils.cpp.s
-
-debug.o: debug.cpp.o
-
-.PHONY : debug.o
-
-# target to build an object file
-debug.cpp.o:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/debug.cpp.o
-.PHONY : debug.cpp.o
-
-debug.i: debug.cpp.i
-
-.PHONY : debug.i
-
-# target to preprocess a source file
-debug.cpp.i:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/debug.cpp.i
-.PHONY : debug.cpp.i
-
-debug.s: debug.cpp.s
-
-.PHONY : debug.s
-
-# target to generate assembly for a file
-debug.cpp.s:
-	cd /home/hunter/devel/robo-dev/build && $(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/debug.cpp.s
-.PHONY : debug.cpp.s
 
 utils.o: utils.cpp.o
 
@@ -243,16 +201,12 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
-	@echo "... utils"
-	@echo "... rebuild_cache"
-	@echo "... debug"
 	@echo "... test_utils"
+	@echo "... rebuild_cache"
+	@echo "... utils"
 	@echo "... __/__/test/utils/test_utils.o"
 	@echo "... __/__/test/utils/test_utils.i"
 	@echo "... __/__/test/utils/test_utils.s"
-	@echo "... debug.o"
-	@echo "... debug.i"
-	@echo "... debug.s"
 	@echo "... utils.o"
 	@echo "... utils.i"
 	@echo "... utils.s"

@@ -91,6 +91,8 @@ test_servo_EXTERNAL_OBJECTS =
 ../bin/test_servo: src/actuators/CMakeFiles/test_servo.dir/__/__/test/actuators/test_servo.cpp.o
 ../bin/test_servo: src/actuators/CMakeFiles/test_servo.dir/build.make
 ../bin/test_servo: ../lib/libservo.so
+../bin/test_servo: ../lib/libi2c.so
+../bin/test_servo: ../lib/libutils.so
 ../bin/test_servo: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../bin/test_servo: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../bin/test_servo: /usr/lib/x86_64-linux-gnu/libboost_chrono.so

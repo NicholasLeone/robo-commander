@@ -163,7 +163,8 @@ clean: src/actuators/CMakeFiles/dcmotor.dir/clean
 # Target rules for target src/actuators/CMakeFiles/servo.dir
 
 # All Build rule for target.
-src/actuators/CMakeFiles/servo.dir/all:
+src/actuators/CMakeFiles/servo.dir/all: src/comms/CMakeFiles/i2c.dir/all
+src/actuators/CMakeFiles/servo.dir/all: src/utils/CMakeFiles/utils.dir/all
 	$(MAKE) -f src/actuators/CMakeFiles/servo.dir/build.make src/actuators/CMakeFiles/servo.dir/depend
 	$(MAKE) -f src/actuators/CMakeFiles/servo.dir/build.make src/actuators/CMakeFiles/servo.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=19,20 "Built target servo"
@@ -176,7 +177,7 @@ all: src/actuators/CMakeFiles/servo.dir/all
 
 # Build rule for subdir invocation for target.
 src/actuators/CMakeFiles/servo.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 6
 	$(MAKE) -f CMakeFiles/Makefile2 src/actuators/CMakeFiles/servo.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
 .PHONY : src/actuators/CMakeFiles/servo.dir/rule
@@ -239,6 +240,8 @@ clean: src/actuators/CMakeFiles/test_dcmotor.dir/clean
 
 # All Build rule for target.
 src/actuators/CMakeFiles/test_servo.dir/all: src/actuators/CMakeFiles/servo.dir/all
+src/actuators/CMakeFiles/test_servo.dir/all: src/comms/CMakeFiles/i2c.dir/all
+src/actuators/CMakeFiles/test_servo.dir/all: src/utils/CMakeFiles/utils.dir/all
 	$(MAKE) -f src/actuators/CMakeFiles/test_servo.dir/build.make src/actuators/CMakeFiles/test_servo.dir/depend
 	$(MAKE) -f src/actuators/CMakeFiles/test_servo.dir/build.make src/actuators/CMakeFiles/test_servo.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=37,38 "Built target test_servo"
@@ -251,7 +254,7 @@ all: src/actuators/CMakeFiles/test_servo.dir/all
 
 # Build rule for subdir invocation for target.
 src/actuators/CMakeFiles/test_servo.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 8
 	$(MAKE) -f CMakeFiles/Makefile2 src/actuators/CMakeFiles/test_servo.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
 .PHONY : src/actuators/CMakeFiles/test_servo.dir/rule
@@ -275,18 +278,20 @@ clean: src/actuators/CMakeFiles/test_servo.dir/clean
 # Directory level rules for directory src/comms
 
 # Convenience name for "all" pass in the directory.
+src/comms/all: src/comms/CMakeFiles/test_udp.dir/all
 src/comms/all: src/comms/CMakeFiles/serial.dir/all
+src/comms/all: src/comms/CMakeFiles/i2c.dir/all
 src/comms/all: src/comms/CMakeFiles/udp.dir/all
 src/comms/all: src/comms/CMakeFiles/test_serial.dir/all
-src/comms/all: src/comms/CMakeFiles/test_udp.dir/all
 
 .PHONY : src/comms/all
 
 # Convenience name for "clean" pass in the directory.
+src/comms/clean: src/comms/CMakeFiles/test_udp.dir/clean
 src/comms/clean: src/comms/CMakeFiles/serial.dir/clean
+src/comms/clean: src/comms/CMakeFiles/i2c.dir/clean
 src/comms/clean: src/comms/CMakeFiles/udp.dir/clean
 src/comms/clean: src/comms/CMakeFiles/test_serial.dir/clean
-src/comms/clean: src/comms/CMakeFiles/test_udp.dir/clean
 
 .PHONY : src/comms/clean
 
@@ -294,6 +299,44 @@ src/comms/clean: src/comms/CMakeFiles/test_udp.dir/clean
 src/comms/preinstall:
 
 .PHONY : src/comms/preinstall
+
+#=============================================================================
+# Target rules for target src/comms/CMakeFiles/test_udp.dir
+
+# All Build rule for target.
+src/comms/CMakeFiles/test_udp.dir/all: src/comms/CMakeFiles/udp.dir/all
+src/comms/CMakeFiles/test_udp.dir/all: src/utils/CMakeFiles/utils.dir/all
+	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/depend
+	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=39,40 "Built target test_udp"
+.PHONY : src/comms/CMakeFiles/test_udp.dir/all
+
+# Include target in all.
+all: src/comms/CMakeFiles/test_udp.dir/all
+
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+src/comms/CMakeFiles/test_udp.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 6
+	$(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/test_udp.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
+.PHONY : src/comms/CMakeFiles/test_udp.dir/rule
+
+# Convenience name for target.
+test_udp: src/comms/CMakeFiles/test_udp.dir/rule
+
+.PHONY : test_udp
+
+# clean rule for target.
+src/comms/CMakeFiles/test_udp.dir/clean:
+	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/clean
+.PHONY : src/comms/CMakeFiles/test_udp.dir/clean
+
+# clean rule for target.
+clean: src/comms/CMakeFiles/test_udp.dir/clean
+
+.PHONY : clean
 
 #=============================================================================
 # Target rules for target src/comms/CMakeFiles/serial.dir
@@ -333,10 +376,47 @@ clean: src/comms/CMakeFiles/serial.dir/clean
 .PHONY : clean
 
 #=============================================================================
+# Target rules for target src/comms/CMakeFiles/i2c.dir
+
+# All Build rule for target.
+src/comms/CMakeFiles/i2c.dir/all: src/utils/CMakeFiles/utils.dir/all
+	$(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/depend
+	$(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=9,10 "Built target i2c"
+.PHONY : src/comms/CMakeFiles/i2c.dir/all
+
+# Include target in all.
+all: src/comms/CMakeFiles/i2c.dir/all
+
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+src/comms/CMakeFiles/i2c.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 4
+	$(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/i2c.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
+.PHONY : src/comms/CMakeFiles/i2c.dir/rule
+
+# Convenience name for target.
+i2c: src/comms/CMakeFiles/i2c.dir/rule
+
+.PHONY : i2c
+
+# clean rule for target.
+src/comms/CMakeFiles/i2c.dir/clean:
+	$(MAKE) -f src/comms/CMakeFiles/i2c.dir/build.make src/comms/CMakeFiles/i2c.dir/clean
+.PHONY : src/comms/CMakeFiles/i2c.dir/clean
+
+# clean rule for target.
+clean: src/comms/CMakeFiles/i2c.dir/clean
+
+.PHONY : clean
+
+#=============================================================================
 # Target rules for target src/comms/CMakeFiles/udp.dir
 
 # All Build rule for target.
-src/comms/CMakeFiles/udp.dir/all:
+src/comms/CMakeFiles/udp.dir/all: src/utils/CMakeFiles/utils.dir/all
 	$(MAKE) -f src/comms/CMakeFiles/udp.dir/build.make src/comms/CMakeFiles/udp.dir/depend
 	$(MAKE) -f src/comms/CMakeFiles/udp.dir/build.make src/comms/CMakeFiles/udp.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=43,44 "Built target udp"
@@ -349,7 +429,7 @@ all: src/comms/CMakeFiles/udp.dir/all
 
 # Build rule for subdir invocation for target.
 src/comms/CMakeFiles/udp.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 4
 	$(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/udp.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
 .PHONY : src/comms/CMakeFiles/udp.dir/rule
@@ -404,43 +484,6 @@ src/comms/CMakeFiles/test_serial.dir/clean:
 
 # clean rule for target.
 clean: src/comms/CMakeFiles/test_serial.dir/clean
-
-.PHONY : clean
-
-#=============================================================================
-# Target rules for target src/comms/CMakeFiles/test_udp.dir
-
-# All Build rule for target.
-src/comms/CMakeFiles/test_udp.dir/all: src/comms/CMakeFiles/udp.dir/all
-	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/depend
-	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=39,40 "Built target test_udp"
-.PHONY : src/comms/CMakeFiles/test_udp.dir/all
-
-# Include target in all.
-all: src/comms/CMakeFiles/test_udp.dir/all
-
-.PHONY : all
-
-# Build rule for subdir invocation for target.
-src/comms/CMakeFiles/test_udp.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 4
-	$(MAKE) -f CMakeFiles/Makefile2 src/comms/CMakeFiles/test_udp.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
-.PHONY : src/comms/CMakeFiles/test_udp.dir/rule
-
-# Convenience name for target.
-test_udp: src/comms/CMakeFiles/test_udp.dir/rule
-
-.PHONY : test_udp
-
-# clean rule for target.
-src/comms/CMakeFiles/test_udp.dir/clean:
-	$(MAKE) -f src/comms/CMakeFiles/test_udp.dir/build.make src/comms/CMakeFiles/test_udp.dir/clean
-.PHONY : src/comms/CMakeFiles/test_udp.dir/clean
-
-# clean rule for target.
-clean: src/comms/CMakeFiles/test_udp.dir/clean
 
 .PHONY : clean
 
@@ -569,7 +612,7 @@ src/sensors/preinstall:
 src/sensors/CMakeFiles/encoder.dir/all:
 	$(MAKE) -f src/sensors/CMakeFiles/encoder.dir/build.make src/sensors/CMakeFiles/encoder.dir/depend
 	$(MAKE) -f src/sensors/CMakeFiles/encoder.dir/build.make src/sensors/CMakeFiles/encoder.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=9,10 "Built target encoder"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=7,8 "Built target encoder"
 .PHONY : src/sensors/CMakeFiles/encoder.dir/all
 
 # Include target in all.
@@ -874,7 +917,7 @@ clean: src/filters/CMakeFiles/test_ekf.dir/clean
 src/filters/CMakeFiles/ekf.dir/all:
 	$(MAKE) -f src/filters/CMakeFiles/ekf.dir/build.make src/filters/CMakeFiles/ekf.dir/depend
 	$(MAKE) -f src/filters/CMakeFiles/ekf.dir/build.make src/filters/CMakeFiles/ekf.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=7,8 "Built target ekf"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=5,6 "Built target ekf"
 .PHONY : src/filters/CMakeFiles/ekf.dir/all
 
 # Include target in all.
@@ -908,16 +951,14 @@ clean: src/filters/CMakeFiles/ekf.dir/clean
 # Directory level rules for directory src/utils
 
 # Convenience name for "all" pass in the directory.
-src/utils/all: src/utils/CMakeFiles/utils.dir/all
-src/utils/all: src/utils/CMakeFiles/debug.dir/all
 src/utils/all: src/utils/CMakeFiles/test_utils.dir/all
+src/utils/all: src/utils/CMakeFiles/utils.dir/all
 
 .PHONY : src/utils/all
 
 # Convenience name for "clean" pass in the directory.
-src/utils/clean: src/utils/CMakeFiles/utils.dir/clean
-src/utils/clean: src/utils/CMakeFiles/debug.dir/clean
 src/utils/clean: src/utils/CMakeFiles/test_utils.dir/clean
+src/utils/clean: src/utils/CMakeFiles/utils.dir/clean
 
 .PHONY : src/utils/clean
 
@@ -925,80 +966,6 @@ src/utils/clean: src/utils/CMakeFiles/test_utils.dir/clean
 src/utils/preinstall:
 
 .PHONY : src/utils/preinstall
-
-#=============================================================================
-# Target rules for target src/utils/CMakeFiles/utils.dir
-
-# All Build rule for target.
-src/utils/CMakeFiles/utils.dir/all:
-	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/depend
-	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=45,46 "Built target utils"
-.PHONY : src/utils/CMakeFiles/utils.dir/all
-
-# Include target in all.
-all: src/utils/CMakeFiles/utils.dir/all
-
-.PHONY : all
-
-# Build rule for subdir invocation for target.
-src/utils/CMakeFiles/utils.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 2
-	$(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/utils.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
-.PHONY : src/utils/CMakeFiles/utils.dir/rule
-
-# Convenience name for target.
-utils: src/utils/CMakeFiles/utils.dir/rule
-
-.PHONY : utils
-
-# clean rule for target.
-src/utils/CMakeFiles/utils.dir/clean:
-	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/clean
-.PHONY : src/utils/CMakeFiles/utils.dir/clean
-
-# clean rule for target.
-clean: src/utils/CMakeFiles/utils.dir/clean
-
-.PHONY : clean
-
-#=============================================================================
-# Target rules for target src/utils/CMakeFiles/debug.dir
-
-# All Build rule for target.
-src/utils/CMakeFiles/debug.dir/all:
-	$(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/depend
-	$(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=5,6 "Built target debug"
-.PHONY : src/utils/CMakeFiles/debug.dir/all
-
-# Include target in all.
-all: src/utils/CMakeFiles/debug.dir/all
-
-.PHONY : all
-
-# Build rule for subdir invocation for target.
-src/utils/CMakeFiles/debug.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 2
-	$(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/debug.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
-.PHONY : src/utils/CMakeFiles/debug.dir/rule
-
-# Convenience name for target.
-debug: src/utils/CMakeFiles/debug.dir/rule
-
-.PHONY : debug
-
-# clean rule for target.
-src/utils/CMakeFiles/debug.dir/clean:
-	$(MAKE) -f src/utils/CMakeFiles/debug.dir/build.make src/utils/CMakeFiles/debug.dir/clean
-.PHONY : src/utils/CMakeFiles/debug.dir/clean
-
-# clean rule for target.
-clean: src/utils/CMakeFiles/debug.dir/clean
-
-.PHONY : clean
 
 #=============================================================================
 # Target rules for target src/utils/CMakeFiles/test_utils.dir
@@ -1034,6 +1001,43 @@ src/utils/CMakeFiles/test_utils.dir/clean:
 
 # clean rule for target.
 clean: src/utils/CMakeFiles/test_utils.dir/clean
+
+.PHONY : clean
+
+#=============================================================================
+# Target rules for target src/utils/CMakeFiles/utils.dir
+
+# All Build rule for target.
+src/utils/CMakeFiles/utils.dir/all:
+	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/depend
+	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hunter/devel/robo-dev/build/CMakeFiles --progress-num=45,46 "Built target utils"
+.PHONY : src/utils/CMakeFiles/utils.dir/all
+
+# Include target in all.
+all: src/utils/CMakeFiles/utils.dir/all
+
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+src/utils/CMakeFiles/utils.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 src/utils/CMakeFiles/utils.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hunter/devel/robo-dev/build/CMakeFiles 0
+.PHONY : src/utils/CMakeFiles/utils.dir/rule
+
+# Convenience name for target.
+utils: src/utils/CMakeFiles/utils.dir/rule
+
+.PHONY : utils
+
+# clean rule for target.
+src/utils/CMakeFiles/utils.dir/clean:
+	$(MAKE) -f src/utils/CMakeFiles/utils.dir/build.make src/utils/CMakeFiles/utils.dir/clean
+.PHONY : src/utils/CMakeFiles/utils.dir/clean
+
+# clean rule for target.
+clean: src/utils/CMakeFiles/utils.dir/clean
 
 .PHONY : clean
 

@@ -11,7 +11,6 @@
 #include <functional>
 #include "base/params.h"
 
-
 using namespace std;
 
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral);
@@ -24,5 +23,15 @@ float unpackFloat(char* buffer, int *i);
 vector<float> parseFloat(string s, string delimiter);
 void attach_CtrlC(void_int_fun func2call);
 void attach_CtrlZ(void_int_fun func2call);
+
+void printUdpHeader(CommunicationHeaderByte* header);
+void printImu(Sim_Msg_IMUData data);
+void printGps(Sim_Msg_GPSData data);
+void printLidar(Sim_Msg_LidarData data);
+
+// UDP Sending Overloads
+// int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_IMUData data);
+// int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_GPSData data);
+// int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_LidarData data);
 
 #endif /* UTILS_H_ */

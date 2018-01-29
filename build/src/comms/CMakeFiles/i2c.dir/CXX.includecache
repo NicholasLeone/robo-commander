@@ -22,11 +22,11 @@ sys/time.h
 definitions.h
 ../include/base/definitions.h
 
-../include/utils/debug.h
+../include/comms/i2c.h
 base/params.h
-../include/utils/base/params.h
+../include/comms/base/params.h
 
-/home/hunter/devel/robo-dev/src/utils/debug.cpp
-debug.h
-/home/hunter/devel/robo-dev/src/utils/debug.h
+/home/hunter/devel/robo-dev/src/comms/i2c.cpp
+comms/i2c.h
+/home/hunter/devel/robo-dev/src/comms/comms/i2c.h
 
