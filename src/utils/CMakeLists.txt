@@ -4,10 +4,15 @@ if(VERBOSE)
 message(STATUS "------ BUILDING PROGRAMMING UTILITIES")
 endif(VERBOSE)
 
-# Utilities
 include_directories(${INCS_DIR}/utils utils)
+
+# Utilities
 add_library(utils SHARED utils.cpp)
 target_link_libraries(utils ${LIBS})
+
+# Debugging Utilities
+add_library(debug SHARED debug.cpp)
+target_link_libraries(debug ${LIBS})
 
 if(BUILD_TESTS)
      if(VERBOSE)
@@ -19,10 +24,3 @@ if(BUILD_TESTS)
      add_executable(test_utils ${TEST_DIR}/utils/test_utils.cpp)
      target_link_libraries(test_utils utils)
 endif(BUILD_TESTS)
-
-if(VERBOSE)
-     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-     foreach(dir ${dirs})
-          message(STATUS "         included='${dir}'")
-     endforeach()
-endif(VERBOSE)

@@ -35,15 +35,11 @@ Dependencies:
 
 #### Drivers to Re-package ####
 
-     - Actuators
-          - DC Motor
-          - Servo
      - Communications
           - UDP
           - Serial
      - Sensors
           - Encoder
-          - IMU (MPU-9250)
           - CameraStreamer
      - Devices
           - RazorIMU
@@ -55,7 +51,7 @@ Dependencies:
      - Profiles
           - 4WD
 
-#### Drivers to Verify Properly Working ####
+#### Drivers to Verify Proper Functionality ####
 
      - Actuators
           - DC Motor
@@ -106,8 +102,6 @@ To Be Continued...
 
 To Be Continued...
 
-##### Cross-compiling on Ubuntu #####
-
 #### Installation ####
 
 To Be Continued...
@@ -120,19 +114,12 @@ To Be Continued...
 
 There are currently no testing procedures or programs defined or developed for this project.
 
-#### Developer Notes ####
-
-To Be Continued...
-
 #### TODOs (Double Check if still valid) ####
 
      -
 
      - combine SerialDev class with the functionality of the pigpiod serial functions used in RoboClaw class
      - convert DC_motor class to modular class setup using class inheritance (model code structure similar to Motors class)
-
-
-
 
 ### Maintainer ###
 

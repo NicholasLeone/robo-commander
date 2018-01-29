@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/base/definitions.h
+
+../include/base/params.h
+armadillo
+-
+string.h
+-
+netinet/in.h
+-
+netdb.h
+-
+sys/time.h
+-
+definitions.h
+../include/base/definitions.h
+
+../include/utils/debug.h
+base/params.h
+../include/utils/base/params.h
+
+/home/hunter/devel/robo-dev/src/utils/debug.cpp
+debug.h
+/home/hunter/devel/robo-dev/src/utils/debug.h
+

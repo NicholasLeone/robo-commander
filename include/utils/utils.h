@@ -9,8 +9,8 @@
 #include <string.h>
 #include <map>
 #include <functional>
+#include "base/params.h"
 
-typedef void (*void_int_fun)(int);
 
 using namespace std;
 

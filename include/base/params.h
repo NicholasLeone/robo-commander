@@ -3,17 +3,19 @@
 
 #include <armadillo>
 #include <string.h>
-#include "definitions.h"
 
 /** UDP_PARAMS Needs these */
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/time.h>
 
+#include "definitions.h"
+
 using namespace std;
 using namespace arma;
 
 #define M_DEG2RAD (2*M_PI)/360
+typedef void (*void_int_fun)(int);
 
 /** SECTION:
 
@@ -198,26 +200,20 @@ typedef struct Sim_LidarData{
 }Sim_LidarData;
 
 typedef struct SENSOR_PARAMS{
-
      // Device Address
      int add;
-
      // Component Readings
      float x;
      float y;
      float z;
-
      // Component Offsets
      float x_off;
      float y_off;
      float z_off;
-
      // Full-Scale Range
      int fs;
-
      // Sensitivity
      float sens;
-
 } SENSOR_PARAMS;
 
 
@@ -226,22 +222,15 @@ typedef struct SENSOR_PARAMS{
      CONTROLLERS PARAMETERS
 
 */
-
 typedef struct EKF_PARAMS{
-
     fmat x;         // State Matrix                         [N x 1]
     fmat F;         // Process Model Jacobian               [N x N]
     fmat H;         // Measurement Model Jacobian           [M x N]
-
     fmat P;         // Predicted State Error Covariance     [N x N]
     fmat Q;         // Process Noise Covariance             [N x N]
     fmat R;         // Measurement Error Covariance         [M x M]
-
     fmat K;         // Kalman gain                          [N x M]
-
-
 } EKF_PARAMS;
-
 
 typedef struct PID_PARAMS{
      double dt;
@@ -254,12 +243,145 @@ typedef struct PID_PARAMS{
      double integral;
 }PID_PARAMS;
 
-
 /** SECTION:
 
      MESSAGES TYPES
 
 */
+
+typedef struct XYZ_BASE_INT{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+} XYZ_BASE_INT;
+
+typedef struct ORIENTATION_QUATERNION_BASE_INT{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	int32_t w;
+} ORIENTATION_QUATERNION_BASE_INT;
+
+typedef struct ORIENTATION_EULER_BASE_INT{
+	int32_t roll;
+	int32_t pitch;
+	int32_t yaw;
+} ORIENTATION_EULER_BASE_INT;
+
+typedef struct XYZ_DATA_INT{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	XYZ_BASE covariance;
+	XYZ_BASE bias;
+	XYZ_BASE offset;
+} XYZ_DATA_INT;
+
+
+typedef struct Sim_Msg_Ack{
+	int32_t sequence;
+}Sim_Msg_Ack;
+
+typedef struct Sim_Msg_SetPort{
+	int32_t simulatorDataType;
+	int32_t port;
+}Sim_Msg_SetPort;
+
+typedef struct Sim_Msg_SimulatorControl{
+	int32_t simulatorControlCode;
+}Sim_Msg_SimulatorControl;
+
+typedef struct Sim_Msg_OrientationData{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	int32_t w;
+	ORIENTATION_EULER_BASE_INT covariance;
+	ORIENTATION_QUATERNION_BASE_INT bias;
+} Sim_Msg_OrientationData;
+
+typedef void SimulatorMessage;
+
+// typedef enum SimulatorMessageType{
+// 	SIMULATOR_MESSAGE_SET_PORT = 0,
+// 	SIMULATOR_MESSAGE_CONTROL = 1,
+// 	SIMULATOR_MESSAGE_DATA_GPS = 2,
+// 	SIMULATOR_MESSAGE_DATA_GYRO = 3,
+// 	SIMULATOR_MESSAGE_DATA_ACCELERATION = 4,
+// 	SIMULATOR_MESSAGE_DATA_RCCOMMANDS = 5,
+// 	SIMULATOR_MESSAGE_DATA_LIDAR = 6,
+// 	SIMULATOR_MESSAGE_DATA_ORIENTATION = 7,
+// 	SIMULATOR_MESSAGE_DATA_ENCODER = 8,
+// 	SIMULATOR_MESSAGE_DATA_FRONT_CAM = 9,
+// 	SIMULATOR_MESSAGE_DATA_IMU = 9,
+// }SimulatorMessageType;
+
+typedef enum SimulatorControlCode{
+	SIMULATOR_CONTROL_STOP = 0,
+	SIMULATOR_CONTROL_START = 1,
+	SIMULATOR_CONTROL_PAUSE = 2,
+	SIMULATOR_CONTROL_RESUME = 3,
+}SimulatorControlCode;
+
+typedef struct Sim_Msg_Data_Header{
+	int32_t data_type;
+	int32_t component_id;
+}Sim_Msg_Data_Header;
+
+
+typedef struct Sim_Msg_IMUData{
+	XYZ_DATA_INT accel;
+	XYZ_DATA_INT gyro;
+	Sim_Msg_OrientationData orientation;
+}Sim_Msg_IMUData;
+
+typedef struct Sim_Msg_GPSData{
+	int32_t time;
+	int32_t latitude;
+	int32_t longitude;
+	int32_t altitude;
+	XYZ_BASE_INT velocity;
+	XYZ_BASE_INT covariance;
+	uint8_t covariance_type;
+	uint16_t service;
+	int8_t status;
+}Sim_Msg_GPSData;
+
+typedef struct Sim_Msg_GyroData{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+}Sim_Msg_GyroData;
+
+typedef struct Sim_Msg_AccelerationData{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+}Sim_Msg_AccelerationData;
+
+
+typedef struct Sim_Msg_MotionCommands{
+	int32_t normalized_speed;
+	int32_t padding;
+	int32_t normalized_yaw_rate;
+}Sim_Msg_MotionCommands;
+
+typedef struct Sim_Msg_LidarData{
+	int32_t angle_min;
+	int32_t angle_max;
+	int32_t dAngle;
+	int32_t scan_time;
+	int32_t dTime;
+	int32_t range_min;
+	int32_t range_max;
+	int32_t ranges[1081];
+	int32_t intensities[1081];
+}Sim_Msg_LidarData;
+
+typedef struct Sim_Msg_EncoderData{
+	int32_t pulses;
+	int32_t speed;
+}Sim_Msg_EncoderData;
 
 typedef struct RC_COMMAND_MSG{
      int32_t yaw;
