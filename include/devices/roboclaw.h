@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "../../include/base/definitions.h"
+#include "base/params.h"
 
 using namespace std;
 

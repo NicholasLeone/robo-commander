@@ -12,11 +12,10 @@
 #include <map>
 
 #include <pigpiod_if2.h>
-#include "../../include/base/params.h"
-#include "../../Actuators/DC_Motor/dc_motor.h"
-#include "../../Sensors/Encoder/encoder.h"
-#include "../../include/Utilities/utils.h"
-#include "../../Devices/UDP/udp.h"
+#include "actuators/dc_motor.h"
+#include "sensors/encoder.h"
+#include "utils/utils.h"
+#include "comms/udp.h"
 #include "pid.h"
 
 #define DEBUG_VERBOSE 1

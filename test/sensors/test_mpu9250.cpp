@@ -17,7 +17,7 @@
 
 #include <pigpiod_if2.h>
 #include "mpu9250.h"
-#include "../../Devices/SerialDev/serial_dev.h"
+#include "comms/serial.h"
 
 // #define DEBUG_I2C_READ
 // #define TEST_CONFIG_SETTINGS

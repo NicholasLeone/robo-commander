@@ -5,8 +5,6 @@
 
 #include "ekf.h"
 
-#define M_DEG2RAD (2*M_PI)/360
-
 using namespace arma;
 
 EKF::EKF(fmat x_init, fmat Pinit, fmat F, fmat H, fmat Q, fmat R, float dt_init){

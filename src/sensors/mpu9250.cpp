@@ -6,9 +6,9 @@
 #include <iostream>
 #include <bitset>
 #include <vector>
-#include "mpu9250.h"
 #include <pigpiod_if2.h>
-#include "../../include/Utilities/utils.h"
+#include "mpu9250.h"
+#include "utils/utils.h"
 
 // TODO: Magnetometer  #define REG_MAG
 

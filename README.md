@@ -5,7 +5,7 @@
 ## Project Overview ##
 
 
-Packages used for Low-level control of electronics used for a variety of robotic applications, as well as algorithms for data fusion and controls.
+Packages used for Low-level control of electronics used for a variety of robotic applications, as well as algorithms for data fusion and controls. Currently, Rapsberry Pi 3 is the platform used to interface with everything.
 
 
 ### Version Summary ###
@@ -26,25 +26,8 @@ Dependencies:
 
 #### CMakelists to make ####
 
-     - Actuators
-          - DC Motor
-          - Servo
-     - Communications
-          - UDP
-          - Serial
      - Sensors
-          - Encoder
-          - IMU (MPU-9250)
           - CameraStreamer
-     - Devices
-          - RazorIMU
-          - RoboClaw
-     - Filters
-          - EKF
-     - Controls
-          - PID
-     - Profiles
-          - 4WD
 
 #### Build-able Drivers ####
 
@@ -72,8 +55,27 @@ Dependencies:
      - Profiles
           - 4WD
 
-#### Drivers to Test ####
+#### Drivers to Verify Properly Working ####
 
+     - Actuators
+          - DC Motor
+          - Servo
+     - Communications
+          - UDP
+          - Serial
+     - Sensors
+          - Encoder
+          - IMU (MPU-9250)
+          - CameraStreamer
+     - Devices
+          - RazorIMU
+          - RoboClaw
+     - Filters
+          - EKF
+     - Controls
+          - PID
+     - Profiles
+          - 4WD
 
 #### Drivers to create ####
 

@@ -3,30 +3,7 @@
 #define PLATFORM_SPECIFIC extern
 
 #include <stdint.h>
-
-enum PERIPHERAL_PROTOCOL {
-	I2C,
-	UART,
-	GPIO,
-	PWM,
-	SPI,
-	BLUETOOTH,
-	WIFI,
-	BLUETOOTH_LE,
-	MAVLINK2_0,
-	MAVLINK3_0
-};
-
-typedef struct PIN_CONFIG{
-     int pinNum;
-     int pinLevel;
-} PIN_CONFIG;
-
-typedef struct Peripheral{
-	PERIPHERAL_PROTOCOL protocol;
-	int pin;
-}Peripheral;
-
+#include "params.h"
 
 class Hardware{
 protected:

@@ -3,12 +3,12 @@
 
 #include <stdarg.h>
 #include <string>
-#include "../../include/base/params.h"
-#include "../../Actuators/DC_Motor/dc_motor.h"
-#include "../../Sensors/Encoder/encoder.h"
-#include "../../Communications/UDP/udp.h"
-#include "../../Actuators/RoboClaw/roboclaw.h"
-#include "../PID/pid.h"
+#include "base/params.h"
+#include "actuators/dc_motor.h"
+#include "sensors/encoder.h"
+#include "comms/udp.h"
+#include "devices/roboclaw.h"
+#include "controls/pid.h"
 
 /** Mr. Swanson Config */
 

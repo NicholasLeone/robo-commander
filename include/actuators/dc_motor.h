@@ -5,7 +5,7 @@
 //TODO: document functions w/ input params and return values
 
 #include <stdint.h>
-#include "../../include/base/actuators.h"
+#include "base/peripherals.h"
 
 class DcMotor : public Hardware{
 

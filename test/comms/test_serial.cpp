@@ -6,7 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
-#include "serial_dev.h"
+#include "serial.h"
 
 using namespace std;
 
@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
      SerialDev ser("/dev/ttyUSB1", 9600);
 
 	int count = 0;
-	
+
 	while(!flag_exit){
           // data = ser.readLine();
           cout << ser.readLine() << endl;

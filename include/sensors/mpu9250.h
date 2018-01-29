@@ -4,8 +4,8 @@
 #include <stdarg.h>
 #include <string>
 #include <vector>
-#include "../../include/base/params.h"
-#include "../../Devices/SerialDev/serial_dev.h"
+#include "base/params.h"
+#include "comms/serial.h"
 
 #define DEBUG_INTERMEDIATE_IMU
 #define MAX_CAL_STEPS 1000

@@ -1,10 +1,7 @@
-#include "roboclaw.h"
 #include <pigpiod_if2.h>
 #include <chrono>
 #include <iostream>
-
-#define SetDWORDval(arg) (uint8_t)(((uint32_t)arg)>>24),(uint8_t)(((uint32_t)arg)>>16),(uint8_t)(((uint32_t)arg)>>8),(uint8_t)arg
-#define SetWORDval(arg) (uint8_t)(((uint16_t)arg)>>8),(uint8_t)arg
+#include "roboclaw.h"
 
 using namespace std;
 using namespace chrono;

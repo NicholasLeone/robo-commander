@@ -4,16 +4,16 @@ project(robo-dev)
 # ===========================
 #       Set Build Options
 # ===========================
-set(VERBOSE         ON CACHE INTERNAL "CMake execution debugging" ON)
+set(VERBOSE         OFF CACHE INTERNAL "CMake execution debugging")
 
 set(BUILD_ACTUATORS ON CACHE INTERNAL "Build all the hardware drivers used to control various standard actuators")
-set(BUILD_COMMS     OFF CACHE INTERNAL "Build all the hardware drivers used to handle device communication protocols")
-set(BUILD_DEVICES   OFF CACHE INTERNAL "Build all the hardware drivers used to")
-set(BUILD_SENSORS   OFF CACHE INTERNAL "Build all the hardware drivers used to")
-set(BUILD_CONTROLS  OFF CACHE INTERNAL "Build all the libraries used to handle the control systems")
-set(BUILD_FILTERS   OFF CACHE INTERNAL "Build all the libraries used to filter and pre-process data")
+set(BUILD_COMMS     ON CACHE INTERNAL "Build all the hardware drivers used to handle device communication protocols")
+set(BUILD_DEVICES   ON CACHE INTERNAL "Build all the hardware drivers used to")
+set(BUILD_SENSORS   ON CACHE INTERNAL "Build all the hardware drivers used to")
+set(BUILD_CONTROLS  ON CACHE INTERNAL "Build all the libraries used to handle the control systems")
+set(BUILD_FILTERS   ON CACHE INTERNAL "Build all the libraries used to filter and pre-process data")
 set(BUILD_UTILS     ON CACHE INTERNAL "Build all the classes useful throughout entire project that help make programming cleaner and quicker")
-set(BUILD_PROFILES  OFF CACHE INTERNAL "Build all the robot configuration profiles responsible for combining all the usable device drivers to control the hardware")
+set(BUILD_PROFILES  ON CACHE INTERNAL "Build all the robot configuration profiles responsible for combining all the usable device drivers to control the hardware")
 
 set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class")
 
@@ -40,16 +40,25 @@ find_package(Armadillo REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 
 # Find pigpiod libraries
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/depends")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/depends/pigpiod")
 find_package(pigpio REQUIRED)
 
 include_directories(
      include
      ${Boost_INCLUDE_DIRS}
      ${pigpio_INCLUDE_DIR}
+     ${LAPACK_INCLUDE_DIRS}
+     ${BLAS_INCLUDE_DIRS}
+     ${ARMADILLO_INCLUDE_DIRS}
 )
 
-set(LINK_LIBS ${Boost_LIBRARIES} ${pigpiod_if2_LIBRARY})
+set(LIBS
+     ${Boost_LIBRARIES}
+     ${pigpiod_if2_LIBRARY}
+     ${ARMADILLO_LIBRARIES}
+     ${LAPACK_LIBRARIES}
+     ${BLAS_LIBRARIES}
+)
 
 # ===========================
 #     Build Targets
@@ -65,7 +74,6 @@ add_subdirectory(src)
 # ===========================
 #         DEBUG
 # ===========================
-
 # this is used when searching for include files e.g. using the FIND_PATH() command.
 # MESSAGE( STATUS "SHARED: " ${SHARED} )
 

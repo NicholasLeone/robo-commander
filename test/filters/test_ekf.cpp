@@ -12,7 +12,6 @@
 #include <map>
 
 // #include <pigpiod_if2.h>
-#include <armadillo>
 #include "ekf.h"
 
 //#define DEBUG_VERBOSE
@@ -158,7 +157,7 @@ int main(){
 			// Check Predicted Value
 			fmat tmpData = ekf.params_pred.x;
 			float estimates = as_scalar(tmpData.row(1));
-			
+
 			cout << "Recorded Data, Estimated Data: " << recorded << ", 	" << estimates << endl;
 
 			dataOut.row(j) = estimates;

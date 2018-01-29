@@ -4,10 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <armadillo>
-#include "../../include/params.h"
+#include "base/params.h"
 
 using namespace arma;
-
 
 class EKF {
 

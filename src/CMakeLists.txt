@@ -11,37 +11,37 @@ endif(BUILD_ACTUATORS)
 # ===========================
 #     Set Build Options
 # ===========================
-# if(BUILD_COMMS)
-#      add_subdirectory(comms)
-# endif(BUILD_COMMS)
+if(BUILD_COMMS)
+     add_subdirectory(comms)
+endif(BUILD_COMMS)
 
 # ===========================
 #     Set Build Options
 # ===========================
-# if(BUILD_DEVICES)
-#      add_subdirectory(devices)
-# endif(BUILD_DEVICES)
+if(BUILD_DEVICES)
+     add_subdirectory(devices)
+endif(BUILD_DEVICES)
 
 # ===========================
 #     Set Build Options
 # ===========================
-# if(BUILD_SENSORS)
-#      add_subdirectory(sensors)
-# endif(BUILD_SENSORS)
+if(BUILD_SENSORS)
+     add_subdirectory(sensors)
+endif(BUILD_SENSORS)
 
 # ===========================
 #     Set Build Options
 # ===========================
-# if(BUILD_CONTROLS)
-#      add_subdirectory(controls)
-# endif(BUILD_CONTROLS)
+if(BUILD_CONTROLS)
+     add_subdirectory(controls)
+endif(BUILD_CONTROLS)
 
 # ===========================
 #     Set Build Options
 # ===========================
-# if(BUILD_FILTERS)
-#      add_subdirectory(filters)
-# endif(BUILD_FILTERS)
+if(BUILD_FILTERS)
+     add_subdirectory(filters)
+endif(BUILD_FILTERS)
 
 # ===========================
 #     Set Build Options
@@ -53,6 +53,14 @@ endif(BUILD_UTILS)
 # ===========================
 #     Set Build Options
 # ===========================
-# if(BUILD_PROFILES)
-#      add_subdirectory(profiles)
-# endif(BUILD_PROFILES)
+if(BUILD_PROFILES)
+     add_subdirectory(profiles)
+endif(BUILD_PROFILES)
+
+
+# ===========================
+#          DEBUG
+# ===========================
+# foreach(dir ${LIBS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()

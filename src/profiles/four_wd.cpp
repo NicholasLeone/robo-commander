@@ -1,8 +1,8 @@
 #include <thread>
-
-#include "four_wd.h"
-#include "../../include/Utilities/utils.h"
 #include <pigpiod_if2.h>
+
+#include "utils/utils.h"
+#include "four_wd.h"
 
 using namespace std;
 

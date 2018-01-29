@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include "serial_dev.h"
+#include "serial.h"
 
 using namespace std;
 using namespace boost;

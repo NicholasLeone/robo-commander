@@ -3,6 +3,7 @@
 
 #include <armadillo>
 #include <string.h>
+#include "definitions.h"
 
 /** UDP_PARAMS Needs these */
 #include <netinet/in.h>
@@ -12,11 +13,30 @@
 using namespace std;
 using namespace arma;
 
+#define M_DEG2RAD (2*M_PI)/360
+
 /** SECTION:
 
      ACTUATOR PARAMETERS
 
 */
+
+#define SetDWORDval(arg) (uint8_t)(((uint32_t)arg)>>24),(uint8_t)(((uint32_t)arg)>>16),(uint8_t)(((uint32_t)arg)>>8),(uint8_t)arg
+#define SetWORDval(arg) (uint8_t)(((uint16_t)arg)>>8),(uint8_t)arg
+
+enum PERIPHERAL_PROTOCOL {
+	I2C,
+	UART,
+	GPIO,
+	PWM,
+	SPI,
+	BLUETOOTH,
+	WIFI,
+	BLUETOOTH_LE,
+	MAVLINK2_0,
+	MAVLINK3_0
+};
+
 static const int NUM_MOTOR_PINS = 2;
 
 typedef struct PIN_CONFIG{

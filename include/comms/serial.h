@@ -1,5 +1,5 @@
-#ifndef SERIAL_DEV_H_
-#define SERIAL_DEV_H_
+#ifndef SERIAL_H_
+#define SERIAL_H_
 
 #include <unistd.h>
 #include <string>
@@ -32,4 +32,4 @@ public:
 };
 
 
-#endif /* SERIAL_DEV_H_ */
+#endif /* SERIAL_H_ */
