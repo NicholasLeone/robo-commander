@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/test_ekf.dir/__/__/test/filters/test_ekf.cpp.o  -o ../../../bin/test_ekf  -L/usr/local/lib -rdynamic ../../../lib/libekf.so -lboost_system -lboost_thread -lboost_chrono -lboost_date_time -lboost_atomic -lpthread -lpigpiod_if2 -larmadillo -llapack -lblas -Wl,-rpath,/home/hunter/devel/robo-dev/lib:/usr/local/lib 

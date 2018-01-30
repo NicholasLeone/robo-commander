@@ -108,7 +108,7 @@ int main(int argc, char *argv[]){
      int err, c;
      int port = 35000;
      char* add = "192.168.1.135";
-     UDP* rc_in = new UDP(port);
+     UDP* rc_in = new UDP(port, add);
 
      Sim_Msg_IMUData* imu_data;
      Sim_Msg_GPSData* gps_data;
