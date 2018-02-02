@@ -3,7 +3,9 @@
 #define PLATFORM_SPECIFIC extern
 
 #include <stdint.h>
-#include "params.h"
+#include "base/params.h"
+
+#define BUF_SIZE 256
 
 class Hardware{
 protected:
@@ -14,10 +16,22 @@ public:
 
 
 class Motor : public Hardware{
-public:
-	// virtual ERROR setWheelVelocity(float vel) = 0;
 protected:
 	PERIPHERAL_PROTOCOL communication_protocol;
+public:
+     // virtual ERROR setWheelVelocity(float vel) = 0;
+};
+
+class Communication : public Hardware{
+protected:
+	PERIPHERAL_PROTOCOL communication_protocol;
+
+protected:
+     int _device;
+     int _address;
+     int _bus;
+     uint8_t _buf[BUF_SIZE];
+
 };
 
 

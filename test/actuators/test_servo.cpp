@@ -1,9 +1,10 @@
-#include "servo.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <thread>
 #include <chrono>
 #include <iostream>
+
+#include "servo.h"
 
 static Motor* servoArray[2];
 Servo* servo1;
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]){
      return 0;
 }
 /** To Compile:
-	
+
 	g++ test_servo.cpp servo.cpp ../Motors/pca9685/PWM-Driver-PCA9685.cpp ../Motors/pca9685/pwm-pca9685-user.c -o TestServo -lpigpiod_if2 -Wall -pthread -std=c++11
 
 */

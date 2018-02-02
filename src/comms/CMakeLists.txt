@@ -25,13 +25,18 @@ if(BUILD_TESTS)
      message(STATUS "------------ Building tests")
      endif(VERBOSE)
 
-     # Serial
      include_directories(${TEST_DIR}/comms)
+
+     # Serial
      add_executable(test_serial ${TEST_DIR}/comms/test_serial.cpp)
      target_link_libraries(test_serial serial)
 
      # UDP
      add_executable(test_udp ${TEST_DIR}/comms/test_udp.cpp)
      target_link_libraries(test_udp udp)
+
+     # I2C
+     add_executable(test_i2c ${TEST_DIR}/comms/test_i2c.cpp)
+     target_link_libraries(test_i2c i2c ${LIBS})
 
 endif(BUILD_TESTS)

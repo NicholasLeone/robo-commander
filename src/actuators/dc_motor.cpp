@@ -24,13 +24,12 @@ static const int MOTOR_DIRECTION_BACKWARD = 2;
 #define MIN_PWM_US 1000
 #define MID_PWM_US 1500
 
-
 int DcMotor::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id){
 
-     if(protocol == PWM){
+     if(protocol == PWM_p){
           this->params.pwm_channel = channel;
      }
-     else if(protocol == GPIO){
+     else if(protocol == GPIO_p){
           this->params.direction_gpio[id].pinNum = channel;
      }
 
@@ -39,8 +38,8 @@ int DcMotor::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id)
 
 DcMotor::DcMotor(int pi, int pwm_gpio, int dir_gpio){
      this->pi = pi;
-     this->attachPeripheral(GPIO, dir_gpio,0);
-     this->attachPeripheral(PWM,pwm_gpio,NULL);
+     this->attachPeripheral(GPIO_p, dir_gpio,0);
+     this->attachPeripheral(PWM_p,pwm_gpio,NULL);
 }
 
 int DcMotor::setMotorDirection(int direction){

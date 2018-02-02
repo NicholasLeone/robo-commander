@@ -27,16 +27,14 @@ typedef void (*void_int_fun)(int);
 #define SetWORDval(arg) (uint8_t)(((uint16_t)arg)>>8),(uint8_t)arg
 
 enum PERIPHERAL_PROTOCOL {
-	I2C,
-	UART,
-	GPIO,
-	PWM,
-	SPI,
-	BLUETOOTH,
-	WIFI,
-	BLUETOOTH_LE,
-	MAVLINK2_0,
-	MAVLINK3_0
+	I2C_p,
+	UART_p,
+	GPIO_p,
+	PWM_p,
+	SPI_p,
+	BLUETOOTH_p,
+	WIFI_p,
+	BLUETOOTH_LE_p,
 };
 
 static const int NUM_MOTOR_PINS = 2;
