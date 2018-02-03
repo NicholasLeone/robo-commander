@@ -10,13 +10,14 @@ private:
 	void reset();
 
 public:
-	PCA9685();
+	PCA9685(int dev, int bus, int address);
 	~PCA9685();
 
-	void setPWMFreq(int freq);
-	void setPWM(uint8_t, int, int);
-	void setPWM(uint8_t, int);
-	int getPWM(uint8_t);
+	int setPwmFreq(int freq);
+	int setPwm(int led, int value);
+     int setPwm(int led, int on_val, int off_val);
+     int setAllPwm(int on_val, int off_val);
+	int getPwm(int led);
 
 };
 #endif
