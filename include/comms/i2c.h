@@ -15,19 +15,26 @@ public:
      I2C(int dev, int bus, int add);
      ~I2C();
 
-     // int set_address(int add);
-     // int set_device(int device_handle);
-     //
-     // int _write_byte(uint8_t byte);
+     /* Configurable Parameter Read/Write Functions */
+     void set_address(int add);
+     void set_device(int device);
+     void set_bus(int bus);
+
+     /* Parent Functions */
+     int _write(uint8_t byte);
+     uint8_t _read(uint8_t add);
+
+     /** Derived Functions */
+     int _write_byte(uint8_t add, uint8_t byte);
      // int _write_bytes(uint8_t* bytes);
      // int write(uint8_t* buf);
      //
-     // uint8_t _read_byte(int add);
      // uint8_t* _read_bytes(int add);
      // uint8_t* read(int add);
 
 };
 
+/* Placeholder functions just to allow deprecated code to build */
 int _initI2c(int i2cBus, int address);
 int _outputPWM(int channel, int val);
 

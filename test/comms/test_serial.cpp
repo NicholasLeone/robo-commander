@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
      	}
 
-     string data = "FUCK YOU TOO!\r\n";
+     string data = "Returned Hello!\r\n";
      ser.writeLine(data);
 
 

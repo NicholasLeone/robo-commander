@@ -24,16 +24,87 @@ int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
      return comm_handle;
 }
 
-// int I2C::set_address(int add);
-// int I2C::set_device(int device_handle);
+void I2C::set_address(int add){this->_address = add;}
+void I2C::set_device(int device){this->_device = device;}
+void I2C::set_bus(int bus){this->_bus = bus;}
+
+/**  Parent Functions:
+*    TODO: Make these easily handle different platforms (Pi, Arduino, etc.)
+*/
+int I2C::_write(uint8_t byte){
+     int err = i2c_write_byte(_device,_han, byte);
+
+     if(err < 0){
+          printf("ERROR: i2c couldnt't write byte\n\r");
+          return -1;
+     }
+
+     return err;
+}
+
+uint8_t I2C::_read(uint8_t add){
+     int err;
+     uint8_t data;
+
+     err = _write(add);
+
+     if(err < 0){
+          printf("ERROR: i2c couldnt't access register at %d\n\r", add);
+          return -2;
+     }else{
+          data = i2c_read_byte(_device,_han);
+     }
+
+     return data;
+}
+
+
+/**  Children Functions:
+*         These functions are derived from the parent functions and just provide
+*    more compacted functions for ease-of-devel purposes.
+*/
+int I2C::_write_byte(uint8_t add, uint8_t byte){
+
+     if(_write(add) < 0){
+          printf("ERROR: i2c couldnt't write to register at address %d\n\r",int(add));
+          return -1;
+     }else{
+          if(_write(byte) < 0){
+               printf("ERROR: i2c couldnt't write to register %d\n\r",int(byte));
+               return -2;
+          }
+     }
+
+     return 0;
+}
+
+// int I2C::_write_bytes(uint8_t* bytes){
+//      int err;
 //
-// int I2C::_write_byte(uint8_t byte);
-// int I2C::_write_bytes(uint8_t* bytes);
-// int I2C::write(uint8_t* buf);
 //
-// uint8_t I2C::_read_byte(int add);
-// uint8_t* I2C::_read_bytes(int add);
-// uint8_t* I2C::read(int add);
+//      return err;
+// }
+//
+// int I2C::write(uint8_t* buf){
+//      int err;
+//
+//
+//      return err;
+// }
+//
+// uint8_t* I2C::_read_bytes(int add){
+//      int err;
+//
+//
+//      return err;
+// }
+//
+// uint8_t* I2C::read(int add){
+//      int err;
+//
+//
+//      return err;
+// }
 
 
 int _initI2c(int i2cBus, int address){
