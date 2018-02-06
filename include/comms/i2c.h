@@ -6,19 +6,19 @@
 
 class I2C : public Communication{
 private:
+
+public:
      int _dev;
      int _han; // Communication Handle
      virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id);
-
-public:
 
      I2C(int dev, int bus, int add);
      ~I2C();
 
      /* Configurable Parameter Read/Write Functions */
-     void set_address(int add);
      void set_device(int device);
      void set_bus(int bus);
+     void set_address(int add);
 
      /* Parent Functions */
      int _write(uint8_t byte);
@@ -26,12 +26,8 @@ public:
 
      /** Derived Functions */
      int _write_byte(uint8_t add, uint8_t byte);
-     // int _write_bytes(uint8_t* bytes);
-     // int write(uint8_t* buf);
-     
-     // uint8_t* _read_bytes(int add);
-     // uint8_t* read(int add);
-
+     int write(uint8_t add, char* buf);
+     int read(uint8_t add, char* data);
 };
 
 /* Placeholder functions just to allow deprecated code to build */

@@ -1,7 +1,8 @@
 #include <pigpiod_if2.h>
 #include <chrono>
 #include <iostream>
-#include "roboclaw.h"
+#include "devices/roboclaw.h"
+#include "base/definitions.h"
 
 using namespace std;
 using namespace chrono;

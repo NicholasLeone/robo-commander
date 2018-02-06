@@ -24,9 +24,9 @@ int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
      return comm_handle;
 }
 
-void I2C::set_address(int add){this->_address = add;}
 void I2C::set_device(int device){this->_dev = device;}
 void I2C::set_bus(int bus){this->_bus = bus;}
+void I2C::set_address(int add){this->_address = add;}
 
 /**  Parent Functions:
 *    TODO: Make these easily handle different platforms (Pi, Arduino, etc.)
@@ -54,7 +54,6 @@ uint8_t I2C::_read(uint8_t add){
      return data;
 }
 
-
 /**  Children Functions:
 *         These functions are derived from the parent functions and just provide
 *    more compacted functions for ease-of-devel purposes.
@@ -69,67 +68,32 @@ int I2C::_write_byte(uint8_t add, uint8_t byte){
      return 0;
 }
 
-// int I2C::_write_bytes(uint8_t* bytes){
-//      int err;
-//
-//
-//      return err;
-// }
-//
-// int I2C::write(uint8_t* buf){
-//      int err;
-//
-//
-//      return err;
-// }
-//
-// uint8_t* I2C::_read_bytes(int add){
-//      int err;
-//
-//
-//      return err;
-// }
-//
-// uint8_t* I2C::read(int add){
-//      int err;
-//
-//
-//      return err;
-// }
+int I2C::write(uint8_t add, char* buf){
+     int numBytes = (sizeof(buf)/sizeof(*buf));
+     cout << "Length of input buffer = " << numBytes << endl;
 
+     int err = i2c_write_block_data(_dev,_han, add, buf, numBytes);
 
-int _initI2c(int i2cBus, int address){
-
-     int err;
-
-//      if(err = PCA9685_config_and_open_i2c(&myConfig, i2cBus, (uint8_t) address, MY_MODE1, MY_MODE2, PCA9685_FUTABAS3004_PWM_PERIOD)){
-// #ifdef TEST_DEBUG
-//           printf("couldnt config and open i2c: err %d\n", err);
-// #endif
-//           return -1;
-//      }
-//
-//      if(err = PCA9685_wake(&myConfig)){
-// #ifdef TEST_DEBUG
-//           printf("couldnt wake i2c: err %d\n", err);
-// #endif
-//           return -2;
-//      }
-
-     return 0;
+     return err;
 }
 
-int _outputPWM(int channel, int val){
+int I2C::read(uint8_t add, char* data){
+     int err = i2c_read_block_data(_dev,_han, add, data);
 
-     int err;
-//      myConfig.channels[channel].dutyTime_us = (uint32_t) val;
-//
-//      if(err = PCA9685_updateChannelRange(0, NUM_CHANNELS-1, &myConfig)){
-// #ifdef TEST_DEBUG
-//           printf("couldnt update channels: err %d\n", err);
-// #endif
-//           return -3;
-//      }
+     if(err < 0){
+          printf("ERROR: Could not read in bytes from register at address '%d'!!!\r\n",add);
+     }else{
+          printf("I2C Read Success: %d Bytes read from register %d",err,add);
+     }
 
-     return 0;
+     return err;
 }
+
+
+/**
+*         TODO: Placeholder area for target-platform independent functions to
+* allow for same execution of functions across all platforms (i.e Pi vs Arduino)
+*
+*/
+int _initI2c(int i2cBus, int address){return 0;}
+int _outputPWM(int channel, int val){return 0;}
