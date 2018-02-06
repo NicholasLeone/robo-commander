@@ -3,12 +3,12 @@
 #include "comms/i2c.h"
 
 I2C::I2C(int dev, int bus, int add){
-     this->_device = dev;
-     _han = attachPeripheral(I2C_p, bus, add);
+     this->_dev = dev;
+     this->_han = attachPeripheral(I2C_p, bus, add);
 }
 
 I2C::~I2C(){
-     int err = i2c_close(_device, _han);
+     int err = i2c_close(_dev, _han);
      if(err < 0)
           printf("ERROR: Couldnt't close i2c line\n\r");
 }
@@ -17,7 +17,7 @@ int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
      int comm_handle;
 
      if(peripheral == I2C_p){
-          comm_handle = i2c_open(_device, channel, id, 0);
+          comm_handle = i2c_open(_dev, channel, id, 0);
      }else{
           printf("ERROR: Communication interface incorrectly set!\r\n");
      }
@@ -25,14 +25,14 @@ int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
 }
 
 void I2C::set_address(int add){this->_address = add;}
-void I2C::set_device(int device){this->_device = device;}
+void I2C::set_device(int device){this->_dev = device;}
 void I2C::set_bus(int bus){this->_bus = bus;}
 
 /**  Parent Functions:
 *    TODO: Make these easily handle different platforms (Pi, Arduino, etc.)
 */
 int I2C::_write(uint8_t byte){
-     int err = i2c_write_byte(_device,_han, byte);
+     int err = i2c_write_byte(_dev,_han, byte);
 
      if(err < 0){
           printf("ERROR: i2c couldnt't write byte\n\r");
@@ -43,16 +43,12 @@ int I2C::_write(uint8_t byte){
 }
 
 uint8_t I2C::_read(uint8_t add){
-     int err;
-     uint8_t data;
 
-     err = _write(add);
+     uint8_t data = i2c_read_byte_data(_dev,_han, add);
 
-     if(err < 0){
-          printf("ERROR: i2c couldnt't access register at %d\n\r", add);
+     if(data < 0){
+          printf("ERROR: i2c couldnt't access register at %d to read\n\r", add);
           return -2;
-     }else{
-          data = i2c_read_byte(_device,_han);
      }
 
      return data;
@@ -65,16 +61,11 @@ uint8_t I2C::_read(uint8_t add){
 */
 int I2C::_write_byte(uint8_t add, uint8_t byte){
 
-     if(_write(add) < 0){
+     int err = i2c_write_byte_data(_dev,_han, add, byte);
+     if(err < 0){
           printf("ERROR: i2c couldnt't write to register at address %d\n\r",int(add));
           return -1;
-     }else{
-          if(_write(byte) < 0){
-               printf("ERROR: i2c couldnt't write to register %d\n\r",int(byte));
-               return -2;
-          }
      }
-
      return 0;
 }
 

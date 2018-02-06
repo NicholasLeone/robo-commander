@@ -9,8 +9,6 @@
 #include <netdb.h>
 #include <sys/time.h>
 
-#include "definitions.h"
-
 using namespace std;
 using namespace arma;
 

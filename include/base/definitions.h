@@ -117,3 +117,10 @@ enum{	M1FORWARD = 0,
 #define ALL_LED_OFF_L 0xFC	// load all the LEDn_OFF registers, byte 0 (turn 0-7 channels off)
 #define ALL_LED_OFF_H 0xFD	// load all the LEDn_OFF registers, byte 1 (turn 8-15 channels off)
 #define PRE_SCALE 0xFE		// prescaler for output frequency
+
+// Bits:
+#define PCA9685_RESTART 0x80
+#define PCA9685_SLEEP 0x10
+#define PCA9685_ALLCALL 0x01
+#define PCA9685_INVRT 0x10
+#define PCA9685_OUTDRV 0x04
