@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
+#include <pigpiod_if2.h>
 #include "devices/pca9685.h"
 #include "base/definitions.h"
 
@@ -27,12 +28,13 @@ int PCA9685::setFrequency(int freq){
      prescale_val /= float(freq);                 // Desired Frequency
      prescale_val -= 1.0;
      int prescale = int(floor(prescale_val + 0.5));
-     printf("Prescale Value: %d\n\r", prescale);
 
      if(prescale < 3)
           prescale = 3;
      else if(prescale > 255)
-        prescale = 255;
+          prescale = 255;
+
+     printf("Prescale Value: %d\n\r", prescale);
 
      uint8_t oldmode = I2C::_read(MODE1);
      uint8_t newmode = (oldmode & ~PCA9685_SLEEP) | PCA9685_SLEEP;
@@ -45,6 +47,7 @@ int PCA9685::setFrequency(int freq){
 
      _frequency = (25000000.0 / 4096.0) / (prescale + 1);
      _period_pulsewidth = (1000000.0 / _frequency);
+     printf("Frequency, Pulsewidth: %.2f,    %.2f\r\n",_frequency, _period_pulsewidth);
 
      return err;
 }
@@ -54,9 +57,11 @@ int PCA9685::setStep(int channel, int on_val, int off_val){return 0;}
 
 int PCA9685::setDutyCycle(int channel, float duty){
 
-     int steps, on_step, off_step;
-     uint8_t tmpAdd;
-     char buf[4];
+     int  on_step, off_step;
+     int steps, err;
+     uint8_t tmpAdd[4];
+     uint8_t buf[4];
+     uint8_t addOut;
 
      steps = int(round(duty * (4096.0 / 100.0)));
      printf("# of Steps: %d\n\r", steps);
@@ -79,12 +84,34 @@ int PCA9685::setDutyCycle(int channel, float duty){
      buf[3] = off_step >> 8;
 
      // Change desired channel
-     if((channel >= 0) && (channel <= 15))
-          tmpAdd = LED0_ON_L + 4 * channel;
-     else
-          tmpAdd = ALL_LED_ON_L;
+     if((channel >= 0) && (channel <= 15)){
+          tmpAdd[0] = LED0_ON_L + LED_MULTIPLYER * channel;
+          tmpAdd[1] = LED0_ON_H + LED_MULTIPLYER * channel;
+          tmpAdd[2] = LED0_OFF_L + LED_MULTIPLYER * channel;
+          tmpAdd[3] = LED0_OFF_H + LED_MULTIPLYER * channel;
 
-     return I2C::write(tmpAdd, &buf[0]);
+          addOut = LED0_ON_L + LED_MULTIPLYER * channel;
+
+     }else{
+          addOut = ALL_LED_ON_L;
+
+          tmpAdd[0] = ALL_LED_ON_L;
+          tmpAdd[1] = ALL_LED_ON_H;
+          tmpAdd[2] = ALL_LED_OFF_L;
+          tmpAdd[3] = ALL_LED_OFF_H;
+     }
+
+     for(int i = 0; i == 3; i++){
+          err = i2c_write_byte_data(I2C::_device, I2C::_han, tmpAdd[i], buf[i]);
+          if(err < 0){
+               printf("ERROR: Could not set duty cycle due to error code %d", err);
+               return err;
+          }
+     }
+
+     // err = i2c_write_i2c_block_data(I2C::_device, I2C::_han, addOut, (char*)&buf[0], 8);
+
+     return 0;
 }
 
 int PCA9685::setPulsewidth(int channel, int width){

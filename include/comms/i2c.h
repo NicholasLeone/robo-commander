@@ -19,6 +19,7 @@ public:
      void set_device(int device);
      void set_bus(int bus);
      void set_address(int add);
+     int close();
 
      /* Parent Functions */
      int _write(uint8_t byte);

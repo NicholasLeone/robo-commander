@@ -27,6 +27,14 @@ int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
 void I2C::set_device(int device){this->_dev = device;}
 void I2C::set_bus(int bus){this->_bus = bus;}
 void I2C::set_address(int add){this->_address = add;}
+int I2C::close(){
+     int err = i2c_close(_dev, _han);
+     if(err < 0){
+          printf("ERROR: Couldnt't close i2c line\n\r");
+          return err;
+     }
+     return 0;
+}
 
 /**  Parent Functions:
 *    TODO: Make these easily handle different platforms (Pi, Arduino, etc.)
@@ -70,9 +78,10 @@ int I2C::_write_byte(uint8_t add, uint8_t byte){
 
 int I2C::write(uint8_t add, char* buf){
      int numBytes = (sizeof(buf)/sizeof(*buf));
-     cout << "Length of input buffer = " << numBytes << endl;
+     // cout << "Length of input buffer = " << numBytes << endl;
 
-     int err = i2c_write_block_data(_dev,_han, add, buf, numBytes);
+     // int err = i2c_write_block_data(_dev,_han, add, buf, numBytes);
+     int err = i2c_write_i2c_block_data(_dev,_han, add, buf, numBytes);
 
      return err;
 }

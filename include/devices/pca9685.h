@@ -8,8 +8,11 @@ private:
 
      float _frequency;
      float _period_pulsewidth;
+     int _dev;
+     int _han;
 
 public:
+
 	PCA9685(int dev, int bus, int address);
 	~PCA9685();
 

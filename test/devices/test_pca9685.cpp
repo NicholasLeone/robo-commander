@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
      int pi = pigpio_start(NULL,NULL);
      PCA9685 pwm(pi, bus, add);
 
-     cout << "Please enter what frequency you'd like to try (40Hz - 1000Hz)." << endl;
+     cout << "Please enter what frequency you'd like to try (24Hz - 1000Hz)." << endl;
      cin >> freq;
 
      pwm.setFrequency(freq);
@@ -32,10 +32,10 @@ int main(int argc, char *argv[]){
      else if(c == 'd')
           flag_test = 0;
 
-     while(1){
+     cout << "Which channel would you like to test" << endl;
+     cin >> channel;
 
-          cout << "Which channel would you like to test" << endl;
-          cin >> channel;
+     while(1){
 
           if(!flag_test){
                cout << "Please enter the desired duty cycle (0 - 100%)" << endl;
@@ -47,10 +47,10 @@ int main(int argc, char *argv[]){
                pwm.setPulsewidth(channel,width);
           }
 
-          cout << "Would you like to exit? (y) or (n)" << endl;
-          cin >> c;
-          if(c == 'y')
-               break;
+          // cout << "Would you like to exit? (y) or (n)" << endl;
+          // cin >> c;
+          // if(c == 'y')
+          //      break;
 
      }
 
