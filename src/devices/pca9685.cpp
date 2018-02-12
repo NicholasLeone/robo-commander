@@ -59,7 +59,7 @@ int PCA9685::setDutyCycle(int channel, float duty){
 
      int  on_step, off_step;
      int steps, err;
-     uint8_t tmpAdd[4];
+     int tmpAdd[4];
      uint8_t buf[4];
      uint8_t addOut;
 
@@ -89,27 +89,20 @@ int PCA9685::setDutyCycle(int channel, float duty){
           tmpAdd[1] = LED0_ON_H + LED_MULTIPLYER * channel;
           tmpAdd[2] = LED0_OFF_L + LED_MULTIPLYER * channel;
           tmpAdd[3] = LED0_OFF_H + LED_MULTIPLYER * channel;
-
-          addOut = LED0_ON_L + LED_MULTIPLYER * channel;
-
      }else{
-          addOut = ALL_LED_ON_L;
-
           tmpAdd[0] = ALL_LED_ON_L;
           tmpAdd[1] = ALL_LED_ON_H;
           tmpAdd[2] = ALL_LED_OFF_L;
           tmpAdd[3] = ALL_LED_OFF_H;
      }
 
-     for(int i = 0; i == 3; i++){
-          err = i2c_write_byte_data(I2C::_device, I2C::_han, tmpAdd[i], buf[i]);
+     for(int i = 0; i < 4; i++){
+          err = I2C::_write_byte(tmpAdd[i],buf[i]);
           if(err < 0){
                printf("ERROR: Could not set duty cycle due to error code %d", err);
                return err;
           }
      }
-
-     // err = i2c_write_i2c_block_data(I2C::_device, I2C::_han, addOut, (char*)&buf[0], 8);
 
      return 0;
 }

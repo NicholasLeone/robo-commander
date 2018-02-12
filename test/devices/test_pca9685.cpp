@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
      cin >> channel;
 
      while(1){
-
+          
           if(!flag_test){
                cout << "Please enter the desired duty cycle (0 - 100%)" << endl;
                cin >> duty;
