@@ -19,4 +19,8 @@ if(BUILD_TESTS)
      include_directories(${TEST_DIR}/utils)
      add_executable(test_utils ${TEST_DIR}/utils/test_utils.cpp)
      target_link_libraries(test_utils utils)
+
+     # JSON Test
+     add_executable(test_json ${TEST_DIR}/utils/test_json.cpp)
+     target_link_libraries(test_json utils)
 endif(BUILD_TESTS)
