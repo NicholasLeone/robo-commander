@@ -1,0 +1,45 @@
+{
+    "plot": {
+        "bio": {
+            "avg_density": 1.36964639439,
+            "avg_height": 0.74203492037
+        },
+        "geometry": {
+            "row_count": 4,
+            "row_length": 15,
+            "row_width": 0.762
+        },
+        "id": 1,
+        "index": {
+            "cross_range": 59.0,
+            "range": 21.143
+        },
+        "location": {
+            "x": 1,
+            "y": 2,
+            "z": 3
+        }
+   },
+
+    "plot": {
+        "bio": {
+            "avg_density": 1.36964639439,
+            "avg_height": 0.74203492037
+        },
+        "geometry": {
+            "row_count": 4,
+            "row_length": 15,
+            "row_width": 0.762
+        },
+        "id": 2,
+        "index": {
+            "cross_range": 59.0,
+            "range": 21.143
+        },
+        "location": {
+            "x": 1,
+            "y": 2,
+            "z": 3
+        }
+    }
+}

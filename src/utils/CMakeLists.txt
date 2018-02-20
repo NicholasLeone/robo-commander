@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+set(CMAKE_CXX_STANDARD 11)
 
 if(VERBOSE)
 message(STATUS "------ BUILDING PROGRAMMING UTILITIES")

@@ -7,20 +7,81 @@
 #include <signal.h>
 #include <map>
 #include <bitset>
+#include <fstream>
+
 #include "rapidjson/document.h"
 
 using namespace std;
 using namespace rapidjson;
 
+void enter(const Value &obj, size_t indent = 0) { //print JSON tree
+
+     if (obj.IsObject()) { //check if object
+          for (Value::ConstMemberIterator itr = obj.MemberBegin(); itr != obj.MemberEnd(); ++itr) {   //iterate through object
+               const Value& objName = obj[itr->name.GetString()]; //make object value
+
+               for (size_t i = 0; i != indent; ++i) //indent
+                  cout << " ";
+
+               cout << itr->name.GetString() << ": "; //key name
+
+               if (itr->value.IsNumber()) //if integer
+                  std::cout << itr->value.GetFloat() ;
+
+               // else if (itr->value.IsString()) //if string
+               //    std::cout << itr->value.GetString();
+               //
+               //
+               // else if (itr->value.IsBool()) //if bool
+               //    std::cout << itr->value.GetBool();
+
+               // else if (itr->value.IsArray()){ //if array
+               //
+               //    for (SizeType i = 0; i < itr->value.Size(); i++) {
+               //         if (itr->value[i].IsNumber()) //if array value integer
+               //             std::cout << itr->value[i].GetInt() ;
+               //
+               //         else if (itr->value[i].IsString()) //if array value string
+               //             std::cout << itr->value[i].GetString() ;
+               //
+               //         else if (itr->value[i].IsBool()) //if array value bool
+               //             std::cout << itr->value[i].GetBool() ;
+               //
+               //         else if (itr->value[i].IsObject()){ //if array value object
+               //             cout << "\n  ";
+               //             const Value& m = itr->value[i];
+               //             for (auto& v : m.GetObject()) { //iterate through array object
+               //                if (m[v.name.GetString()].IsString()) //if array object value is string
+               //                    cout << v.name.GetString() << ": " <<   m[v.name.GetString()].GetString();
+               //                else //if array object value is integer
+               //                    cout << v.name.GetString() << ": "  <<  m[v.name.GetString()].GetInt();
+               //
+               //               cout <<  "\t"; //indent
+               //             }
+               //         }
+               //         cout <<  "\t"; //indent
+               //    }
+               // }
+
+               cout << endl;
+               enter(objName, indent + 1); //if couldn't find in object, enter object and repeat process recursively
+          }
+     }
+}
+
+
+
 int main(int argc, char *argv[]){
 
-     const char json[] = " { \"plot\" : {\"id\" : 1, \"t\" : true , \"f\" : false, \"n\": null, \"i\":123, \"pi\": 3.1416, \"a\":[1, 2, 3, 4] }} ";
-     // const char json[] = "{\"plot\": {\"id\": 1,\"index\":{\"range\": 21.143,\"cross_range\": 59.0},\"location\": {\"x\":1, \"y\":2, \"z\":3},\"geometry\": {\"row_width\": 0.762,\"row_length\": 15,\"row_count\": 4}}";
-     // printf("Original JSON:\n %s\n", json);
+     ifstream in("/home/hunter/devel/robo-dev/test/utils/test.json");
+     string contents((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
+
+     const char* json = contents.c_str();
+     printf("Original JSON:\n %s\n",json);
 
      Document document;  // Default template parameter uses UTF8 and MemoryPoolAllocator.
 
-#if 0
+#if 1
     // "normal" parsing, decode strings to new buffers. Can use other input stream via ParseStream().
     if (document.Parse(json).HasParseError())
         return 1;
@@ -34,57 +95,13 @@ int main(int argc, char *argv[]){
     printf("\nParsing to document succeeded.\n");
 
     printf("\nAccess values in document:\n");
-        // assert(document.IsObject());    // Document is a JSON value represents the root of DOM. Root can be either an object or array.
 
-        assert(document.HasMember("plot"));
-        assert(document["plot"].HasMember("id"));
+        static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
 
-        const Value& plot = document["plot"];
-
-        printf("Plot id: %d\n", plot["id"].GetInt());
-        // // Since version 0.2, you can use single lookup to check the existing of member and its value:
-        // Value::MemberIterator id = plot.FindMember("id");
-        // assert(id != plot.MemberEnd());
-        // assert(id->value.IsString());
-        // assert(strcmp("world", id->value.GetString()) == 0);
-        // (void)id;
-        //
-        // assert(document["t"].IsBool());     // JSON true/false are bool. Can also uses more specific function IsTrue().
-        // printf("t = %s\n", document["t"].GetBool() ? "true" : "false");
-        //
-        // assert(document["f"].IsBool());
-        // printf("f = %s\n", document["f"].GetBool() ? "true" : "false");
-        //
-        // printf("n = %s\n", document["n"].IsNull() ? "null" : "?");
-        //
-        // assert(document["i"].IsNumber());   // Number is a JSON type, but C++ needs more specific type.
-        // assert(document["i"].IsInt());      // In this case, IsUint()/IsInt64()/IsUInt64() also return true.
-        // printf("i = %d\n", document["i"].GetInt()); // Alternative (int)document["i"]
-        //
-        // assert(document["pi"].IsNumber());
-        // assert(document["pi"].IsDouble());
-        // printf("pi = %g\n", document["pi"].GetDouble());
-        //
-        // {
-        //     const Value& a = document["a"]; // Using a reference for consecutive access is handy and faster.
-        //     assert(a.IsArray());
-        //     for (SizeType i = 0; i < a.Size(); i++) // rapidjson uses SizeType instead of size_t.
-        //         printf("a[%d] = %d\n", i, a[i].GetInt());
-        //
-        //     int y = a[0].GetInt();
-        //     (void)y;
-        //
-        //     // Iterating array with iterators
-        //     printf("a = ");
-        //     for (Value::ConstValueIterator itr = a.Begin(); itr != a.End(); ++itr)
-        //         printf("%d ", itr->GetInt());
-        //     printf("\n");
-        // }
-        //
-        // // Iterating object members
-        // static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
-        // for (Value::ConstMemberIterator itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr)
-        //     printf("Type of member %s is %s\n", itr->name.GetString(), kTypeNames[itr->value.GetType()]);
+        for (Value::ConstMemberIterator i = document.MemberBegin(); i != document.MemberEnd(); ++i){
+           enter(i->value);
+           cout << endl << endl<< endl;
+        }
 
      return 0;
 
