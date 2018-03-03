@@ -31,4 +31,8 @@ if(BUILD_TESTS)
      add_executable(test_pca9685 ${TEST_DIR}/devices/test_pca9685.cpp)
      target_link_libraries(test_pca9685 pca9685 i2c ${LIBS})
 
+     # LED Color Test
+     add_executable(test_leds ${TEST_DIR}/devices/test_leds.cpp)
+     target_link_libraries(test_leds pca9685 i2c ${LIBS})
+
 endif(BUILD_TESTS)
