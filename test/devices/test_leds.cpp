@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
                case 'R':
                case 'r':
                     cout << "Red..." << endl;
-                    pwm.setDutyCycle(0,1.0);
+                    pwm.setDutyCycle(0,100.0);
                     pwm.setDutyCycle(1,0);
                     pwm.setDutyCycle(2,0);
                     break;
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]){
                case 'g':
                     cout << "Green..." << endl;
                     pwm.setDutyCycle(0,0);
-                    pwm.setDutyCycle(1,1.0);
+                    pwm.setDutyCycle(1,100.0);
                     pwm.setDutyCycle(2,0);
                     break;
                case 'B':
@@ -58,14 +58,14 @@ int main(int argc, char *argv[]){
                     cout << "Blue..." << endl;
                     pwm.setDutyCycle(0,0);
                     pwm.setDutyCycle(1,0);
-                    pwm.setDutyCycle(2,1.0);
+                    pwm.setDutyCycle(2,100.0);
                     break;
                case 'W':
                case 'w':
                     cout << "White..." << endl;
-                    pwm.setDutyCycle(0,1.0);
-                    pwm.setDutyCycle(1,1.0);
-                    pwm.setDutyCycle(2,1.0);
+                    pwm.setDutyCycle(0,100.0);
+                    pwm.setDutyCycle(1,100.0);
+                    pwm.setDutyCycle(2,100.0);
                     break;
                case 'K':
                case 'k':
@@ -77,15 +77,15 @@ int main(int argc, char *argv[]){
                case 'P':
                case 'p':
                     cout << "Purple..." << endl;
-                    pwm.setDutyCycle(0,1.0);
+                    pwm.setDutyCycle(0,100.0);
                     pwm.setDutyCycle(1,0);
-                    pwm.setDutyCycle(2,1.0);
+                    pwm.setDutyCycle(2,100.0);
                     break;
                case 'Y':
                case 'y':
                     cout << "Yellow..." << endl;
-                    pwm.setDutyCycle(0,1.0);
-                    pwm.setDutyCycle(1,1.0);
+                    pwm.setDutyCycle(0,100.0);
+                    pwm.setDutyCycle(1,100.0);
                     pwm.setDutyCycle(2,0);
                     break;
                case 'Q':
