@@ -3,8 +3,11 @@
 
 #include <stdarg.h>
 #include <string>
+#include <vector>
 #include "base/params.h"
 #include "devices/roboclaw.h"
+
+using namespace std;
 
 class DualClaw {
 
@@ -17,6 +20,7 @@ private:
 
      float _max_speed;
      float _base_width;
+     int _qpps_per_meter;
 
      bool _valid[4];
 
@@ -41,7 +45,8 @@ public:
      RoboClaw* leftclaw;
      RoboClaw* rightclaw;
 
-     void drive(float v, float w);
+     vector<int32_t> update_commands(float v, float w);
+     void drive(vector<int32_t> cmds);
 
      // TODO: develop
      void update_status();

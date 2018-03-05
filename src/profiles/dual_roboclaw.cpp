@@ -20,6 +20,7 @@ DualClaw::DualClaw(int pi){
      int baud = (int) variables["baud"];
      _base_width = variables["base_width"];
      _max_speed = variables["max_speed"];
+     _qpps_per_meter = variables["qpps_per_meter"];
      // TODO: Add more tune-able parameters
 
      // printf("%d %d %d %d %d %d %d %d\r\n",fr_pwm,fr_dir,fl_pwm,fl_dir,rr_pwm,rr_dir,rl_pwm,rl_dir);
@@ -36,7 +37,9 @@ DualClaw::DualClaw(int pi){
 
 
 DualClaw::~DualClaw(){
-     drive(0,0);
+
+     vector<int32_t> cmds{0,0};
+     drive(cmds);
 
      delete leftclaw;
      delete rightclaw;
@@ -45,7 +48,9 @@ DualClaw::~DualClaw(){
      usleep(1 * 10000000);
 }
 
-void DualClaw::drive(float v, float w){
+vector<int32_t> DualClaw::update_commands(float v, float w){
+
+     vector<int32_t> cmds(2);
 
      /**   Differential Drive Drive Equations     */
      float vLeft = v - w * centerToWheelRadius;
@@ -56,10 +61,20 @@ void DualClaw::drive(float v, float w){
      int32_t leftClawSpd = vLeft * max_speed;
      int32_t rightClawSpd = vRight * max_speed;
 
-     leftclaw->SpeedM1M2(leftClawSpd,leftClawSpd);
-     rightclaw->SpeedM1M2(rightClawSpd,rightClawSpd);
+     // TODO: Make adaptable to variable number of motors (also account for motor order)
+     cmds[0] = leftClawSpd;
+     cmds[1] = rightClawSpd;
 
      // printf("V, Omega, Left, Right:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",v,w,vLeft,vRight);
+
+}
+
+void DualClaw::drive(vector<int32_t> cmds){
+
+     int n = cmds.size();
+
+     leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
+     rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
 
 }
 
