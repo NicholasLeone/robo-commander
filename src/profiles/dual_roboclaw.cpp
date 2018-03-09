@@ -16,7 +16,8 @@ DualClaw::DualClaw(int pi){
      std::map<std::string, float> variables;
      LoadInitialVariables("../../config/profiles/dualclaw.config", variables);
 
-     char* ser_path = (string) variables["dev"];//ser_path.c_str()
+     float _ser_path = variables["dev"];
+     char* ser_path = (char*) to_string(_ser_path).c_str();
      int baud = (int) variables["baud"];
      _base_width = variables["base_width"];
      _max_speed = variables["max_speed"];
@@ -31,8 +32,8 @@ DualClaw::DualClaw(int pi){
 
      _ser_handle = serial_open(pi, ser_path, baud, 0);
 
-     leftclaw = new RoboClaw(pi, ser_handle, 128);
-     rightclaw = new RoboClaw(pi, ser_handle, 129);
+     leftclaw = new RoboClaw(pi, _ser_handle, 128);
+     rightclaw = new RoboClaw(pi, _ser_handle, 129);
 }
 
 
@@ -44,28 +45,28 @@ DualClaw::~DualClaw(){
      delete leftclaw;
      delete rightclaw;
 
-     int err = serial_close(_pi, ser_handle);
+     int err = serial_close(_pi, _ser_handle);
      usleep(1 * 10000000);
 }
 
-vector<int32_t> DualClaw::update_commands(float v, float w){
+vector<int32_t> DualClaw::set_speeds(float v, float w){
 
      vector<int32_t> cmds(2);
 
      /**   Differential Drive Drive Equations     */
-     float vLeft = v - w * centerToWheelRadius;
-     float vRight = v + w * centerToWheelRadius;
-     target_speed_left = vLeft;
-     target_speed_right = vRight;
+     float v_left = v - w * (_base_width / 2.0);
+     float v_right = v + w * (_base_width / 2.0);
 
-     int32_t leftClawSpd = vLeft * max_speed;
-     int32_t rightClawSpd = vRight * max_speed;
+     float left_spd = v_left * _qpps_per_meter * flag_left_sign;
+     float right_spd = v_right * _qpps_per_meter * flag_right_sign;
+
+     // printf("Left Velocity, Right Velocity:     %.5f   |    %.5f \r\n",left_spd, right_spd);
 
      // TODO: Make adaptable to variable number of motors (also account for motor order)
-     cmds[0] = leftClawSpd;
-     cmds[1] = rightClawSpd;
+     cmds[0] = (int32_t)(left_spd);
+     cmds[1] = (int32_t)(right_spd);
 
-     // printf("V, Omega, Left, Right:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",v,w,vLeft,vRight);
+     return cmds;
 
 }
 
@@ -78,63 +79,103 @@ void DualClaw::drive(vector<int32_t> cmds){
 
 }
 
-void DualClaw::updateSensors(){
+void DualClaw::update_status(){
+     int err[8];
 
-     // now = rospy.Time.now()
-     //    dt = now.to_sec() - self.last_odom.to_sec()
-     //
-     //    if dt > 10.0 or dt == 0.0:
-     //        self.last_odom = now
-     //        return
-     //
-     //    self.last_odom = now
-     //
-     //    enc1 = self.roboclaw.ReadEncM1(ADDRESS)
-     //    enc2 = self.roboclaw.ReadEncM2(ADDRESS)
-     //
-     //    encoder_left = 0
-     //    encoder_right = 0
-     //
-     //    if enc1[0] == 1:
-     //        encoder_left = self.left_dir * enc1[1]
-     //    else:
-     //        rospy.logerr("failed to read encoder 1")
-     //        return
-     //
-     //    if enc2[0] == 1:
-     //        encoder_right = self.right_dir * enc2[1]
-     //    else:
-     //        rospy.logerr("failed to read encoder 2")
-     //        return
-     //
-     //    dist_left = 0.0
-     //    dist_right = 0.0
-     //
-     //    if self.robot_dir:
-     //        dist_left = float(encoder_left - self.last_enc_left) / self.ticks_per_m
-     //        dist_right = float(encoder_right - self.last_enc_right) / self.ticks_per_m
-     //    else:
-     //        dist_right = float(encoder_left - self.last_enc_left) / self.ticks_per_m
-     //        dist_left = float(encoder_right - self.last_enc_right) / self.ticks_per_m
-     //
-     //    self.last_enc_left = encoder_left
-     //    self.last_enc_right = encoder_right
-     //
-     //    distance_travelled = (dist_left + dist_right) / 2.0
-     //    delta_th = (dist_right - dist_left) / self.base_width
-     //
-     //    self.vx = distance_travelled / dt
-     //    self.vth = delta_th / dt
-     //
-     //    if distance_travelled != 0.0:
-     //        delta_x = cos(delta_th) * distance_travelled
-     //        delta_y = -sin(delta_th) * distance_travelled
-     //        self.x += (cos(self.theta) * delta_x - sin(self.theta) * delta_y)
-     //        self.y += (sin(self.theta) * delta_x - cos(self.theta) * delta_y)
-     //
-     //    if delta_th != 0.0:
-     //        self.theta += delta_th
+     _main_battery[0] = leftclaw->ReadMainBatteryVoltage();
+     _main_battery[1] = rightclaw->ReadMainBatteryVoltage();
 
-     // printf("V1, V2, V3, V4:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",spd1,spd2,spd3,spd4);
+     main_battery[0] = (float) (_main_battery[0]) / 10.0;
+     main_battery[1] = (float) (_main_battery[1]) / 10.0;
+
+     err[1] = leftclaw->ReadCurrents(_currents[0], _currents[1]);
+     err[1] = rightclaw->ReadCurrents(_currents[2], _currents[3]);
+
+     currents[0] = (float) (_currents[0]) / 100.0;
+     currents[1] = (float) (_currents[1]) / 100.0;
+     currents[2] = (float) (_currents[2]) / 100.0;
+     currents[3] = (float) (_currents[3]) / 100.0;
+
+     error[0] = leftclaw->ReadError();
+     error[1] = rightclaw->ReadError();
+
+     // TODO: User-friendly handling of errors
+
+}
+
+vector<float> DualClaw::get_currents(){
+     vector<float> tmp {currents[0],currents[1],currents[2],currents[3]};
+     return tmp;
+}
+
+vector<float> DualClaw::get_voltages(){
+     vector<float> tmp {main_battery[0],main_battery[1]};
+     return tmp;
+}
+
+vector<float> DualClaw::get_encoder_positions(){
+     vector<float> tmp {positions[0],positions[1],positions[2],positions[3]};
+     return tmp;
+}
+
+vector<float> DualClaw::get_encoder_speeds(){
+     vector<float> tmp {speeds[0],speeds[1],speeds[2],speeds[3]};
+     return tmp;
+}
+
+void DualClaw::update_encoders(){
+
+     int tmpPos[4] = {0,0,0,0};
+     float tmpDist[4] = {0,0,0,0};
+     float avg_dist[2] = {0,0};
+
+     _speeds[0] = leftclaw->ReadSpeedM1();
+     _speeds[1] = leftclaw->ReadSpeedM2();
+     _speeds[2] = rightclaw->ReadSpeedM1();
+     _speeds[3] = rightclaw->ReadSpeedM2();
+
+     for(int i = 0; i <= 3;i++){
+          speeds[i] = (float) (_speeds[i]) / _qpps_per_meter;
+     }
+
+     // printf("Motor Speeds (m/s)/[PPS]: %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
+
+     leftclaw->ReadEncoders(_positions[0],_positions[1]);
+     rightclaw->ReadEncoders(_positions[2],_positions[3]);
+
+     tmpPos[0] = _positions[0] * flag_left_sign;
+     tmpPos[1] = _positions[1] * flag_left_sign;
+     tmpPos[2] = _positions[2] * flag_right_sign;
+     tmpPos[3] = _positions[3] * flag_right_sign;
+
+     for(int i = 0; i <= 3;i++){
+          tmpDist[i] = (float) (tmpPos[i] - _last_positions[i]) / _qpps_per_meter;
+          _last_positions[i] = tmpPos[i];
+     }
+
+     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
+
+     avg_dist[0] = (tmpDist[0] + tmpDist[1]) / 2.0;
+     avg_dist[1] = (tmpDist[2] + tmpDist[3]) / 2.0;
+
+     dDistance = (avg_dist[0] + avg_dist[1]) / 2.0;
+     dTheta = (avg_dist[1] - avg_dist[0]) / _base_width;
+
+     // printf("Odometry Updates: %.3f  | %.3f\r\n",dDistance,dTheta);
+}
+
+void DualClaw::reset_encoders(){
+
+     for(int i = 0; i <= 3;i++){
+          _last_positions[i] = 0;
+     }
+
+     leftclaw->ResetEncoders();
+     rightclaw->ResetEncoders();
+
+     leftclaw->ReadEncoders(_positions[0],_positions[1]);
+     rightclaw->ReadEncoders(_positions[2],_positions[3]);
+
+     printf("Encoders Reset (qpps): %d | %d | %d | %d\r\n",_positions[0],_positions[1],_positions[2],_positions[3]);
 
 }

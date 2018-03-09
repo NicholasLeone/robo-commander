@@ -7,10 +7,13 @@ endif(VERBOSE)
 
 include_directories(${INCS_DIR}/profiles profiles)
 
-# 4-wheel drive, app controlled robot
-add_library(4WD SHARED four_wd.cpp)
-target_link_libraries(4WD utils roboclaw encoder dcmotor pid udp ${LIBS})
+# # 4-wheel drive, app controlled robot, with basic motor drive hardware
+# add_library(4WD SHARED four_wd.cpp)
+# target_link_libraries(4WD utils roboclaw encoder dcmotor pid udp ${LIBS})
 
+# 4-wheel drive robot using two roboclaws
+add_library(DualClaw SHARED dual_roboclaw.cpp)
+target_link_libraries(DualClaw utils roboclaw ${LIBS})
 
 if(BUILD_TESTS)
 
@@ -20,8 +23,12 @@ if(BUILD_TESTS)
 
      include_directories(${TEST_DIR}/profiles)
 
-     # 4WD
-     add_executable(test_4WD ${TEST_DIR}/profiles/test_4wd.cpp)
-     target_link_libraries(test_4WD 4WD)
+     # # 4WD
+     # add_executable(test_4WD ${TEST_DIR}/profiles/test_4wd.cpp)
+     # target_link_libraries(test_4WD 4WD)
+
+     # DualClaw
+     add_executable(test_DualClaw ${TEST_DIR}/profiles/test_dual_roboclaw.cpp)
+     target_link_libraries(test_DualClaw DualClaw)
 
 endif(BUILD_TESTS)

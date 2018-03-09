@@ -7,7 +7,7 @@
 #include <thread>
 
 #include <pigpiod_if2.h>
-#include "four_wd.h"
+#include "dual_roboclaw.h"
 
 using namespace std;
 
@@ -17,27 +17,15 @@ int main(int argc, char *argv[]){
 
      if (pi >= 0){
 
-          FourWD bot(pi);
-          // thread upper(bot.updateSensors,&bot);
+          DualClaw claws(pi);
 
           while(1){
-               bot.readRC();
-               float accel = (float) bot.controls.speed / 1000000;
-               float omega = (float) bot.controls.yaw / 1000000;
-               bot.updateSensors();
-               bot.drive(accel,-2 * omega);
+               claws.update_status();
+               claws.update_encoders();
           }
-          // bot.drive(1,0);
 
           pigpio_stop(pi);
      }
 
      return 0;
 }
-
-
-/** TO COMPILE:
-
-     g++ test_speed.cpp  -o TestSpeed -lpigpiod_if2 -Wall -pthread
-
-*/
