@@ -182,7 +182,8 @@ void DualClaw::update_encoders(){
      tmpPos[3] = _positions[3] * flag_right_sign;
 
      for(int i = 0; i <= 3;i++){
-          tmpDist[i] = ((float) (tmpPos[i] - _last_positions[i])) / _qpps_per_meter;
+          int32_t dPos = (int32_t) tmpPos[i] - (int32_t) _last_positions[i];
+          tmpDist[i] = (float) dPos / _qpps_per_meter;
           _last_positions[i] = tmpPos[i];
      }
 
