@@ -8,12 +8,11 @@ using namespace std;
 
 DualClaw::DualClaw(int pi){
 
-     uint32_t qpps[4];
-     float kp[4];
-     float ki[4];
-     float kd[4];
-
      this->_pi = pi;
+
+     flag_turn_dir = 1;
+     flag_left_sign = 1;
+     flag_right_sign = 1;
 
      /**************************************************************************
      * LOAD CONFIG FILE
@@ -157,7 +156,7 @@ void DualClaw::update_encoders(){
      uint8_t status1, status2, status3, status4;
      bool valid1, valid2, valid3, valid4;
 
-     int tmpPos[4] = {0,0,0,0};
+     uint32_t tmpPos[4] = {0,0,0,0};
      float tmpDist[4] = {0,0,0,0};
      float avg_dist[2] = {0,0};
 
