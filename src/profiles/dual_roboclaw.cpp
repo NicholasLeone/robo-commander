@@ -8,6 +8,11 @@ using namespace std;
 
 DualClaw::DualClaw(int pi){
 
+     uint32_t qpps[4];
+     float kp[4];
+     float ki[4];
+     float kd[4];
+
      this->_pi = pi;
 
      /**************************************************************************
@@ -25,7 +30,14 @@ DualClaw::DualClaw(int pi){
      // TODO: Add more tune-able parameters
 
      // printf("%d %d %d %d %d %d %d %d\r\n",fr_pwm,fr_dir,fl_pwm,fl_dir,rr_pwm,rr_dir,rl_pwm,rl_dir);
-
+     printf("ROBOCLAW SETTINGS: \r\n");
+     printf("       Device Address: %s\r\n", ser_path);
+     printf("       Claw Baud Rate: %d\r\n", baud);
+     printf("       Base Width: %.4f\r\n", _base_width);
+     printf("       Max Speed (m/s): %.3f\r\n", _max_speed);
+     printf("       QPPS per Meter: %d\r\n", _qpps_per_meter);
+     printf("\r\n");
+     
      /**************************************************************************
      * END LOAD CONFIG FILE
      **************************************************************************/
@@ -34,6 +46,18 @@ DualClaw::DualClaw(int pi){
 
      leftclaw = new RoboClaw(pi, _ser_handle, 128);
      rightclaw = new RoboClaw(pi, _ser_handle, 129);
+
+
+     leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+     leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+     rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+     rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);
+     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+
+
 }
 
 
@@ -80,10 +104,13 @@ void DualClaw::drive(vector<int32_t> cmds){
 }
 
 void DualClaw::update_status(){
-     int err[8];
 
-     _main_battery[0] = leftclaw->ReadMainBatteryVoltage();
-     _main_battery[1] = rightclaw->ReadMainBatteryVoltage();
+     int err[8];
+     uint8_t status;
+     bool valid1,valid2,valid3,valid4;
+
+     _main_battery[0] = leftclaw->ReadMainBatteryVoltage(&valid1);
+     _main_battery[1] = rightclaw->ReadMainBatteryVoltage(&valid2);
 
      main_battery[0] = (float) (_main_battery[0]) / 10.0;
      main_battery[1] = (float) (_main_battery[1]) / 10.0;
@@ -96,8 +123,8 @@ void DualClaw::update_status(){
      currents[2] = (float) (_currents[2]) / 100.0;
      currents[3] = (float) (_currents[3]) / 100.0;
 
-     error[0] = leftclaw->ReadError();
-     error[1] = rightclaw->ReadError();
+     error[0] = leftclaw->ReadError(&valid3);
+     error[1] = rightclaw->ReadError(&valid4);
 
      // TODO: User-friendly handling of errors
 
@@ -125,20 +152,23 @@ vector<float> DualClaw::get_encoder_speeds(){
 
 void DualClaw::update_encoders(){
 
+     uint8_t status1, status2, status3, status4;
+     bool valid1, valid2, valid3, valid4;
+
      int tmpPos[4] = {0,0,0,0};
      float tmpDist[4] = {0,0,0,0};
      float avg_dist[2] = {0,0};
 
-     _speeds[0] = leftclaw->ReadSpeedM1();
-     _speeds[1] = leftclaw->ReadSpeedM2();
-     _speeds[2] = rightclaw->ReadSpeedM1();
-     _speeds[3] = rightclaw->ReadSpeedM2();
+     _speeds[0] = leftclaw->ReadSpeedM1(&status1,&valid1);
+     _speeds[1] = leftclaw->ReadSpeedM2(&status2,&valid2);
+     _speeds[2] = rightclaw->ReadSpeedM1(&status3,&valid3);
+     _speeds[3] = rightclaw->ReadSpeedM2(&status4,&valid4);
 
      for(int i = 0; i <= 3;i++){
           speeds[i] = (float) (_speeds[i]) / _qpps_per_meter;
      }
 
-     // printf("Motor Speeds (m/s)/[PPS]: %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
+     printf("Motor Speeds (m/s)/[PPS]: %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
 
      leftclaw->ReadEncoders(_positions[0],_positions[1]);
      rightclaw->ReadEncoders(_positions[2],_positions[3]);
@@ -153,7 +183,7 @@ void DualClaw::update_encoders(){
           _last_positions[i] = tmpPos[i];
      }
 
-     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
+     printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
 
      avg_dist[0] = (tmpDist[0] + tmpDist[1]) / 2.0;
      avg_dist[1] = (tmpDist[2] + tmpDist[3]) / 2.0;
