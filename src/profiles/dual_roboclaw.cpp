@@ -167,7 +167,7 @@ void DualClaw::update_encoders(){
      _speeds[3] = rightclaw->ReadSpeedM2(&status4,&valid4);
 
      for(int i = 0; i <= 3;i++){
-          speeds[i] = (float) _speeds[i] / (uint32_t) _qpps_per_meter;
+          speeds[i] = ( *(float*) &_speeds[i]) / _qpps_per_meter;
      }
 
      printf("Motor Speeds (m/s)/[PPS]: %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
