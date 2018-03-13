@@ -19,7 +19,7 @@ DualClaw::DualClaw(int pi){
      * LOAD CONFIG FILE
      **************************************************************************/
      std::map<std::string, float> variables;
-     LoadInitialVariables("../../config/profiles/dualclaw.config", variables);
+     LoadInitialVariables("/home/hunter/devel/robo-dev/config/profiles/dualclaw.config", variables);
 
      float _ser_path = variables["dev"];
      char* ser_path = (char*) to_string(_ser_path).c_str();
@@ -37,7 +37,7 @@ DualClaw::DualClaw(int pi){
      printf("       Max Speed (m/s): %.3f\r\n", _max_speed);
      printf("       QPPS per Meter: %d\r\n", _qpps_per_meter);
      printf("\r\n");
-     
+
      /**************************************************************************
      * END LOAD CONFIG FILE
      **************************************************************************/
@@ -52,11 +52,12 @@ DualClaw::DualClaw(int pi){
      leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
      rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
      rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);
+
      printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
      printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
      printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
      printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
-
+     printf("\r\n");
 
 }
 

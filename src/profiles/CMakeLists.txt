@@ -28,7 +28,7 @@ if(BUILD_TESTS)
      # target_link_libraries(test_4WD 4WD)
 
      # DualClaw
-     add_executable(test_DualClaw ${TEST_DIR}/profiles/test_dual_roboclaw.cpp)
-     target_link_libraries(test_DualClaw DualClaw)
+     add_executable(test_dualclaw ${TEST_DIR}/profiles/test_dual_roboclaw.cpp)
+     target_link_libraries(test_dualclaw DualClaw)
 
 endif(BUILD_TESTS)

@@ -24,8 +24,8 @@ int main(int argc, char *argv[]){
           while(1){
                claws.update_status();
                claws.update_encoders();
-               cmds = claws.set_speeds(1.0, 0.0);
-               claws.drive(cmds);
+               // cmds = claws.set_speeds(1.0, 0.0);
+               // claws.drive(cmds);
           }
 
           pigpio_stop(pi);
