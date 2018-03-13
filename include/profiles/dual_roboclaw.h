@@ -21,7 +21,7 @@ private:
      float _max_speed;
      float _base_width;
      float _wheel_diameter;
-     int _qpps_per_meter;
+     uint32_t _qpps_per_meter;
 
      bool _valid[4];
 

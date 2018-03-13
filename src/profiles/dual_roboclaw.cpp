@@ -26,7 +26,7 @@ DualClaw::DualClaw(int pi){
      _base_width = stof(variables["base_width"]);
      _max_speed = stof(variables["max_speed"]);
      _qpps_per_meter = stoi(variables["qpps_per_meter"]);
-     _wheel_diameter = stof(variables["wheel_diameter"]);
+     _wheel_diameter = (uint32_t) stof(variables["wheel_diameter"]);
 
      // TODO: Add more tune-able parameters
 
@@ -167,7 +167,7 @@ void DualClaw::update_encoders(){
      _speeds[3] = rightclaw->ReadSpeedM2(&status4,&valid4);
 
      for(int i = 0; i <= 3;i++){
-          speeds[i] = ((float) _speeds[i]) / _qpps_per_meter;
+          speeds[i] = (float) (_speeds[i] / _qpps_per_meter);
      }
 
      printf("Motor Speeds (m/s)/[PPS]: %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
