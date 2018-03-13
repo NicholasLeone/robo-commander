@@ -171,7 +171,7 @@ void DualClaw::update_encoders(){
      }
 
      // printf("Motor Speeds (m/s): %.3f  | %.3f  | %.3f  | %.3f\r\n",(float) _speeds[0],(float) _speeds[1],(float) _speeds[2],(float) _speeds[3]);
-     printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
+     // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
 
      leftclaw->ReadEncoders(_positions[0],_positions[1]);
      rightclaw->ReadEncoders(_positions[2],_positions[3]);
@@ -194,7 +194,7 @@ void DualClaw::update_encoders(){
      dDistance = (avg_dist[0] + avg_dist[1]) / 2.0;
      dTheta = (avg_dist[1] - avg_dist[0]) / _base_width;
 
-     // printf("Odometry Updates: %.3f  | %.3f\r\n",dDistance,dTheta);
+     printf("Odometry Updates: %.3f  | %.3f\r\n",dDistance,dTheta);
 }
 
 void DualClaw::reset_encoders(){
