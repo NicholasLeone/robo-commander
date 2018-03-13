@@ -23,9 +23,10 @@ DualClaw::DualClaw(int pi){
      string _ser_path = variables["dev"];
      char* ser_path = (char*) _ser_path.c_str();
      int baud = stoi(variables["baud"]);
-     float _base_width = stof(variables["base_width"]);
-     float _max_speed = stof(variables["max_speed"]);
-     float _qpps_per_meter = stof(variables["qpps_per_meter"]);
+     _base_width = stof(variables["base_width"]);
+     _max_speed = stof(variables["max_speed"]);
+     _qpps_per_meter = stoi(variables["qpps_per_meter"]);
+     _wheel_diameter = stof(variables["wheel_diameter"]);
 
      // TODO: Add more tune-able parameters
 
@@ -35,7 +36,7 @@ DualClaw::DualClaw(int pi){
      printf("       Claw Baud Rate: %d\r\n", baud);
      printf("       Base Width: %.4f\r\n", _base_width);
      printf("       Max Speed (m/s): %.3f\r\n", _max_speed);
-     printf("       QPPS per Meter: %.2f\r\n", _qpps_per_meter);
+     printf("       QPPS per Meter: %d\r\n", _qpps_per_meter);
      printf("\r\n");
 
      /**************************************************************************
