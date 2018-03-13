@@ -24,7 +24,7 @@ int main(int argc, char *argv[]){
           while(1){
                claws.update_status();
                claws.update_encoders();
-               cmds = claws.set_speeds(0.0, 0.0);
+               cmds = claws.set_speeds(-0.1, 0.0);
                claws.drive(cmds);
           }
 

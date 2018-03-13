@@ -37,6 +37,7 @@ DualClaw::DualClaw(int pi){
      printf("       Base Width: %.4f\r\n", _base_width);
      printf("       Max Speed (m/s): %.3f\r\n", _max_speed);
      printf("       QPPS per Meter: %d\r\n", _qpps_per_meter);
+     printf("       Wheel Diameter (m): %f\r\n", _wheel_diameter);
      printf("\r\n");
 
      /**************************************************************************
@@ -47,7 +48,6 @@ DualClaw::DualClaw(int pi){
 
      leftclaw = new RoboClaw(pi, _ser_handle, 128);
      rightclaw = new RoboClaw(pi, _ser_handle, 129);
-
 
      leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
      leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
