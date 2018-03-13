@@ -114,21 +114,23 @@ void DualClaw::update_status(){
      _main_battery[0] = leftclaw->ReadMainBatteryVoltage(&valid1);
      _main_battery[1] = rightclaw->ReadMainBatteryVoltage(&valid2);
 
-     main_battery[0] = (float) (_main_battery[0]) / 10.0;
-     main_battery[1] = (float) (_main_battery[1]) / 10.0;
+     main_battery[0] = (float) ((int16_t) _main_battery[0]) / 10.0;
+     main_battery[1] = (float) ((int16_t) _main_battery[1]) / 10.0;
 
      err[1] = leftclaw->ReadCurrents(_currents[0], _currents[1]);
      err[1] = rightclaw->ReadCurrents(_currents[2], _currents[3]);
 
-     currents[0] = (float) (_currents[0]) / 100.0;
-     currents[1] = (float) (_currents[1]) / 100.0;
-     currents[2] = (float) (_currents[2]) / 100.0;
-     currents[3] = (float) (_currents[3]) / 100.0;
+     currents[0] = (float) _currents[0] / 100.0;
+     currents[1] = (float) _currents[1] / 100.0;
+     currents[2] = (float) _currents[2] / 100.0;
+     currents[3] = (float) _currents[3] / 100.0;
 
-     error[0] = leftclaw->ReadError(&valid3);
-     error[1] = rightclaw->ReadError(&valid4);
+     printf("Battery Voltages:     %.3f |    %.3f\r\n",main_battery[0], main_battery[1]);
+     printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n",currents[0], currents[1], currents[2], currents[3]);
 
      // TODO: User-friendly handling of errors
+     error[0] = leftclaw->ReadError(&valid3);
+     error[1] = rightclaw->ReadError(&valid4);
 
 }
 
@@ -170,9 +172,6 @@ void DualClaw::update_encoders(){
           speeds[i] = (float) ((int32_t) _speeds[i]) / _qpps_per_meter;
      }
 
-     // printf("Motor Speeds (m/s): %.3f  | %.3f  | %.3f  | %.3f\r\n",(float) _speeds[0],(float) _speeds[1],(float) _speeds[2],(float) _speeds[3]);
-     // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
-
      leftclaw->ReadEncoders(_positions[0],_positions[1]);
      rightclaw->ReadEncoders(_positions[2],_positions[3]);
 
@@ -187,15 +186,15 @@ void DualClaw::update_encoders(){
           _last_positions[i] = tmpPos[i];
      }
 
-     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
-
      avg_dist[0] = (tmpDist[0] + tmpDist[1]) / 2.0;
      avg_dist[1] = (tmpDist[2] + tmpDist[3]) / 2.0;
 
      dDistance = (avg_dist[0] + avg_dist[1]) / 2.0;
      dTheta = (avg_dist[1] - avg_dist[0]) / _base_width;
 
-     printf("Odometry Updates: %.3f  | %.3f\r\n",dDistance,dTheta);
+     // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
+     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
+     // printf("Odometry Updates: %.3f  | %.3f\r\n",dDistance,dTheta);
 }
 
 void DualClaw::reset_encoders(){
