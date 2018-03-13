@@ -45,6 +45,26 @@ void LoadInitialVariables(const string &fileName, map<string, float> &variables)
 	}
 }
 
+void LoadStringVariables(const string &fileName, map<string, string> &variables){
+    variables.clear();
+
+    char name[256];
+    char value[1028];
+    int numLines;
+    string line,tmpline;
+
+	ifstream myfile(fileName.c_str());
+
+	numLines = 0;
+
+	while(getline(myfile, tmpline)){
+		if (sscanf(tmpline.c_str(), "%s = %s", name, &value) == 2){
+            variables[name] = value;
+		}
+		++numLines;
+	}
+}
+
 int countData(string s, char delimiter){
      size_t num = count(s.begin(), s.end(), delimiter);
      num = num + 1;

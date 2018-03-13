@@ -18,15 +18,16 @@ DualClaw::DualClaw(int pi){
      /**************************************************************************
      * LOAD CONFIG FILE
      **************************************************************************/
-     std::map<std::string, float> variables;
-     LoadInitialVariables("/home/hunter/devel/robo-dev/config/profiles/dualclaw.config", variables);
+     std::map<std::string, std::string> variables;
+     LoadStringVariables("/home/hunter/devel/robo-dev/config/profiles/dualclaw.config", variables);
 
-     float _ser_path = variables["dev"];
-     char* ser_path = (char*) to_string(_ser_path).c_str();
-     int baud = (int) variables["baud"];
-     _base_width = variables["base_width"];
-     _max_speed = variables["max_speed"];
-     _qpps_per_meter = variables["qpps_per_meter"];
+     string _ser_path = variables["dev"];
+     char* ser_path = (char*) _ser_path.c_str();
+     int baud = stoi(variables["baud"]);
+     float _base_width = stof(variables["base_width"]);
+     float _max_speed = stof(variables["max_speed"]);
+     float _qpps_per_meter = stof(variables["qpps_per_meter"]);
+
      // TODO: Add more tune-able parameters
 
      // printf("%d %d %d %d %d %d %d %d\r\n",fr_pwm,fr_dir,fl_pwm,fl_dir,rr_pwm,rr_dir,rl_pwm,rl_dir);
@@ -35,7 +36,7 @@ DualClaw::DualClaw(int pi){
      printf("       Claw Baud Rate: %d\r\n", baud);
      printf("       Base Width: %.4f\r\n", _base_width);
      printf("       Max Speed (m/s): %.3f\r\n", _max_speed);
-     printf("       QPPS per Meter: %d\r\n", _qpps_per_meter);
+     printf("       QPPS per Meter: %.2f\r\n", _qpps_per_meter);
      printf("\r\n");
 
      /**************************************************************************

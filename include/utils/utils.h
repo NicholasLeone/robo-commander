@@ -15,6 +15,7 @@ using namespace std;
 
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral);
 void LoadInitialVariables(const string &fileName, map<string, float> &variables);
+void LoadStringVariables(const string &fileName, map<string, string> &variables);
 int countData(string s, char delimiter);
 int countLines(const string &fileName);
 int extract_bit(int inputByte, int bitLocation);
