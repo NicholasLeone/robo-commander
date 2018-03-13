@@ -167,7 +167,7 @@ void DualClaw::update_encoders(){
      _speeds[3] = rightclaw->ReadSpeedM2(&status4,&valid4);
 
      for(int i = 0; i <= 3;i++){
-          speeds[i] = (float) (_speeds[i]) / _qpps_per_meter;
+          speeds[i] = ((float) _speeds[i]) / _qpps_per_meter;
      }
 
      printf("Motor Speeds (m/s)/[PPS]: %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
@@ -181,11 +181,11 @@ void DualClaw::update_encoders(){
      tmpPos[3] = _positions[3] * flag_right_sign;
 
      for(int i = 0; i <= 3;i++){
-          tmpDist[i] = (float) (tmpPos[i] - _last_positions[i]) / _qpps_per_meter;
+          tmpDist[i] = ((float) (tmpPos[i] - _last_positions[i])) / _qpps_per_meter;
           _last_positions[i] = tmpPos[i];
      }
 
-     printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
+     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
 
      avg_dist[0] = (tmpDist[0] + tmpDist[1]) / 2.0;
      avg_dist[1] = (tmpDist[2] + tmpDist[3]) / 2.0;
