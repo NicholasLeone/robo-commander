@@ -32,6 +32,8 @@ private:
 
      uint32_t _last_positions[4];
 
+     float _current_pose[6];
+
 public:
 
      DualClaw(int pi);

@@ -8,11 +8,14 @@
 #include <vector>
 #include <string.h>
 #include <map>
+#include <math.h>
 #include <functional>
 #include "base/params.h"
 
 using namespace std;
 
+float convertRadians2Degrees(float angle);
+float convertDegrees2Radians(float angle);
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral);
 void LoadInitialVariables(const string &fileName, map<string, float> &variables);
 void LoadStringVariables(const string &fileName, map<string, string> &variables);

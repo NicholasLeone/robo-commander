@@ -5,7 +5,6 @@
 static const float G_TO_MPSS = 9.80665;
 static const int uT_TO_T = 1000000;
 
-#define D2R(angleDegrees) ((angleDegrees) * M_PI / 180.0)
 #define R2D(angleRadians) ((angleRadians) * 180.0 / M_PI)
 
 using namespace std;

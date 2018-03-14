@@ -192,9 +192,20 @@ void DualClaw::update_encoders(){
      dDistance = (avg_dist[0] + avg_dist[1]) / 2.0;
      dTheta = (avg_dist[1] - avg_dist[0]) / _base_width;
 
+     // Update current yaw first for back-solving changes in the X and Y points
+     _current_pose[5] += dTheta;
+
+     // Compute changes in X and Y coordinates
+     float dx = dDistance * cos(_current_pose[5]);
+     float dy = dDistance * sin(_current_pose[5]);
+
+     // Update current 2D location
+     _current_pose[0] += dx;
+     _current_pose[1] += dy;
+
      // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
-     printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
-     // printf("Odometry Updates: %.3f  | %.3f\r\n",dDistance,dTheta);
+     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
+     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
 }
 
 void DualClaw::reset_encoders(){

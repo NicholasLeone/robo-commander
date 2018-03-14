@@ -16,6 +16,20 @@
 
 using namespace std;
 
+float convertRadians2Degrees(float angle){
+     float degr = angle * 180.0 / M_PI;
+     // cout << "Converted Angle (deg): " << degr << endl;
+     return degr;
+}
+
+float convertDegrees2Radians(float angle){
+
+     float rad = angle * M_PI / 180.0;
+     // cout << "Converted Angle (rad): " << rad << endl;
+     return rad;
+}
+
+
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral){
 
      float dPulse = (max - min)/2;
