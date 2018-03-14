@@ -8,7 +8,8 @@ using namespace std;
 
 int main(int argc, char *argv[]){
 
-	// int dt = 0.012048 * 1000000;
+	int dt;
+	// = 0.012048 * 1000000;
 
 	string path = "/home/hunter/devel/robo-dev/config/sensors";
 	string file = "mpu9250";
