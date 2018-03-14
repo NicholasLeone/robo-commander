@@ -77,7 +77,7 @@ int IMU::init(string path, string file){
 }
 
 int IMU::get_update_period(){
-     return (_imu->IMUGetPollInterval() / 1000.0);
+     return _imu->IMUGetPollInterval() * 1000;
 }
 
 void IMU::update(){
