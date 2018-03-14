@@ -9,9 +9,8 @@ using namespace std;
 class IMU{
 
 private:
-     // int address;
-     // int port;
-     // Sim_Msg_IMUData data;
+     // TODO: Figure out how to account for initial pose offsets to start everything off by 0
+     
      string calib_path;
      string calib_file;
 
@@ -42,7 +41,7 @@ public:
 
      // TODO: Add these functions for ease-of-use later
      // void reset_yaw();
-     
+
      // void print();
 
 };
