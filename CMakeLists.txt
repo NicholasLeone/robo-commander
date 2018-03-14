@@ -39,6 +39,7 @@ find_package(Armadillo REQUIRED)
 # Find Boost Libraries
 find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Threads)
+find_library(RTIMULib libRTIMULib.so)
 
 # Find pigpiod libraries
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/depends/pigpiod")

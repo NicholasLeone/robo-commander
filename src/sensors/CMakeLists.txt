@@ -12,6 +12,10 @@ add_library(encoder SHARED encoder.cpp)
 target_link_libraries(encoder ${LIBS})
 
 # IMU
+add_library(imu SHARED imu.cpp)
+target_link_libraries(imu RTIMULib ${LIBS})
+
+# MPU-9250
 add_library(mpu9250 SHARED mpu9250.cpp)
 target_link_libraries(mpu9250 utils ${LIBS})
 

@@ -1,20 +1,45 @@
 #ifndef IMU_H_
 #define IMU_H_
 
+#include <vector>
+#include <RTIMULib.h>
+
+using namespace std;
+
 class IMU{
 
 private:
-     int address;
-     int port;
-     Sim_Msg_IMUData data;
+     // int address;
+     // int port;
+     // Sim_Msg_IMUData data;
+     string calib_path;
+     string calib_file;
+
+     int num_updates;
+     float declination_offset;          // (radians)
+     float corrected_yaw;
+
+     RTIMU* _imu;
+     RTIMUSettings* _settings;
 
 public:
 	IMU();
-	~IMU();
+	IMU(string path, string file);
+     ~IMU();
 
-     void print();
+     float accel[3];
+     float gyro[3];
+     float mag[3];
+     float euler[3];
+     float quats[4];
+
+     // TODO: potentially integrate to get an estimated positional movement
+     float position[3];
+
+     int init(string path, string file);
+     void update();
+     // void print();
 
 };
-
 
 #endif /* IMU_H_*/
