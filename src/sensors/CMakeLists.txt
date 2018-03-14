@@ -30,6 +30,10 @@ if(BUILD_TESTS)
      target_link_libraries(test_encoder encoder)
 
      # IMU
+     add_executable(test_imu ${TEST_DIR}/sensors/test_imu.cpp)
+     target_link_libraries(test_imu imu)
+
+     # MPU-9250
      add_executable(test_mpu9250 ${TEST_DIR}/sensors/test_mpu9250.cpp)
      target_link_libraries(test_mpu9250 mpu9250 serial)
 endif(BUILD_TESTS)

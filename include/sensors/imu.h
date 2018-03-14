@@ -38,6 +38,7 @@ public:
 
      int init(string path, string file);
      void update();
+     int get_update_period();
      // void print();
 
 };

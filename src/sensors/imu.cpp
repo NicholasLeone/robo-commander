@@ -76,15 +76,9 @@ int IMU::init(string path, string file){
      return 1;
 }
 
-// void I2cImu::spin()
-// {
-//      ros::Rate r(1.0 / (imu_->IMUGetPollInterval() / 1000.0));
-//      while (ros::ok())
-//      {
-//           update();
-//           r.sleep();
-//      }
-// }
+int IMU::get_update_period(){
+     return (_imu->IMUGetPollInterval() / 1000.0);
+}
 
 void IMU::update(){
 
