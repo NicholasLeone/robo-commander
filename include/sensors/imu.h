@@ -39,6 +39,10 @@ public:
      int init(string path, string file);
      void update();
      int get_update_period();
+
+     // TODO: Add these functions for ease-of-use later
+     // void reset_yaw();
+     
      // void print();
 
 };

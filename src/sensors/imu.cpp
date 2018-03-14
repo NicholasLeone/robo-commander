@@ -112,7 +112,7 @@ void IMU::update(){
 
           euler[0] = data.fusionPose.x();
           euler[1] = data.fusionPose.y();
-          euler[2] = -data.fusionPose.z();
+          euler[2] = data.fusionPose.z();
 
           corrected_yaw = euler[2] - declination_offset;
 
