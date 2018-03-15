@@ -210,7 +210,7 @@ void DualClaw::update_encoders(){
      // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
      // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
      // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",dx,dy,dTheta);
-     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f, %.3f, %.3f, %.3f\r\n",dDistance, dx,dy,dTheta);
+     printf("Δdistance, ΔX, ΔY, ΔYaw]: %.3f, %.3f, %.3f, %.3f\r\n",dDistance, dx,dy,dTheta);
      // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
 }
 
