@@ -148,7 +148,7 @@ int main(){
 			angle = fmod((R2D(imu.euler[1]) + 360.0),360.0);
 			pwm = getControl(angle);
 			usleep(dt);
-          	// motor->setSpeed(pwm);
+          	motor->setSpeed(pwm);
 
 			// float dutycycle = pwm * maxControl;
 
