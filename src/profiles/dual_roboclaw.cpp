@@ -14,12 +14,6 @@ DualClaw::DualClaw(int pi){
      flag_left_sign = 1;
      flag_right_sign = 1;
 
-     // for(int i = 0; i<6;i++){
-     //      _current_pose[i] = 0;
-     // }
-
-     // _current_pose = {0,0,0,0,0,0};
-
      /**************************************************************************
      * LOAD CONFIG FILE
      **************************************************************************/
@@ -60,12 +54,15 @@ DualClaw::DualClaw(int pi){
      rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
      rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);
 
+     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
+
      printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
      printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
      printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
      printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
      printf("\r\n");
 
+     sleep(1);
 }
 
 
