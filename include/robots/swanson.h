@@ -1,10 +1,9 @@
 #ifndef SWANSON_H_
 #define SWANSON_H_
 
-
-#include <stdarg.h>
-#include <string>
-#include "base/params.h"
+// #include <stdarg.h>
+// #include <string>
+// #include "base/params.h"
 #include "actuators/dc_motor.h"
 #include "sensors/encoder.h"
 #include "comms/udp.h"

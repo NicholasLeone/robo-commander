@@ -1,9 +1,4 @@
-#include <stdio.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <thread>
-#include <chrono>
-#include <iostream>
 #include <pigpiod_if2.h>
 #include "dc_motor.h"
 
@@ -29,9 +24,3 @@ int main(int argc, char *argv[]){
 
      return 0;
 }
-
-
-/** TO COMPILE:
-     g++ test_motors.cpp motor-driver.cpp -o TestMotor -lpigpiod_if2 -Wall -pthread
-     g++ test_motors.cpp motor-driver.cpp ./pca9685/PWM-Driver-PCA9685.cpp ./pca9685/pwm-pca9685-user.c -o TestRC -lpigpiod_if2 -Wall -pthread -std=c++11
-*/

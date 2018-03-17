@@ -1,20 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <unistd.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <signal.h>
-#include <bitset>
-#include <boost/asio.hpp>
-#include <fcntl.h>      // File control definitions
-#include <errno.h>      // Error number definitions
-#include <termios.h>    // POSIX terminal control definitions
-#include <vector>
-#include <algorithm>
-
 #include <pigpiod_if2.h>
 #include "mpu9250.h"
 #include "comms/serial.h"

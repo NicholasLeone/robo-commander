@@ -1,10 +1,39 @@
 #ifndef UDP_H_
 #define UDP_H_
 
-#include "base/params.h"
-#include <vector>
+#include <netdb.h>
 
 using namespace std;
+
+typedef struct UDP_PARAMS{
+     int fd;
+     int sock;
+     int in_port;
+     int dev_address;
+     int out_port;
+     char* file;
+     socklen_t sock_len;
+     struct sockaddr_in remAddr;
+     struct sockaddr_in myAddr;
+     struct hostent * hp;
+     fd_set read_fds;
+     fd_set write_fds;
+     struct timeval tv;
+}UDP_PARAMS;
+
+typedef struct CommunicationHeaderByte{
+     int32_t header;
+     int32_t msg_type;
+     int32_t data_type;
+     int32_t measurement_type;
+     int32_t measurement_length;
+}CommunicationHeaderByte;
+
+typedef struct RC_COMMAND_MSG{
+     int32_t yaw;
+     int32_t pitch;
+	int32_t speed;
+}RC_COMMAND_MSG;
 
 class UDP{
 

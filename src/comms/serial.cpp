@@ -1,17 +1,7 @@
-#include "string.h"
-#include <boost/asio.hpp>
-#include <boost/asio/serial_port.hpp>
-#include <fcntl.h>      // File control definitions
-#include <errno.h>      // Error number definitions
-#include <termios.h>    // POSIX terminal control definitions
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
 #include "serial.h"
 
 using namespace std;
-using namespace boost;
 
 SerialDev::SerialDev(const char* add, unsigned int baud): port(io){
 

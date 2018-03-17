@@ -1,10 +1,8 @@
 #ifndef ROBOCLAW_H_
 #define ROBOCLAW_H_
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <stdarg.h>
-#include "base/params.h"
+#include <unistd.h>
 
 using namespace std;
 

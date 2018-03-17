@@ -1,7 +1,6 @@
 #ifndef I2C_H_
 #define I2C_H_
 
-#include <stdint.h>
 #include "base/peripherals.h"
 
 class I2C : public Communication{

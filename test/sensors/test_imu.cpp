@@ -1,11 +1,7 @@
-#include <stdio.h>
-#include <string.h>
 #include <iostream>
-#include <math.h>
+#include "base/definitions.h"
 
 #include "imu.h"
-
-#define R2D(angleRadians) ((angleRadians) * 180.0 / M_PI)
 
 using namespace std;
 
@@ -21,7 +17,7 @@ int main(int argc, char *argv[]){
 
 	while(1){
 		imu.update();
-		angle = fmod((R2D(imu.euler[1]) + 360.0),360.0);
+		angle = fmod((imu.euler[1]*M_RAD2DEG + 360.0),360.0);
 		dt = imu.get_update_period();
 		usleep(dt);
 

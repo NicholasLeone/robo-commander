@@ -1,22 +1,9 @@
-#include <stdio.h>
-#include <pthread.h>
-#include <thread>
-#include <chrono>
 #include <iostream>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/select.h>
+#include <string.h>
 
 #include "udp.h"
-#include "utils/utils.h"
+#include "base/params.h"
 
 using namespace std;
 
@@ -52,7 +39,7 @@ static void readImu(UDP* udp_line, CommunicationHeaderByte* header, Sim_Msg_IMUD
      header = (CommunicationHeaderByte*)&dat[0];
      data = (Sim_Msg_IMUData*)&dat[20];
 
-     printImu(*data);
+     // printImu(*data);
 }
 
 static void readGps(UDP* udp_line, CommunicationHeaderByte* header, Sim_Msg_GPSData* data){
@@ -77,7 +64,7 @@ static void readGps(UDP* udp_line, CommunicationHeaderByte* header, Sim_Msg_GPSD
      header = (CommunicationHeaderByte*)&dat[0];
      data = (Sim_Msg_GPSData*)&dat[20];
 
-     printGps(*data);
+     // printGps(*data);
 }
 
 static void readLidar(UDP* udp_line, CommunicationHeaderByte* header, Sim_Msg_LidarData* data){
@@ -101,7 +88,7 @@ static void readLidar(UDP* udp_line, CommunicationHeaderByte* header, Sim_Msg_Li
      header = (CommunicationHeaderByte*)&dat[0];
      data = (Sim_Msg_LidarData*)&dat[20];
 
-     printLidar(*data);
+     // printLidar(*data);
 }
 
 int main(int argc, char *argv[]){

@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <iostream>
 #include <unistd.h>
 #include <pigpiod_if2.h>
+
 #include "actuators/servo.h"
 #include "comms/i2c.h"
 

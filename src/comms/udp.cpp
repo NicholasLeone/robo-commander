@@ -1,15 +1,12 @@
-#include <sys/types.h>
-#include <sys/socket.h>       // for socket(), connect(), sendto() and recvform()
-#include <net/if.h>
-#include <stdlib.h>           // for atoi() and exit()
 #include <arpa/inet.h>        // for sockaddr_in and inet_addr()
-#include <stdio.h>            // for printf() and fprintf()
 #include <string.h>           // for memset()
-#include <unistd.h>           // for close()
+#include <unistd.h>           // for close(), usleep
 #include <fcntl.h>
-#include <sys/select.h>
+#include <iostream>           // for cout, endl
 
 #include "udp.h"
+
+using namespace std;
 
 UDP::UDP(int port, char* address){
 
@@ -174,7 +171,7 @@ char* UDP::readtimeout(int num_bytes){
      int nBytes;
      char* tmp;
      char* dummy;
-     
+
      while(_read(config, buf, num_bytes) > 0){}
 
      usleep(100 * 1000);

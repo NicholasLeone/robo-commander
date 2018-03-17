@@ -1,5 +1,5 @@
-#include <thread>
 #include <pigpiod_if2.h>
+#include <math.h>
 
 #include "utils/utils.h"
 #include "dual_roboclaw.h"
@@ -157,6 +157,16 @@ vector<float> DualClaw::get_encoder_speeds(){
      return tmp;
 }
 
+vector<float> DualClaw::get_odom_deltas(){
+     vector<float> tmp {dist_traveled,dyaw,dx,dy};
+     return tmp;
+}
+
+vector<float> DualClaw::get_pose(){
+     vector<float> tmp {_current_pose[0],_current_pose[1],_current_pose[2]};
+     return tmp;
+}
+
 void DualClaw::update_encoders(){
 
      uint8_t status1, status2, status3, status4;
@@ -192,15 +202,15 @@ void DualClaw::update_encoders(){
      avg_dist[0] = (tmpDist[0] + tmpDist[1]) / 2.0;
      avg_dist[1] = (tmpDist[2] + tmpDist[3]) / 2.0;
 
-     dDistance = (avg_dist[0] + avg_dist[1]) / 2.0;
-     dTheta = (avg_dist[1] - avg_dist[0]) / _base_width;
+     dist_traveled = (avg_dist[0] + avg_dist[1]) / 2.0;
+     dyaw = (avg_dist[1] - avg_dist[0]) / _base_width;
 
      // Update current yaw first for back-solving changes in the X and Y points
-     _current_pose[5] = _current_pose[5] + dTheta;
+     _current_pose[2] = _current_pose[2] + dyaw;
 
      // Compute changes in X and Y coordinates
-     float dx = dDistance * cos(_current_pose[5]);
-     float dy = dDistance * sin(_current_pose[5]);
+     dx = dist_traveled * cos(_current_pose[2]);
+     dy = dist_traveled * sin(_current_pose[2]);
 
      // Update current 2D location
      _current_pose[0] = _current_pose[0] + dx;
@@ -208,8 +218,8 @@ void DualClaw::update_encoders(){
 
      // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
      // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
-     // printf("Δdistance, ΔX, ΔY, ΔYaw: %.3f, %.3f, %.3f, %.3f\r\n",dDistance, dx,dy,dTheta);
-     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
+     // printf("Δdistance, ΔX, ΔY, ΔYaw: %.3f, %.3f, %.3f, %.3f\r\n",dist_traveled, dx,dy,dyaw);
+     // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
 }
 
 void DualClaw::reset_encoders(){

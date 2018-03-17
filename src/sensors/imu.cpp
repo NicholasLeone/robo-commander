@@ -1,11 +1,10 @@
 #include <string.h>
 #include <iostream>
+#include "base/definitions.h"
 #include "imu.h"
 
 static const float G_TO_MPSS = 9.80665;
 static const int uT_TO_T = 1000000;
-
-#define R2D(angleRadians) ((angleRadians) * 180.0 / M_PI)
 
 using namespace std;
 
@@ -14,21 +13,12 @@ IMU::IMU(){}
 IMU::IMU(string path, string file){
 
      num_updates = 0;
-
      declination_offset = -0.6;
 
      int err = init(path, file);
      if(err < 0){
           exit(1);
      }
-
-     // // Print out all configured parameters for debugging
-     // printf("IMU CONFIGURATION SETTINGS: \r\n");
-     // printf("       Device Address: %s\r\n", _add);
-     // printf("       Baud Rate: %d\r\n", _baud);
-     // printf("       Imu Type: %.4f\r\n", _type);
-     // printf("\r\n");
-
 }
 
 IMU::~IMU(){
@@ -119,14 +109,35 @@ void IMU::update(){
           euler[2] = data.fusionPose.z();
 
           corrected_yaw = euler[2] - declination_offset;
-
-          // printf("IMU DATA: \r\n");
-          // printf("       Accelerations (m/s^2): %.4f        %.4f      %.4f\r\n", accel[0], accel[1], accel[2]);
-          // printf("       Angular Velocities (rad/sec): %.4f        %.4f      %.4f\r\n", gyro[0], gyro[1], gyro[2]);
-          // printf("       Magnetometer (???): %.4f        %.4f      %.4f\r\n", mag[0], mag[1], mag[2]);
-          // printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n", R2D(euler[0]), R2D(euler[1]), R2D(euler[2]));
-          // fflush(stdout);
-          // printf("\r\n");
 	}
 
+}
+
+void IMU::print_settings(){
+     // Print out all configured parameters for debugging
+     printf("IMU CONFIGURATION SETTINGS: \r\n");
+     // printf("       Device Address: %s\r\n", _add);
+     // printf("       Baud Rate: %d\r\n", _baud);
+     // printf("       Imu Type: %.4f\r\n", _type);
+     printf("\r\n");
+}
+
+void IMU::print_data(){
+     fflush(stdout);
+     printf("IMU DATA: \r\n");
+     printf("       Accelerations (m/s^2): %.4f        %.4f      %.4f\r\n", accel[0], accel[1], accel[2]);
+     printf("       Angular Velocities (rad/sec): %.4f        %.4f      %.4f\r\n", gyro[0], gyro[1], gyro[2]);
+     printf("       Magnetometer (???): %.4f        %.4f      %.4f\r\n", mag[0], mag[1], mag[2]);
+     printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n\r\n", euler[0]*M_RAD2DEG, euler[1]*M_RAD2DEG, euler[2]*M_RAD2DEG);
+}
+
+void IMU::print_angles(){
+     float tmpAng[3];
+
+     for(int i = 0; i<3;i++){
+          tmpAng[i] = euler[i] * M_RAD2DEG;
+     }
+
+     fflush(stdout);
+     printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n\r\n", tmpAng[0], tmpAng[1], tmpAng[2]);
 }

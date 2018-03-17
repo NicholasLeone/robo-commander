@@ -1,16 +1,9 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <unistd.h>
 #include <vector>
-#include <string.h>
 #include <map>
-#include <math.h>
-#include <functional>
-#include "base/params.h"
+#include "base/definitions.h"
 
 using namespace std;
 
@@ -28,10 +21,10 @@ vector<float> parseFloat(string s, string delimiter);
 void attach_CtrlC(void_int_fun func2call);
 void attach_CtrlZ(void_int_fun func2call);
 
-void printUdpHeader(CommunicationHeaderByte* header);
-void printImu(Sim_Msg_IMUData data);
-void printGps(Sim_Msg_GPSData data);
-void printLidar(Sim_Msg_LidarData data);
+// void printUdpHeader(CommunicationHeaderByte* header);
+// void printImu(Sim_Msg_IMUData data);
+// void printGps(Sim_Msg_GPSData data);
+// void printLidar(Sim_Msg_LidarData data);
 
 // UDP Sending Overloads
 // int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_IMUData data);

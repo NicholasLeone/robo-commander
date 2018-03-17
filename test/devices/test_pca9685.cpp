@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <iostream>
-#include <math.h>
 
 #include <pigpiod_if2.h>
 #include "devices/pca9685.h"
@@ -36,7 +33,7 @@ int main(int argc, char *argv[]){
      cin >> channel;
 
      while(1){
-          
+
           if(!flag_test){
                cout << "Please enter the desired duty cycle (0 - 100%)" << endl;
                cin >> duty;

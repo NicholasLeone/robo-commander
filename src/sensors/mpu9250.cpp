@@ -1,12 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
 #include <unistd.h>
 #include <iostream>
-#include <bitset>
-#include <vector>
 #include <pigpiod_if2.h>
+
 #include "mpu9250.h"
 #include "utils/utils.h"
 

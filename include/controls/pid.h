@@ -1,11 +1,10 @@
 #ifndef PID_H_
 #define PID_H_
 
-#include <stdint.h>
 #include <chrono>
-#include <ctime>
 
-#include "base/params.h"
+using namespace std;
+using namespace chrono;
 
 /** Forum Tips on PID Tuning */
 // 1. Start with I=0, D=0 and pick a fixed velocity. Start on the slow end.
@@ -21,22 +20,22 @@
 // max - maximum value of manipulated variable
 // min - minimum value of manipulated variable
 
-using namespace chrono;
+typedef struct PID_PARAMS{
+     float dt;
+     float max;
+     float min;
+     float Kp;
+     float Kd;
+     float Ki;
+     float pre_error;
+     float integral;
+}PID_PARAMS;
 
 class PID {
 
 private:
 
      PID_PARAMS params;
-
-     // float dt;
-     // float max;
-     // float min;
-     // float Kp;
-     // float Kd;
-     // float Ki;
-     // float pre_error;
-     // float integral;
 
      high_resolution_clock::time_point prev_time;
      float prev_input;
@@ -61,4 +60,3 @@ public:
 };
 
 #endif
-//

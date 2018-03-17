@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <iostream>
-#include <math.h>
 
 #include <pigpiod_if2.h>
 #include "devices/pca9685.h"

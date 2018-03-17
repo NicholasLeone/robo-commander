@@ -1,8 +1,6 @@
 #ifndef ENCODER_H_
 #define ENCODER_H_
 
-#include <stdint.h>
-
 #define ENCODER_MODE_DETENT 0
 #define ENCODER_MODE_STEP   1
 

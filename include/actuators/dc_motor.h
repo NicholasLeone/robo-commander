@@ -4,8 +4,16 @@
 //TODO: Ensure functions (and inputs) maintain generality and modularity
 //TODO: document functions w/ input params and return values
 
-#include <stdint.h>
 #include "base/peripherals.h"
+
+static const int NUM_MOTOR_PINS = 2;
+
+typedef struct MOTOR_PARAMS{
+     PIN_CONFIG direction_gpio[NUM_MOTOR_PINS];
+     int direction;
+     int pwm_channel;
+     int pwm_val;
+} MOTOR_PARAMS;
 
 class DcMotor : public Hardware{
 

@@ -1,9 +1,6 @@
 #ifndef SWANSONV2_H_
 #define SWANSONV2_H_
 
-#include <stdarg.h>
-#include <string>
-#include "base/params.h"
 #include "comms/udp.h"
 #include "profiles/dual_roboclaw.h"
 

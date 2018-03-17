@@ -9,7 +9,7 @@ include_directories(${INCS_DIR}/controls controls)
 
 # PID
 add_library(pid SHARED pid.cpp)
-target_link_libraries(pid utils ${LIBS})
+target_link_libraries(pid ${LIBS})
 
 if(BUILD_TESTS)
 

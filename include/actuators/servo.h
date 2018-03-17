@@ -1,9 +1,18 @@
 #ifndef SERVO_H_
 #define SERVO_H_
 
-#include <stdint.h>
-#include "base/params.h"
 #include "base/peripherals.h"
+
+typedef struct SERVO_PARAMS{
+     int channel;
+     float max_angle;
+     float min_angle;
+     float current_angle;
+     int max_pulse;
+     int min_pulse;
+     int zero_pulse;
+     int current_pulse;
+} SERVO_PARAMS;
 
 class Servo : public Motor{
 

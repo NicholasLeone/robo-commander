@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <armadillo>
-
 #include "ekf.h"
 
 using namespace arma;

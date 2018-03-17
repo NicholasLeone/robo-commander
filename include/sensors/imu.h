@@ -41,10 +41,13 @@ public:
      void update();
      int get_update_period();
 
+     void print_settings(); // TODO: extract settings from calibration.ini file
+     void print_data();
+     void print_angles();
+
      // TODO: Add these functions for ease-of-use later
      // void reset_yaw();
 
-     // void print();
 
 };
 

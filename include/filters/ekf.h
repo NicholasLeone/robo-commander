@@ -1,12 +1,21 @@
 #ifndef EKF_H_
 #define EKF_H_
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <armadillo>
-#include "base/params.h"
+#include "base/definitions.h"
 
 using namespace arma;
+
+typedef struct EKF_PARAMS{
+    fmat x;         // State Matrix                         [N x 1]
+    fmat F;         // Process Model Jacobian               [N x N]
+    fmat H;         // Measurement Model Jacobian           [M x N]
+    fmat P;         // Predicted State Error Covariance     [N x N]
+    fmat Q;         // Process Noise Covariance             [N x N]
+    fmat R;         // Measurement Error Covariance         [M x M]
+    fmat K;         // Kalman gain                          [N x M]
+} EKF_PARAMS;
+
 
 class EKF {
 

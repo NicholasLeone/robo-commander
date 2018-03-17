@@ -1,9 +1,8 @@
 #define TEST_DEBUG 0
 #include "actuators.h"
 #include "motors.h"
-// #include <pigpiod_if2.h>
-#include "motor-driver.h"
-#include "pca9685/PWM-Driver-PCA9685.h"
+// #include "motor-driver.h"
+// #include "pca9685/PWM-Driver-PCA9685.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <thread>
@@ -11,17 +10,17 @@
 #include <iostream>
 #include <ncurses.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/select.h>
+// #include <sys/types.h>
+// #include <sys/socket.h>
+// #include <net/if.h>
+// #include <netinet/in.h>
+// #include <arpa/inet.h>
+// #include <netdb.h>
+// #include <stdio.h>
+// #include <string.h>
+// #include <unistd.h>
+// #include <fcntl.h>
+// #include <sys/select.h>
 
 typedef struct Msg_Command_RC3D{
     int32_t yaw;//radians 1 <
@@ -307,7 +306,7 @@ int main(int argc, char *argv[]){
 	  readControls(&controls);
 	  float accel = (float) controls.speed / 1000000;
 	  float omega = (float) controls.yaw / 1000000;
-	  
+
 /**
 	  if(accel == 2){
 	 	linSpeed = 0;

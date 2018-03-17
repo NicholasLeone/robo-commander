@@ -1,5 +1,4 @@
 #include <pigpiod_if2.h>
-#include "base/params.h"
 #include "comms/i2c.h"
 
 I2C::I2C(int dev, int bus, int add){

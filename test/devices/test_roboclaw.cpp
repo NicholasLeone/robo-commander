@@ -1,6 +1,5 @@
 #include <iostream>
 #include <unistd.h>
-#include <stdint.h>
 #include <thread>
 
 #include <pigpiod_if2.h>

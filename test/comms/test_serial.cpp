@@ -1,11 +1,4 @@
 #include <iostream>
-#include <unistd.h>
-#include <cstdlib>
-#include <string>
-#include <signal.h>
-#include <sstream>
-#include <vector>
-#include <stdlib.h>
 #include "serial.h"
 
 using namespace std;

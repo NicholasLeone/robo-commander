@@ -1,10 +1,7 @@
 #ifndef DUAL_ROBOCLAW_H_
 #define DUAL_ROBOCLAW_H_
 
-#include <stdarg.h>
-#include <string>
 #include <vector>
-#include "base/params.h"
 #include "devices/roboclaw.h"
 
 using namespace std;
@@ -32,7 +29,7 @@ private:
 
      uint32_t _last_positions[4] = {0,0,0,0};
 
-     float _current_pose[6] = {0,0,0,0,0,0};
+     float _current_pose[3] = {0,0,0};
 
 public:
 
@@ -57,8 +54,10 @@ public:
 
      float speeds[4];
      float positions[4];
-     float dDistance;
-     float dTheta;
+     float dx;
+     float dy;
+     float dyaw;
+     float dist_traveled;
 
      // FUNCTIONS
      vector<int32_t> set_speeds(float v, float w);
@@ -71,6 +70,8 @@ public:
      vector<float> get_voltages();
      vector<float> get_encoder_positions();
      vector<float> get_encoder_speeds();
+     vector<float> get_odom_deltas();
+     vector<float> get_pose();
 
      void reset_encoders();
 

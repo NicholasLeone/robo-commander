@@ -1,11 +1,5 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <iostream>
-#include <math.h>
-
 #include <pigpiod_if2.h>
 #include "comms/i2c.h"
-#include "base/definitions.h"
 
 using namespace std;
 

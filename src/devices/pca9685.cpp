@@ -1,7 +1,7 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <math.h>
 #include <pigpiod_if2.h>
+#include <unistd.h>
+#include <math.h>
+
 #include "devices/pca9685.h"
 #include "base/definitions.h"
 
