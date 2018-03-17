@@ -111,12 +111,12 @@ int DcMotor::setSpeed(float spd_ratio){
           err = setMotorDirection(MOTOR_DIRECTION_STOP);
 
      // Calculate the PWM Duty value to writeOut
-     // int duty = fabs(spd_ratio) * 255;
-     // err = setDuty(duty);
+     int duty = fabs(spd_ratio) * 255;
+     err = setDuty(duty);
 
      // Calculate the PWM pulsewidth value to writeOut
-     int pulse = convertSpdRatio2Pulse(spd_ratio,MAX_PWM_US, MIN_PWM_US, MID_PWM_US);
-     err = setPulse(pulse);
+     // int pulse = convertSpdRatio2Pulse(spd_ratio,MAX_PWM_US, MIN_PWM_US, MID_PWM_US);
+     // err = setPulse(pulse);
      return err;
 }
 
