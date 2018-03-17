@@ -36,7 +36,7 @@ int flag_start = 0;
 static ofstream myFile;
 static int flag_exit = 0;
 
-static float maxSpd = 0.;
+static float maxVal = 90.0;
 static int maxControl = 255;
 static float targetVel = -1.0;
 
@@ -46,10 +46,10 @@ float getControl(float curVal){
 
 	// Get current value
 	// float preSpd = curVal;
-	// float normPreSpd = preSpd / maxSpd;
+	float normVal = curVal / maxVal;
 
 	// Update Control Inputs
-	float curCtrl = pid1->calculate(curVal);
+	float curCtrl = pid1->calculate(normVal);
 
 	//cout << "PID CONTROL: " << curCtrl << endl;
 
@@ -85,7 +85,7 @@ void funUpdate(int s){
 	pidM1params.Kd = kd;
 
      pid1->set_params(pidM1params);
-	pid1->set_target(targetVel);
+	pid1->set_target(targetVel/maxVal);
 
      //printf("VARIABLES UPDATED\r\n");
      printf("TARGET SPEED, Kp, Ki, Kd:	%.2f	%.2f	%.2f	%.2f \r\n",targetVel,kp,ki,kd);
@@ -94,10 +94,8 @@ void funUpdate(int s){
 
 int main(){
 
-     float epsilon = 0.0001;
-     float dSpd = 10;
      int i = 0;
-     float angle,degr;
+     float angle;
      float pwm;
 	int dt;
 
@@ -146,7 +144,7 @@ int main(){
           while(1){
 			imu.update();
 			dt = imu.get_update_period();
-			pid1->set_dt(dt/1000000);
+			pid1->set_dt(float (dt) / 1000000);
 			angle = R2D(imu.euler[1]);
 			pwm = getControl(angle);
 			usleep(dt);
