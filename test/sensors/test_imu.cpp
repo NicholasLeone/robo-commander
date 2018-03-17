@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
 
 	while(1){
 		imu.update();
-		angle = (R2D(imu.euler[1]) + 360.0);
+		angle = (R2D(imu.euler[1]) + 90.0);
 		dt = imu.get_update_period();
 		usleep(dt);
 
