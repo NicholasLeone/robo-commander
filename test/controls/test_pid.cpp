@@ -145,7 +145,7 @@ int main(){
 			imu.update();
 			dt = imu.get_update_period();
 			pid1->set_dt(float (dt) / 1000000);
-			angle = R2D(imu.euler[1]);
+			angle = R2D(imu.euler[1]) - 90;
 			pwm = getControl(angle);
 			usleep(dt);
           	// motor->setSpeed(pwm);
