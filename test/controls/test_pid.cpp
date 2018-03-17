@@ -100,13 +100,13 @@ int main(){
 	int dt;
 
 	string path = "/home/hunter/devel/robo-dev/config/sensors";
-	string file = "mpu9250";
+	string file = "pid_imu";
 
      IMU imu(path, file);
 
 	pidM1params.dt = 0.01;
-	pidM1params.max = 0.25;
-	pidM1params.min = -0.25;
+	pidM1params.max = 0.3;
+	pidM1params.min = -0.3;
 	pidM1params.pre_error = 0;
 	pidM1params.integral = 0;
 	pidM1params.Kp = 1.0;
@@ -145,7 +145,7 @@ int main(){
 			imu.update();
 			dt = imu.get_update_period();
 			pid1->set_dt(float (dt) / 1000000);
-			angle = fmod((R2D(imu.euler[1]) + 360.0),360.0);
+			angle = fmod((R2D(imu.euler[0]) + 360.0),360.0);
 			pwm = getControl(angle);
 			usleep(dt);
           	motor->setSpeed(pwm);
