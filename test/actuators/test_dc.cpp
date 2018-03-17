@@ -21,9 +21,9 @@ int main(int argc, char *argv[]){
      DcMotor FR(pi,21,20);
      FR.setSpeed(0);
      sleep(1);
-     FR.setSpeed(1.0);
+     FR.setSpeed(0.50);
      sleep(1);
-     FR.setSpeed(-1.0);
+     FR.setSpeed(-0.50);
      sleep(1);
      FR.setSpeed(0);
 

@@ -105,8 +105,8 @@ int main(){
      IMU imu(path, file);
 
 	pidM1params.dt = 0.01;
-	pidM1params.max = 1;
-	pidM1params.min = -1;
+	pidM1params.max = 0.25;
+	pidM1params.min = -0.25;
 	pidM1params.pre_error = 0;
 	pidM1params.integral = 0;
 	pidM1params.Kp = 1.0;
