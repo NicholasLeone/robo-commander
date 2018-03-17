@@ -20,6 +20,6 @@ if(BUILD_TESTS)
      # PID
      include_directories(${TEST_DIR}/controls)
      add_executable(test_pid ${TEST_DIR}/controls/test_pid.cpp)
-     target_link_libraries(test_pid pid udp dcmotor encoder)
+     target_link_libraries(test_pid pid dcmotor imu)
 
 endif(BUILD_TESTS)
