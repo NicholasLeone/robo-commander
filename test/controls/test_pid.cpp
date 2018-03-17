@@ -47,11 +47,11 @@ void funDummy(int s){}
 float getControl(float curVal){
 
 	// Get current value
-	float preSpd = curVal;
-	float normPreSpd = preSpd / maxSpd;
+	// float preSpd = curVal;
+	// float normPreSpd = preSpd / maxSpd;
 
 	// Update Control Inputs
-	float curCtrl = pid1->calculate(targetVel, normPreSpd);
+	float curCtrl = pid1->calculate(targetVel, curVal);
 
 	//cout << "PID CONTROL: " << curCtrl << endl;
 
@@ -98,7 +98,7 @@ int main(){
      float epsilon = 0.0001;
      float dSpd = 10;
      int i = 0;
-     float speed;
+     float angle;
      float pwm;
 	int dt;
 
@@ -146,16 +146,17 @@ int main(){
 
           while(1){
 			imu.update();
+			angle = imu.euler[1];
+			pwm = getControl(angle);
 			dt = imu.get_update_period();
 			usleep(dt);
-               pwm = getControl(0);
           	// motor->setSpeed(pwm);
 
 			// float dutycycle = pwm * maxControl;
 
 #ifdef DEBUG_VERBOSE
-               cout << "Speed, Controls, Error: " << speed/maxSpd << "		" << pwm  << "		" << pid1->_integral << endl;
-               myFile << i << "," << targetVel << "," << speed/maxSpd << "," << pwm << "," << pid1->_integral << endl;
+               cout << "Angle, Controls, Error: " << angle << "		" << pwm  << "		" << pid1->_integral << endl;
+               // myFile << i << "," << targetVel << "," << speed/maxSpd << "," << pwm << "," << pid1->_integral << endl;
 #endif
 
                i = i + 1;
