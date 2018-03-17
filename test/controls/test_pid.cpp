@@ -17,6 +17,8 @@
 #include "utils/utils.h"
 #include "pid.h"
 
+#define R2D(angleRadians) ((angleRadians) * 180.0 / M_PI)
+
 #define DEBUG_VERBOSE 0
 #define ENCODER_A 18
 #define ENCODER_B 23
@@ -98,7 +100,7 @@ int main(){
      float epsilon = 0.0001;
      float dSpd = 10;
      int i = 0;
-     float angle;
+     float angle,degr;
      float pwm;
 	int dt;
 
@@ -147,6 +149,7 @@ int main(){
           while(1){
 			imu.update();
 			angle = imu.euler[1];
+			angle = R2D(angle);
 			pwm = getControl(angle);
 			dt = imu.get_update_period();
 			usleep(dt);
