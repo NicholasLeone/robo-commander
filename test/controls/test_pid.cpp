@@ -21,8 +21,8 @@
 
 #define DEBUG_VERBOSE 0
 
-#define MOTOR_DIR 13
-#define MOTOR_PWM 26
+#define MOTOR_DIR 20
+#define MOTOR_PWM 21
 
 using namespace std;
 
