@@ -24,8 +24,9 @@ int main(int argc, char *argv[]){
                accel = max_vel * accel;
                omega = max_omega * omega;
 
+               cout << "Controls: " << accel << ",          " << omega << endl;
                bot.drive(accel, omega);
-               bot.updateSensors();
+               // bot.updateSensors();
           }
 
           pigpio_stop(pi);
