@@ -173,9 +173,8 @@ int UDP::write(char* buf, int num_bytes, char* address, int port){
 char* UDP::readtimeout(int num_bytes){
      int nBytes;
      char* tmp;
-
-     char dummy[32] = {111, 0, 0, 0, -48, -24, -64, 118, 8, 112, -69, 118, -48, -49, -78, 0, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+     char* dummy;
+     
      while(_read(config, buf, num_bytes) > 0){}
 
      usleep(100 * 1000);
