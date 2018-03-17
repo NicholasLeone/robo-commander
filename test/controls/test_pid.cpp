@@ -20,10 +20,9 @@
 #define R2D(angleRadians) ((angleRadians) * 180.0 / M_PI)
 
 #define DEBUG_VERBOSE 0
-#define ENCODER_A 18
-#define ENCODER_B 23
-#define MOTOR_DIR 20
-#define MOTOR_PWM 13
+
+#define MOTOR_DIR 13
+#define MOTOR_PWM 26
 
 using namespace std;
 
