@@ -21,11 +21,11 @@ int main(int argc, char *argv[]){
 
 	while(1){
 		imu.update();
-		angle = (R2D(imu.euler[1]) + 360.0);
+		angle = fmod((R2D(imu.euler[1]) + 360.0),360.0);
 		dt = imu.get_update_period();
 		usleep(dt);
 
-		cout << "Angle: " << fmod(angle,360.0) << endl;
+		cout << "Angle: " << angle << endl;
 	}
 
      return 0;

@@ -36,7 +36,7 @@ int flag_start = 0;
 static ofstream myFile;
 static int flag_exit = 0;
 
-static float maxVal = 90.0;
+static float maxVal = 360.0;
 static int maxControl = 255;
 static float targetVel = -1.0;
 
@@ -145,7 +145,7 @@ int main(){
 			imu.update();
 			dt = imu.get_update_period();
 			pid1->set_dt(float (dt) / 1000000);
-			angle = R2D(imu.euler[1]) + 90;
+			angle = fmod((R2D(imu.euler[1]) + 360.0),360.0);
 			pwm = getControl(angle);
 			usleep(dt);
           	// motor->setSpeed(pwm);
