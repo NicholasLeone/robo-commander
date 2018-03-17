@@ -28,6 +28,16 @@ class PID {
 private:
 
      PID_PARAMS params;
+
+     // double dt;
+     // double max;
+     // double min;
+     // double Kp;
+     // double Kd;
+     // double Ki;
+     // double pre_error;
+     // double integral;
+
      high_resolution_clock::time_point prev_time;
      float prev_input;
      float prev_output;

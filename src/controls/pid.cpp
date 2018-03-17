@@ -72,8 +72,8 @@ float PID::calculate(float curVal){
           else if(output < _min) output = _min;
 
           // Prevent Motor from executing any commands in the direction opposite of the desired direction of motion
-          if(_target > 0) output = fabs(output);
-          else if(_target < 0) output = -1 * fabs(output);
+          // if(_target > 0) output = fabs(output);
+          // else if(_target < 0) output = -1 * fabs(output);
 
           // Remember Current Values for next iteration
           prev_time = now;

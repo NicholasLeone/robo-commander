@@ -36,7 +36,7 @@ int flag_start = 0;
 static ofstream myFile;
 static int flag_exit = 0;
 
-static float maxVal = 360.0;
+static float maxVal = 90.0;
 static int maxControl = 255;
 static float targetVel = -1.0;
 

@@ -13,6 +13,8 @@ using namespace std;
 using namespace arma;
 
 #define M_DEG2RAD (2*M_PI)/360
+#define M_RAD2DEG 360/(2*M_PI)
+
 typedef void (*void_int_fun)(int);
 
 /** SECTION:
