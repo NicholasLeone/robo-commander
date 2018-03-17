@@ -12,8 +12,8 @@ include_directories(${INCS_DIR}/profiles profiles)
 # target_link_libraries(4WD utils roboclaw encoder dcmotor pid udp ${LIBS})
 
 # 4-wheel drive robot using two roboclaws
-add_library(DualClaw SHARED dual_roboclaw.cpp)
-target_link_libraries(DualClaw utils roboclaw ${LIBS})
+add_library(dualclaw SHARED dual_roboclaw.cpp)
+target_link_libraries(dualclaw utils roboclaw ${LIBS})
 
 if(BUILD_TESTS)
 
@@ -29,6 +29,6 @@ if(BUILD_TESTS)
 
      # DualClaw
      add_executable(test_dualclaw ${TEST_DIR}/profiles/test_dual_roboclaw.cpp)
-     target_link_libraries(test_dualclaw DualClaw)
+     target_link_libraries(test_dualclaw dualclaw)
 
 endif(BUILD_TESTS)

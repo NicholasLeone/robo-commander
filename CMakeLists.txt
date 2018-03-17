@@ -4,7 +4,7 @@ project(robo-dev)
 # ===========================
 #       Set Build Options
 # ===========================
-set(COMPILE_ARM     ON CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
+set(COMPILE_ARM     OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
 
 set(VERBOSE         OFF CACHE INTERNAL "CMake execution debugging")
 
@@ -16,6 +16,7 @@ set(BUILD_CONTROLS  ON CACHE INTERNAL "Build all the libraries used to handle th
 set(BUILD_FILTERS   ON CACHE INTERNAL "Build all the libraries used to filter and pre-process data")
 set(BUILD_UTILS     ON CACHE INTERNAL "Build all the classes useful throughout entire project that help make programming cleaner and quicker")
 set(BUILD_PROFILES  ON CACHE INTERNAL "Build all the robot configuration profiles responsible for combining all the usable device drivers to control the hardware")
+set(BUILD_ROBOTS    ON CACHE INTERNAL "Build all the robot configuration profiles responsible for combining all the usable device drivers to control the hardware")
 
 set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class")
 

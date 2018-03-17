@@ -60,6 +60,15 @@ endif(BUILD_PROFILES)
 
 
 # ===========================
+#     Set Build Options
+# ===========================
+if(BUILD_ROBOTS)
+     add_subdirectory(robots)
+endif(BUILD_ROBOTS)
+
+
+
+# ===========================
 #          DEBUG
 # ===========================
 # foreach(dir ${LIBS})
