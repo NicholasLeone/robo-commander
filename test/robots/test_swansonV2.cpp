@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
 
                //cout << "Controls: " << accel << ",          " << omega << endl;
                bot.drive(accel, omega);
-               // bot.updateSensors();
+               bot.updateSensors();
           }
 
           pigpio_stop(pi);
