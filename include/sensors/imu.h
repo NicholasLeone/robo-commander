@@ -31,8 +31,8 @@ public:
      float mag[3];
      float euler[3];
      float quats[4];
-     uint64_t time_start;
-     uint64_t now;
+     uint32_t time_start;
+     uint32_t now;
 
      // TODO: potentially integrate to get an estimated positional movement
      float position[3];

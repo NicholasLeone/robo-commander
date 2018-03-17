@@ -125,6 +125,7 @@ void IMU::update(){
           // printf("       Angular Velocities (rad/sec): %.4f        %.4f      %.4f\r\n", gyro[0], gyro[1], gyro[2]);
           // printf("       Magnetometer (???): %.4f        %.4f      %.4f\r\n", mag[0], mag[1], mag[2]);
           printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n", R2D(euler[0]), R2D(euler[1]), R2D(euler[2]));
+          fflush(stdout);
           printf("\r\n");
 	}
 
