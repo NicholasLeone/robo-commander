@@ -19,6 +19,7 @@ int main(int argc, char *argv[]){
 		imu.update();
 		dt = imu.get_update_period();
 		usleep(dt);
+		fflush(stdout);
 		// cout << "Poll Interval: " << dt << endl;
 	}
 

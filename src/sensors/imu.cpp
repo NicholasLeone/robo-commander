@@ -71,6 +71,9 @@ int IMU::init(string path, string file){
      _imu->setAccelEnable(true);
      _imu->setCompassEnable(true);
 
+     // Get current system time for later
+     time_start = RTMath::currentUSecsSinceEpoch();
+
      printf("SUCCESS: Imu initialized!\r\n");
      return 1;
 }
@@ -81,12 +84,14 @@ int IMU::get_update_period(){
 
 void IMU::update(){
 
-	if(_imu->IMURead()){
+	while(_imu->IMURead()){
           // TODO: Potentially need to update timestamp for this section
           // TODO: Add if-statements for valid readings
 
           num_updates++;
           RTIMU_DATA data = _imu->getIMUData();
+
+          now = RTMath::currentUSecsSinceEpoch();
 
           accel[0] = data.accel.x() * G_TO_MPSS;
           accel[1] = data.accel.y() * G_TO_MPSS;

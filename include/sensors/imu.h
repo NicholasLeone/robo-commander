@@ -10,7 +10,7 @@ class IMU{
 
 private:
      // TODO: Figure out how to account for initial pose offsets to start everything off by 0
-     
+
      string calib_path;
      string calib_file;
 
@@ -31,6 +31,8 @@ public:
      float mag[3];
      float euler[3];
      float quats[4];
+     uint64_t time_start;
+     uint64_t now;
 
      // TODO: potentially integrate to get an estimated positional movement
      float position[3];

@@ -4,6 +4,8 @@ project(robo-dev)
 # ===========================
 #       Set Build Options
 # ===========================
+set(COMPILE_ARM     ON CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
+
 set(VERBOSE         OFF CACHE INTERNAL "CMake execution debugging")
 
 set(BUILD_ACTUATORS ON CACHE INTERNAL "Build all the hardware drivers used to control various standard actuators")
@@ -17,6 +19,13 @@ set(BUILD_PROFILES  ON CACHE INTERNAL "Build all the robot configuration profile
 
 set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class")
 
+# ===========================
+#        Set Compiler
+# ===========================
+# if(COMPILE_ARM)
+#      set(CMAKE_C_COMPILER arm-linux-gnueabihf-gcc)
+#      set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++)
+# endif(COMPILE_ARM)
 
 # ===========================
 #    Set CMake Properties

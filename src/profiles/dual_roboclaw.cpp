@@ -14,9 +14,11 @@ DualClaw::DualClaw(int pi){
      flag_left_sign = 1;
      flag_right_sign = 1;
 
-     for(int i = 0; i<6;i++){
-          _current_pose[i] = 0;
-     }
+     // for(int i = 0; i<6;i++){
+     //      _current_pose[i] = 0;
+     // }
+
+     // _current_pose = {0,0,0,0,0,0};
 
      /**************************************************************************
      * LOAD CONFIG FILE

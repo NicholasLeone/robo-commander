@@ -25,14 +25,14 @@ private:
 
      bool _valid[4];
 
-     uint16_t _main_battery[2];
-     int16_t _currents[4];
-     uint32_t _positions[4];
-     uint32_t _speeds[4];
+     uint16_t _main_battery[2] = {0,0};
+     int16_t _currents[4] = {0,0,0,0};
+     uint32_t _positions[4] = {0,0,0,0};
+     uint32_t _speeds[4] = {0,0,0,0};
 
-     uint32_t _last_positions[4];
+     uint32_t _last_positions[4] = {0,0,0,0};
 
-     float _current_pose[6];
+     float _current_pose[6] = {0,0,0,0,0,0};
 
 public:
 
