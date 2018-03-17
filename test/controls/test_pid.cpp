@@ -148,6 +148,8 @@ int main(){
 
           while(1){
 			imu.update();
+			pidM1params.dt = dt/1000000;
+			pid1->update(pidM1params);
 			angle = imu.euler[1];
 			angle = R2D(angle);
 			pwm = getControl(angle);
