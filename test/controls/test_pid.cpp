@@ -128,7 +128,7 @@ int main(){
           motor = new DcMotor(pi,(int) MOTOR_PWM,(int) MOTOR_DIR);
 		pid1 = new PID(pidM1params);
 
-		motor->setSpeed(0);
+		motor->setSpeed(0.001);
 
           // cout << "Pi Section" << endl;
 
