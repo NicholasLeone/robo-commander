@@ -384,7 +384,7 @@ typedef struct Sim_Msg_EncoderData{
 typedef struct RC_COMMAND_MSG{
      int32_t yaw;
      int32_t pitch;
-     int32_t speed;
+	int32_t speed;
 }RC_COMMAND_MSG;
 
 

@@ -51,8 +51,8 @@ void SwansonV2::readRC(){
      UDP* udp_line = rc_in;
      RC_COMMAND_MSG* data = &controls;
 
-	char* dat = udp_line->read(sizeof(data)+20);
-	memcpy(data, &dat[20],sizeof(data)+4);
+	char* dat = udp_line->read(sizeof(data)+24);
+	memcpy(data, &dat[16],sizeof(data)+8);
 }
 
 
