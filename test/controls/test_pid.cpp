@@ -128,6 +128,9 @@ int main(){
 		pid1 = new PID(pidM1params);
 
 		motor->setSpeed(0.001);
+		sleep(1);
+		motor->setSpeed(0);
+
 
           // cout << "Pi Section" << endl;
 
