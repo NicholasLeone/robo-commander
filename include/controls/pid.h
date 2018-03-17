@@ -32,6 +32,7 @@ private:
      float prev_input;
      float prev_output;
      float prev_error;
+     float _target;
 
 public:
 
@@ -40,11 +41,12 @@ public:
      PID(PID_PARAMS initialParam);
      ~PID();
 
-     //void init(PID_PARAMS initialParam);
-     void update(PID_PARAMS updateParam);
+     void set_params(PID_PARAMS updateParam);
+     void set_dt(float dt);
+     void set_target(float target);
 
      // Returns the manipulated variable given a setpoint and current process value
-     float calculate(float setPoint, float curVal);
+     float calculate(float curVal);
 
 };
 

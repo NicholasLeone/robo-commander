@@ -37,9 +37,6 @@ static ofstream myFile;
 static int flag_exit = 0;
 
 static float maxSpd = 0.;
-static float curSpeed = 0;
-static float curPos = 0;
-static int curControl = 0;
 static int maxControl = 255;
 static float targetVel = -1.0;
 
@@ -52,7 +49,7 @@ float getControl(float curVal){
 	// float normPreSpd = preSpd / maxSpd;
 
 	// Update Control Inputs
-	float curCtrl = pid1->calculate(targetVel, curVal);
+	float curCtrl = pid1->calculate(curVal);
 
 	//cout << "PID CONTROL: " << curCtrl << endl;
 
@@ -87,7 +84,8 @@ void funUpdate(int s){
 	pidM1params.Ki = ki;
 	pidM1params.Kd = kd;
 
-     pid1->update(pidM1params);
+     pid1->set_params(pidM1params);
+	pid1->set_target(targetVel);
 
      //printf("VARIABLES UPDATED\r\n");
      printf("TARGET SPEED, Kp, Ki, Kd:	%.2f	%.2f	%.2f	%.2f \r\n",targetVel,kp,ki,kd);
@@ -127,9 +125,9 @@ int main(){
           motor = new DcMotor(pi,(int) MOTOR_PWM,(int) MOTOR_DIR);
 		pid1 = new PID(pidM1params);
 
-		motor->setSpeed(0.001);
-		sleep(1);
+		// motor->setSpeed(0.001);
 		motor->setSpeed(0);
+		sleep(1);
 
 
           // cout << "Pi Section" << endl;
@@ -137,34 +135,29 @@ int main(){
           // myFile.open("pid.csv");
           // myFile << "Iteration,Target Speed,Measured Speed,PWM, Error\n";
 
-		cout << "Waiting for User to start (Ctrl+Z)" << endl;
+		cout << "Waiting for User to start (Ctrl+Z)..." << endl;
 		while(!flag_start){
-			// if(numUpdates>0){
-			// 	break;
-			// }
-			usleep(0.1 * 1000000);
-			cout << "Looping" << endl;
+			usleep(0.5 * 1000000);
+			// cout << "Looping" << endl;
 		}
 
-          cout << "Beginning Loop" << endl;
+          cout << "Beginning Control Loop..." << endl;
 
           while(1){
 			imu.update();
-			pidM1params.dt = dt/1000000;
-			pid1->update(pidM1params);
-			angle = imu.euler[1];
-			angle = R2D(angle);
-			pwm = getControl(angle);
 			dt = imu.get_update_period();
+			pid1->set_dt(dt/1000000);
+			angle = R2D(imu.euler[1]);
+			pwm = getControl(angle);
 			usleep(dt);
           	// motor->setSpeed(pwm);
 
 			// float dutycycle = pwm * maxControl;
 
-#ifdef DEBUG_VERBOSE
+			#ifdef DEBUG_VERBOSE
                cout << "Angle, Controls, Error: " << angle << "		" << pwm  << "		" << pid1->_integral << endl;
                // myFile << i << "," << targetVel << "," << speed/maxSpd << "," << pwm << "," << pid1->_integral << endl;
-#endif
+			#endif
 
                i = i + 1;
                if(flag_exit == 1){

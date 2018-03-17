@@ -18,7 +18,9 @@ int main(int argc, char *argv[]){
      int err;
 
      int pi = pigpio_start(NULL,NULL);
-     DcMotor FR(pi,12,16);
+     DcMotor FR(pi,21,20);
+     FR.setSpeed(0);
+     sleep(1);
      FR.setSpeed(1.0);
      sleep(1);
      FR.setSpeed(-1.0);

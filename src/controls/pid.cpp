@@ -21,15 +21,20 @@ PID::~PID(){}
 * Functions
 */
 
-// void PID::init(PID_PARAMS initialParams){
-//      this->params = initialParams;
-// }
 
-void PID::update(PID_PARAMS updateParam){
+void PID::set_params(PID_PARAMS updateParam){
      this->params = updateParam;
 }
 
-float PID::calculate(float setPoint, float curVal){
+void PID::set_dt(float dt){
+     this->params.dt = dt;
+}
+
+void PID::set_target(float target){
+     this->_target = target;
+}
+
+float PID::calculate(float curVal){
 
      float _Kp = this->params.Kp;
      float _Ki = this->params.Ki;
@@ -45,7 +50,7 @@ float PID::calculate(float setPoint, float curVal){
      if(_dt >= dt){
 
           // Calculate error
-          float error = setPoint - curVal;
+          float error = _target - curVal;
 
           // Proportional term
           float Pout = _Kp * error;
@@ -67,8 +72,8 @@ float PID::calculate(float setPoint, float curVal){
           else if(output < _min) output = _min;
 
           // Prevent Motor from executing any commands in the direction opposite of the desired direction of motion
-          if(setPoint > 0) output = fabs(output);
-          else if(setPoint < 0) output = -1 * fabs(output);
+          if(_target > 0) output = fabs(output);
+          else if(_target < 0) output = -1 * fabs(output);
 
           // Remember Current Values for next iteration
           prev_time = now;
