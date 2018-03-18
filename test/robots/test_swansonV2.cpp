@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
           bot = new SwansonV2(pi);
 
           while(1){
-               bot->readRC();
+               bot->read_rc();
                float accel = (float) bot->controls.speed / 1000000;
                float omega = (float) bot->controls.yaw / 1000000;
 
@@ -38,7 +38,10 @@ int main(int argc, char *argv[]){
 
                //cout << "Controls: " << accel << ",          " << omega << endl;
                bot->drive(accel, omega);
-               bot->updateSensors();
+               bot->update_sensors();
+               vector<float> data = bot->get_sensor_data();
+               bot->add_datalog_entry(data);
+
                if(flag_exit == 1){
                     break;
                }

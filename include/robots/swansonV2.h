@@ -40,9 +40,11 @@ public:
 	SwansonV2(int pi);
      ~SwansonV2();
 
-     void readRC();
+     void read_rc();
      void drive(float v, float w);
-     void updateSensors();
+     void update_sensors();
+     vector<float> get_sensor_data();
+
      void open_datalog(string file_path);
      void close_datalog();
      void add_datalog_entry(vector<float> data);

@@ -58,7 +58,7 @@ void SwansonV2::drive(float v, float w){
 
 }
 
-void SwansonV2::readRC(){
+void SwansonV2::read_rc(){
      int i = 0;
 
      UDP* udp_line = rc_in;
@@ -69,35 +69,44 @@ void SwansonV2::readRC(){
 }
 
 
-void SwansonV2::updateSensors(){
-
-     float roll,pitch,yaw;
-     vector<float> log_entry(17);
+void SwansonV2::update_sensors(){
 
      imu->update();
-     vector<float> imu_data = imu->get_raw_data();
-     // float imu_dt = imu->get_update_period();
-
      claws->update_status();
      claws->update_encoders();
-     vector<float> encoder_data = claws->get_odom_deltas();
 
-     /** Datalogging Section ONLY */
+     // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
+     // printf("V1, V2, V3, V4:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",spd1,spd2,spd3,spd4);
+
+}
+
+vector<float> SwansonV2::get_sensor_data(){
+
+     float roll, pitch, yaw, imu_dt;
+     vector<float> raw_data(17);
+
+     // Perform Timestamping procedures
      current_system_time = system_clock::now();
      _time = duration_cast<duration<float>>(current_system_time-previous_system_time).count();
 
-     log_entry.push_back(_time);
-     log_entry.insert(log_entry.end(), imu_data.begin(), imu_data.end());
-     log_entry.insert(log_entry.end(), encoder_data.begin(), encoder_data.end());
+     // Grab Stored Data
+     imu_dt = imu->get_update_period();
+     vector<float> imu_data = imu->get_raw_data();
+     vector<float> encoder_data = claws->get_odom_deltas();
 
+     // Reformat into single data vector
+     raw_data.push_back(_time);
+     raw_data.insert(raw_data.end(), imu_data.begin(), imu_data.end());
+     raw_data.insert(raw_data.end(), encoder_data.begin(), encoder_data.end());
 
+     // Miscellaneous Debugging
      roll = fmod((imu->euler[0]*M_RAD2DEG + 360.0),360.0);
      pitch = fmod((imu->euler[1]*M_RAD2DEG + 360.0),360.0);
      yaw = fmod((imu->euler[2]*M_RAD2DEG + 360.0),360.0);
 
      // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
      // printf("V1, V2, V3, V4:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",spd1,spd2,spd3,spd4);
-
+     return raw_data;
 }
 
 void SwansonV2::open_datalog(string file_path){
