@@ -26,7 +26,7 @@ SwansonV2::SwansonV2(int pi){
      this->_port = 14500;
 
      string path = "/home/hunter/devel/robo-dev/config/sensors";
-	string file = "mpu9250";
+     string file = "mpu9250";
      string datalog_file = "datalog";
 
      current_system_time = previous_system_time = start_system_time = system_clock::now();
@@ -42,7 +42,6 @@ SwansonV2::SwansonV2(int pi){
 }
 
 SwansonV2::~SwansonV2(){
-
      printf("SwansonV2 Shutting Down...\r\n");
      close_datalog();
      delete rc_in;
@@ -52,10 +51,8 @@ SwansonV2::~SwansonV2(){
 
 
 void SwansonV2::drive(float v, float w){
-
      vector<int32_t> cmds = claws->set_speeds(v, w);
      claws->drive(cmds);
-
 }
 
 void SwansonV2::read_rc(){
@@ -64,26 +61,22 @@ void SwansonV2::read_rc(){
      UDP* udp_line = rc_in;
      RC_COMMAND_MSG* data = &controls;
 
-	char* dat = udp_line->read(sizeof(data)+24);
-	memcpy(data, &dat[16],sizeof(data)+8);
+     char* dat = udp_line->read(sizeof(data)+24);
+     memcpy(data, &dat[16],sizeof(data)+8);
 }
 
 
 void SwansonV2::update_sensors(){
-
      imu->update();
      claws->update_status();
      claws->update_encoders();
-
-     // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
-     // printf("V1, V2, V3, V4:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",spd1,spd2,spd3,spd4);
-
 }
 
 vector<float> SwansonV2::get_sensor_data(){
 
      float roll, pitch, yaw, imu_dt;
-     vector<float> raw_data(17);
+     vector<float> raw_data;
+     raw_data.reserve(NStates);
 
      // Perform Timestamping procedures
      current_system_time = system_clock::now();
@@ -104,8 +97,6 @@ vector<float> SwansonV2::get_sensor_data(){
      pitch = fmod((imu->euler[1]*M_RAD2DEG + 360.0),360.0);
      yaw = fmod((imu->euler[2]*M_RAD2DEG + 360.0),360.0);
 
-     // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
-     // printf("V1, V2, V3, V4:     %.5f   |    %.5f |    %.5f |    %.5f \r\n",spd1,spd2,spd3,spd4);
      return raw_data;
 }
 
@@ -119,7 +110,7 @@ void SwansonV2::close_datalog(){datalog.close();}
 
 void SwansonV2::add_datalog_entry(vector<float> data){
      int n = data.size();
-     for(int i = 0;i<=n;i++){
+     for(int i = 0;i<n;i++){
           if(i==n)
                datalog << data.at(i);
           else

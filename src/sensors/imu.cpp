@@ -1,5 +1,7 @@
 #include <string.h>
 #include <iostream>
+#include <unistd.h>
+
 #include "base/definitions.h"
 #include "imu.h"
 
@@ -19,6 +21,7 @@ IMU::IMU(string path, string file){
      if(err < 0){
           exit(1);
      }
+
 }
 
 IMU::~IMU(){
@@ -114,8 +117,9 @@ void IMU::update(){
 }
 
 vector<float> IMU::get_raw_data(){
-     vector<float> out(9);
-
+     vector<float> out;
+     out.reserve(9);
+     
      out.push_back(accel[0]);
      out.push_back(accel[1]);
      out.push_back(accel[2]);
@@ -143,7 +147,7 @@ void IMU::print_data(){
      printf("IMU DATA: \r\n");
      printf("       Accelerations (m/s^2): %.4f        %.4f      %.4f\r\n", accel[0], accel[1], accel[2]);
      printf("       Angular Velocities (rad/sec): %.4f        %.4f      %.4f\r\n", gyro[0], gyro[1], gyro[2]);
-     printf("       Magnetometer (???): %.4f        %.4f      %.4f\r\n", mag[0], mag[1], mag[2]);
+     printf("       Magnetometer (μT): %.4f        %.4f      %.4f\r\n", mag[0], mag[1], mag[2]);
      printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n\r\n", euler[0]*M_RAD2DEG, euler[1]*M_RAD2DEG, euler[2]*M_RAD2DEG);
 }
 
