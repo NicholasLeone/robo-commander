@@ -12,7 +12,6 @@ SwansonV2* bot;
 void funExit(int s){
 
      printf("[Ctrl+C] Shutting Down...\r\n");
-     delete bot;
 	flag_exit = 1;
 	usleep(1 * 1000000);
 }
@@ -24,7 +23,7 @@ int main(int argc, char *argv[]){
 
      int pi = pigpio_start(NULL, NULL); /* Connect to Pi. */
      attach_CtrlC(funExit);
-     
+
      if (pi >= 0){
 
           bot = new SwansonV2(pi);
@@ -44,7 +43,7 @@ int main(int argc, char *argv[]){
                     break;
                }
           }
-
+          delete bot;
           pigpio_stop(pi);
      }
 
