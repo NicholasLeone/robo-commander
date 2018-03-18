@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "robots/swansonV2.h"
+#include "utils/utils.h"
 #include "base/definitions.h"
 
 using namespace std;
@@ -42,11 +43,11 @@ SwansonV2::SwansonV2(int pi){
 
 SwansonV2::~SwansonV2(){
 
+     printf("SwansonV2 Shutting Down...\r\n");
      close_datalog();
      delete rc_in;
      delete claws;
      delete imu;
-
 }
 
 

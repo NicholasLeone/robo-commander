@@ -1,9 +1,21 @@
 #include <iostream>
 
 #include <pigpiod_if2.h>
+#include "utils/utils.h"
 #include "swansonV2.h"
 
 using namespace std;
+
+int flag_exit = 0;
+SwansonV2* bot;
+
+void funExit(int s){
+
+     printf("[Ctrl+C] Shutting Down...\r\n");
+     delete bot;
+	flag_exit = 1;
+	usleep(1 * 1000000);
+}
 
 int main(int argc, char *argv[]){
 
@@ -14,19 +26,22 @@ int main(int argc, char *argv[]){
 
      if (pi >= 0){
 
-          SwansonV2 bot(pi);
+          bot = new SwansonV2(pi);
 
           while(1){
-               bot.readRC();
-               float accel = (float) bot.controls.speed / 1000000;
-               float omega = (float) bot.controls.yaw / 1000000;
+               bot->readRC();
+               float accel = (float) bot->controls.speed / 1000000;
+               float omega = (float) bot->controls.yaw / 1000000;
 
                accel = max_vel * accel;
                omega = max_omega * omega;
 
                //cout << "Controls: " << accel << ",          " << omega << endl;
-               bot.drive(accel, omega);
-               bot.updateSensors();
+               bot->drive(accel, omega);
+               bot->updateSensors();
+               if(flag_exit == 1){
+                    break;
+               }
           }
 
           pigpio_stop(pi);
