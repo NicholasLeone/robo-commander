@@ -9,7 +9,7 @@ include_directories(${INCS_DIR}/robots robots)
 
 # 4-wheel drive robot using two roboclaws
 add_library(swansonV2 SHARED swansonV2.cpp)
-target_link_libraries(swansonV2 dualclaw udp imu ${LIBS})
+target_link_libraries(swansonV2 dualclaw udp imu utils ${LIBS})
 
 if(BUILD_TESTS)
 

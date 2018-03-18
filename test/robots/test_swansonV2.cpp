@@ -23,7 +23,8 @@ int main(int argc, char *argv[]){
      float max_omega = max_vel / 0.381;
 
      int pi = pigpio_start(NULL, NULL); /* Connect to Pi. */
-
+     attach_CtrlC(funExit);
+     
      if (pi >= 0){
 
           bot = new SwansonV2(pi);
