@@ -113,6 +113,22 @@ void IMU::update(){
 
 }
 
+vector<float> IMU::get_raw_data(){
+     vector<float> out(9);
+
+     out.push_back(accel[0]);
+     out.push_back(accel[1]);
+     out.push_back(accel[2]);
+     out.push_back(gyro[0]);
+     out.push_back(gyro[1]);
+     out.push_back(gyro[2]);
+     out.push_back(mag[0]);
+     out.push_back(mag[1]);
+     out.push_back(mag[2]);
+
+     return out;
+}
+
 void IMU::print_settings(){
      // Print out all configured parameters for debugging
      printf("IMU CONFIGURATION SETTINGS: \r\n");

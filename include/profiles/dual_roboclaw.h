@@ -60,12 +60,14 @@ public:
      float dist_traveled;
 
      // FUNCTIONS
-     vector<int32_t> set_speeds(float v, float w);
 
      void drive(vector<int32_t> cmds);
      void update_status();
      void update_encoders();
 
+     vector<int32_t> set_speeds(float v, float w);
+     void set_turn_direction(int dir);
+     
      vector<float> get_currents();
      vector<float> get_voltages();
      vector<float> get_encoder_positions();

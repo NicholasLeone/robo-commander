@@ -16,7 +16,6 @@ typedef struct EKF_PARAMS{
     fmat K;         // Kalman gain                          [N x M]
 } EKF_PARAMS;
 
-
 class EKF {
 
     private:

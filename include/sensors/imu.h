@@ -44,7 +44,8 @@ public:
      void print_settings(); // TODO: extract settings from calibration.ini file
      void print_data();
      void print_angles();
-
+     vector<float> get_raw_data();
+     
      // TODO: Add these functions for ease-of-use later
      // void reset_yaw();
 

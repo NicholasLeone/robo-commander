@@ -1,9 +1,6 @@
 #ifndef MPU9250_H_
 #define MPU9250_H_
 
-// #include <stdarg.h>
-// #include <string>
-// #include <vector>
 #include "base/params.h"
 #include "base/peripherals.h"
 #include "comms/serial.h"

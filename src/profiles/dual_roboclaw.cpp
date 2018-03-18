@@ -78,13 +78,22 @@ DualClaw::~DualClaw(){
      usleep(1 * 10000000);
 }
 
+void DualClaw::drive(vector<int32_t> cmds){
+
+     int n = cmds.size();
+
+     leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
+     rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
+
+}
+
 vector<int32_t> DualClaw::set_speeds(float v, float w){
 
      vector<int32_t> cmds(2);
 
      /**   Differential Drive Drive Equations     */
-     float v_left = v - w * (_base_width / 2.0);
-     float v_right = v + w * (_base_width / 2.0);
+     float v_left = v - (flag_turn_dir * w) * (_base_width / 2.0);
+     float v_right = v + (flag_turn_dir * w) * (_base_width / 2.0);
 
      float left_spd = v_left * _qpps_per_meter * flag_left_sign;
      float right_spd = v_right * _qpps_per_meter * flag_right_sign;
@@ -99,42 +108,8 @@ vector<int32_t> DualClaw::set_speeds(float v, float w){
 
 }
 
-void DualClaw::drive(vector<int32_t> cmds){
-
-     int n = cmds.size();
-
-     leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
-     rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
-
-}
-
-void DualClaw::update_status(){
-
-     int err[8];
-     uint8_t status;
-     bool valid1,valid2,valid3,valid4;
-
-     _main_battery[0] = leftclaw->ReadMainBatteryVoltage(&valid1);
-     _main_battery[1] = rightclaw->ReadMainBatteryVoltage(&valid2);
-
-     main_battery[0] = (float) ((int16_t) _main_battery[0]) / 10.0;
-     main_battery[1] = (float) ((int16_t) _main_battery[1]) / 10.0;
-
-     err[1] = leftclaw->ReadCurrents(_currents[0], _currents[1]);
-     err[1] = rightclaw->ReadCurrents(_currents[2], _currents[3]);
-
-     currents[0] = (float) _currents[0] / 100.0;
-     currents[1] = (float) _currents[1] / 100.0;
-     currents[2] = (float) _currents[2] / 100.0;
-     currents[3] = (float) _currents[3] / 100.0;
-
-     // printf("Battery Voltages:     %.3f |    %.3f\r\n",main_battery[0], main_battery[1]);
-     // printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n",currents[0], currents[1], currents[2], currents[3]);
-
-     // TODO: User-friendly handling of errors
-     error[0] = leftclaw->ReadError(&valid3);
-     error[1] = rightclaw->ReadError(&valid4);
-
+void DualClaw::set_turn_direction(int dir){
+     this->flag_turn_dir = dir;
 }
 
 vector<float> DualClaw::get_currents(){
@@ -165,6 +140,35 @@ vector<float> DualClaw::get_odom_deltas(){
 vector<float> DualClaw::get_pose(){
      vector<float> tmp {_current_pose[0],_current_pose[1],_current_pose[2]};
      return tmp;
+}
+
+void DualClaw::update_status(){
+
+     int err[8];
+     uint8_t status;
+     bool valid1,valid2,valid3,valid4;
+
+     _main_battery[0] = leftclaw->ReadMainBatteryVoltage(&valid1);
+     _main_battery[1] = rightclaw->ReadMainBatteryVoltage(&valid2);
+
+     main_battery[0] = (float) ((int16_t) _main_battery[0]) / 10.0;
+     main_battery[1] = (float) ((int16_t) _main_battery[1]) / 10.0;
+
+     err[1] = leftclaw->ReadCurrents(_currents[0], _currents[1]);
+     err[1] = rightclaw->ReadCurrents(_currents[2], _currents[3]);
+
+     currents[0] = (float) _currents[0] / 100.0;
+     currents[1] = (float) _currents[1] / 100.0;
+     currents[2] = (float) _currents[2] / 100.0;
+     currents[3] = (float) _currents[3] / 100.0;
+
+     // printf("Battery Voltages:     %.3f |    %.3f\r\n",main_battery[0], main_battery[1]);
+     // printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n",currents[0], currents[1], currents[2], currents[3]);
+
+     // TODO: User-friendly handling of errors
+     error[0] = leftclaw->ReadError(&valid3);
+     error[1] = rightclaw->ReadError(&valid4);
+
 }
 
 void DualClaw::update_encoders(){
