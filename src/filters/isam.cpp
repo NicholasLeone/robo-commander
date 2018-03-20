@@ -37,7 +37,6 @@ iSAM2::iSAM2(){
 
      /** Initialize Misc Variables */
 
-
 }
 
 iSAM2::~iSAM2(){}
