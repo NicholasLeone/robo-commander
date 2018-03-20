@@ -3,21 +3,35 @@
 
 #include <vector>
 #include <map>
+#include <armadillo>
 #include "base/definitions.h"
 
 using namespace std;
+using namespace arma;
 
 float convertRadians2Degrees(float angle);
 float convertDegrees2Radians(float angle);
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral);
 void LoadInitialVariables(const string &fileName, map<string, float> &variables);
 void LoadStringVariables(const string &fileName, map<string, string> &variables);
-int countData(string s, char delimiter);
-int countLines(const string &fileName);
 int extract_bit(int inputByte, int bitLocation);
 int extract_bits(int inputByte, int msb, int lsb);
 float unpackFloat(char* buffer, int *i);
+int countData(string s, char delimiter);
+int countLines(const string &file);
+
 vector<float> parseFloat(string s, string delimiter);
+vector<int> get_csv_size(const string &file);
+vector<vector<float>> csv_to_array(const string &file);
+vector<vector<float>> csv_extract_columns(const string &file);
+
+fmat csv_to_matrix(const string &file);
+
+fmat Ci2b(float angles[3]);
+
+template<typename T> void print_vector(string header, vector<T> vec);
+template<typename T> void print_vectors(string header, vector< vector<T> > vecs);
+
 void attach_CtrlC(void_int_fun func2call);
 void attach_CtrlZ(void_int_fun func2call);
 

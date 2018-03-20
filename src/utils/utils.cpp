@@ -1,28 +1,19 @@
 #include <fstream>
+#include <iostream>
 #include <math.h>
 #include <signal.h>
 #include <string.h>
 #include <algorithm>
-
+#include <sstream>
+#include <armadillo>
 #include "utils.h"
 
 // #define GTSAM_LIBRARY_INCLUDED
 
+
+
 using namespace std;
-
-float convertRadians2Degrees(float angle){
-     float degr = angle * 180.0 / M_PI;
-     // cout << "Converted Angle (deg): " << degr << endl;
-     return degr;
-}
-
-float convertDegrees2Radians(float angle){
-
-     float rad = angle * M_PI / 180.0;
-     // cout << "Converted Angle (rad): " << rad << endl;
-     return rad;
-}
-
+using namespace arma;
 
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral){
 
@@ -73,27 +64,7 @@ void LoadStringVariables(const string &fileName, map<string, string> &variables)
 	}
 }
 
-int countData(string s, char delimiter){
-     size_t num = count(s.begin(), s.end(), delimiter);
-     num = num + 1;
-     return num;
-}
 
-int countLines(const string &fileName){
-
-    int numLines;
-    string tmpline;
-
-	ifstream myfile(fileName.c_str());
-
-	numLines = 0;
-
-	while(getline(myfile, tmpline)){
-		++numLines;
-	}
-
-	return numLines;
-}
 
 
 int extract_bit(int inputByte, int bitLocation){
@@ -130,34 +101,168 @@ float unpackFloat(char* buffer, int *i){
      return out;
 }
 
+int countData(string s, char delimiter){
+     size_t num = count(s.begin(), s.end(), delimiter);
+     num = num + 1;
+     return num;
+}
+
+int countLines(const string &file){
+    int numLines = 0;
+    string tmpline;
+    ifstream  _file(file);
+	while(getline(_file, tmpline)){
+		++numLines;
+	}
+
+	return numLines;
+}
+
 vector<float> parseFloat(string s, string delimiter){
      size_t pos = 0;
      string token;
      int i = 0;
      int tmpLength;
      int numVar = countData(s, ',');
-     vector<float> tmpData(numVar);
+     vector<float> tmpData;
+     tmpData.reserve(numVar);
 
-     while ((pos = s.find(delimiter)) != string::npos) {
+     while((pos = s.find(delimiter)) != string::npos) {
           token = s.substr(0, pos);
           tmpLength = token.size();
           char tmpChar[tmpLength];
           token.copy(tmpChar, tmpLength);
 
-          tmpData.at(i) = strtof(tmpChar, NULL);
+          // tmpData.at(i) = strtof(tmpChar, NULL);
+          tmpData.push_back(strtof(tmpChar, NULL));
 
           i++;
           s.erase(0, pos + delimiter.length());
      }
-
-     tmpLength = s.size();
-     char tmpChar[tmpLength];
-     s.copy(tmpChar, tmpLength);
-
-     tmpData.at(i) = strtof(tmpChar, NULL);
-
      return tmpData;
+}
 
+vector<int> get_csv_size(const string &file){
+
+     ifstream  csv(file);
+     string line, field;
+     vector<int> dimen;
+     dimen.reserve(2);
+
+     dimen.push_back(countLines(file));
+     getline(csv,line);
+     dimen.push_back(countData(line,','));
+
+     print_vector("Size of .csv: ",dimen);
+     return dimen;
+}
+
+
+vector<vector<float>> csv_to_array(const string &file){
+
+     ifstream  csv(file);
+     string line, field;
+     vector<int> _sz = get_csv_size(file);
+     int rows = _sz.at(0);
+     int cols = _sz.at(1);
+
+     vector<vector<float>> array;
+     vector<float> row;
+
+     while(getline(csv,line)){
+          row.clear();
+          stringstream ss(line);
+
+          while (getline(ss,field,',')){
+               row.push_back(strtof(field.c_str(), NULL));
+          }
+          array.push_back(row);
+     }
+
+     print_vectors("Matrix: ",array);
+     return array;
+}
+
+vector<vector<float>> csv_extract_columns(const string &file){
+     ifstream  csv(file);
+     string line, field;
+
+     vector<int> _sz = get_csv_size(file);
+     int _rows = _sz.at(0);
+     int _cols = _sz.at(1);
+
+     vector<vector<float>> array;
+     vector<vector<float>> cols;
+     vector<float> tmpRow;
+     vector<float> tmpCol;
+     // tmpCol.reserve(_rows);
+
+     // Convert file into float array
+     while(getline(csv,line)){
+          tmpRow.clear();
+          stringstream ss(line);
+
+          while (getline(ss,field,',')){
+               tmpRow.push_back(strtof(field.c_str(), NULL));
+          }
+          array.push_back(tmpRow);
+     }
+
+     for(int i = 0;i<_cols;i++){
+          tmpCol.clear();
+          for(int j = 0;j<_rows;j++){
+               tmpCol.push_back(array.at(j).at(i));
+          }
+          cols.push_back(tmpCol);
+     }
+
+     // print_vectors("Entries: ",array);
+     return cols;
+}
+
+fmat csv_to_matrix(const string &file){
+     fmat out;
+     out.load(file, csv_ascii);
+     return out;
+}
+
+fmat Ci2b(float angles[3]){
+     fmat out;
+     float t = angles[0]; // Theta
+     float p = angles[1]; // Phi
+     float y = angles[2]; // Upsilon
+
+     out << cos(t)*cos(y) << -sin(y)*cos(p) + cos(y)*sin(p)*sin(t) << sin(p)*sin(y) + cos(y)*sin(t)*sin(p) << endr
+         << cos(t)*cos(y) << cos(p)*cos(y) + sin(t)*sin(p)*sin(y) << -sin(p)*cos(y) + sin(t)*sin(p)*sin(y) << endr
+         << -sin(t) << cos(t)*sin(p) << cos(p)*cos(t) << endr;
+
+
+     return out;
+}
+
+// void parse_csv(const string &file){}
+
+template<typename T> void print_vector(string header, vector<T> vec){
+     int n = vec.size();
+     cout << header;
+     for(int i = 0;i<n;i++){
+          cout << vec.at(i) << ", ";
+     }
+     cout << endl;
+}
+
+template<typename T> void print_vectors(string header, vector< vector<T> > vecs){
+     int n = vecs.size();
+     int m = vecs.at(0).size();
+     cout << header;
+     for(int i = 0;i<n;i++){
+          cout << "     ";
+          for(int j = 0;j<m;j++){
+               cout << vecs.at(i).at(j) << ", ";
+          }
+          cout << endl;
+     }
+     cout << endl;
 }
 
 void attach_CtrlC(void_int_fun func2call){
@@ -177,6 +282,7 @@ void attach_CtrlZ(void_int_fun func2call){
      sigUpHandler.sa_flags = 0;
      sigaction(SIGTSTP, &sigUpHandler, NULL);
 }
+
 
 
 #ifdef GTSAM_LIBRARY_INCLUDED

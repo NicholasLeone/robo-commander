@@ -18,7 +18,7 @@ void funExit(int s){
 
 int main(int argc, char *argv[]){
 
-     float max_vel = 0.5;
+     float max_vel = 1.5;
      float max_omega = max_vel / 0.381;
 
      int pi = pigpio_start(NULL, NULL); /* Connect to Pi. */

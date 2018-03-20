@@ -37,6 +37,7 @@ set(LIBS_DIR ${LIBRARY_OUTPUT_PATH})
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
 set(INCS_DIR "${PROJECT_SOURCE_DIR}/include")
 set(TEST_DIR "${PROJECT_SOURCE_DIR}/test")
+set(HOME_DIR "${PROJECT_SOURCE_DIR}")
 
 # ============================================
 #       Find & Include Dependencies
@@ -55,6 +56,11 @@ find_library(RTIMULib libRTIMULib.so)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/depends/pigpiod")
 find_package(pigpio REQUIRED)
 
+# Find GTSAM libraries
+find_package(GTSAMCMakeTools)
+find_package(GTSAM REQUIRED)
+
+
 include_directories(
      include
      ${Boost_INCLUDE_DIRS}
@@ -62,9 +68,11 @@ include_directories(
      ${LAPACK_INCLUDE_DIRS}
      ${BLAS_INCLUDE_DIRS}
      ${ARMADILLO_INCLUDE_DIRS}
+     ${GTSAM_INCLUDE_DIR}
 )
 
 set(LIBS
+     gtsam
      ${Boost_LIBRARIES}
      ${pigpiod_if2_LIBRARY}
      ${ARMADILLO_LIBRARIES}
