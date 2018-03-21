@@ -21,7 +21,7 @@ UDP::UDP(int port, char* address){
      nFail = 0;
      timeout_begin = time(0);
      flag_wait = 0;
-
+     flag_verbose = 0;
 }
 
 
@@ -140,8 +140,14 @@ int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
 
      n = recvfrom(_config->sock,(void*)_buf,num_bytes,0,(struct sockaddr *)&_config->myAddr,&(len=sizeof(struct sockaddr_in)));
 
-     for(int i = 0; i < num_bytes; i++){
-          // cout << (int)buf[i];
+     if(flag_verbose == 0){
+          cout << "Raw UDP Bytes: ";
+          for(int i = 0; i < num_bytes; i++){
+               cout << (int)buf[i] << ", ";
+          }
+          cout << endl;
+     }else{
+          for(int i = 0; i < num_bytes; i++){}
      }
 
      if(n < -1){
@@ -201,4 +207,8 @@ char* UDP::readtimeout(int num_bytes){
      }
 
      return tmp;
+}
+
+void UDP::set_verbose(int flag){
+     flag_verbose = flag;
 }

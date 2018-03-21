@@ -44,6 +44,7 @@ private:
      int nFail;
      time_t timeout_begin;
      int flag_wait;
+     int flag_verbose;
 
 public:
      char buf[1000];
@@ -51,6 +52,8 @@ public:
      UDP_PARAMS* config;
      UDP(int port, char* address = NULL);
      ~UDP();
+
+     void set_verbose(int flag);
 
      int _open(UDP_PARAMS* _config, int port, char* address);
      int _close();
@@ -60,6 +63,7 @@ public:
      char* read(int num_bytes);
      char* readtimeout(int num_bytes);
      int write(char* buf, int num_bytes, char* address, int port);
+
 };
 
 
