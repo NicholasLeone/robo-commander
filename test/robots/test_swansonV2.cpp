@@ -31,17 +31,15 @@ int main(int argc, char *argv[]){
 
           while(1){
 
-               bot->read_udp_header();
-
-
-               // bot->read_udp_commands();
+               // bot->read_udp_header();
+               bot->read_udp_commands();
                float accel = (float) bot->controls.speed / 1000000;
                float omega = (float) bot->controls.yaw / 1000000;
-
-               accel = max_vel * accel;
+               float gain = (float) bot->controls.limit / 1000000;
+               accel = max_vel * accel * gain;
                omega = max_omega * omega;
 
-               //cout << "Controls: " << accel << ",          " << omega << endl;
+               cout << "Controls: " << accel << ",          " << omega << ",          " << gain << endl;
                bot->drive(accel, omega);
                bot->update_sensors();
                vector<float> data = bot->get_sensor_data();
