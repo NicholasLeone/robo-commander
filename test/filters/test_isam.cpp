@@ -7,13 +7,14 @@
 using namespace std;
 using namespace arma;
 
-int main(){
+int main(int argc, char *argv[]){
 
 	// VARIABLES
 	string csv;
 	int i = 0;
-	float d[3];
 	int n;
+	float dt;
+	float d[3];
 	// int t = 235; // Test row in csv
 
 	string data_filename;
@@ -32,7 +33,10 @@ int main(){
 	fmat dDistances = data.col(10);
 	fmat dYaws = data.col(11);
 
-	for(int t = 0;t<data.n_rows;t++){
+	for(int t = 1;t<data.n_rows;t++){
+
+		dt = as_scalar(times.row(t) - times.row(t-1));
+
 		d[0] = as_scalar(times.row(t));
 		d[1] = as_scalar(dDistances.row(t));
 		d[2] = as_scalar(dYaws.row(t));

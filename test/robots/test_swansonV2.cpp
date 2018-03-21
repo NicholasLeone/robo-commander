@@ -27,7 +27,8 @@ int main(int argc, char *argv[]){
      if (pi >= 0){
 
           bot = new SwansonV2(pi);
-
+          bot->rc_in->set_verbose(1);
+          
           while(1){
                bot->read_rc();
                float accel = (float) bot->controls.speed / 1000000;

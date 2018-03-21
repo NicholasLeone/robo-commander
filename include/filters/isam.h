@@ -1,6 +1,7 @@
 #ifndef ISAM_H_
 #define ISAM_H_
 
+#include <vector>
 #include "base/definitions.h"
 
 // Both relative poses and recovered trajectory poses will be stored as Pose2 objects
@@ -41,8 +42,13 @@
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 
+using namespace std;
 using namespace gtsam;
 namespace NM = gtsam::noiseModel;
+
+using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
+using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
+using symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
 
 class iSAM2{
 private:
@@ -70,6 +76,11 @@ private:
      // Performance Analysis Values
      float SSE = 0;
      float MSE = 0;
+     float current_position_error;
+     float current_orientation_error;
+
+     // Counters
+     int correction_count = 0;
 
      // Create a Factor Graph and Values to hold the new data
 	NonlinearFactorGraph graph;
@@ -83,13 +94,22 @@ private:
 	NM::Diagonal::shared_ptr priorNoise;
 	NM::Diagonal::shared_ptr odomNoise;
 	NM::Isotropic::shared_ptr imuNoise;
+     NM::Diagonal::shared_ptr pose_noise_model;
+     NM::Diagonal::shared_ptr velocity_noise_model;
+     NM::Diagonal::shared_ptr bias_noise_model;
 
      // Define the odometry inputs as a Pose2
 	Pose2 initPose, prevPose, curPose;
 	Pose2 odometry;
 
+     boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p;
+
      PreintegrationType *imu_preintegrated_;
-     const string output_filename = "imuFactorExampleResults.csv";
+     imuBias::ConstantBias prior_imu_bias; // assume zero initial bias
+     imuBias::ConstantBias prev_bias;
+     NavState prop_state;
+
+     string output_filename = "imuFactorExampleResults.csv";
 
 public:
 
@@ -117,7 +137,7 @@ public:
      *
      *    @param z: the currently observed sensor readings
      */
-     void update_imu();
+     void update_imu(vector<float> data);
 
      /**
      * Updates the locally stored observations for use in next prediction step
