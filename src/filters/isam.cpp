@@ -4,6 +4,10 @@ using namespace std;
 using namespace gtsam;
 namespace NM = gtsam::noiseModel;
 
+using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
+using symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
+using symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
+
 iSAM2::iSAM2(){
 
      // Initialize variables
@@ -12,8 +16,8 @@ iSAM2::iSAM2(){
      fresh_odom = false;
 
      // Debugging
-     printf("[INITIALS]:\r\n  X, Y, Z: %.4f, %.4f, %.4f\r\n",initX[0], initX[1], initX[2]);
-     printf("[PREVIOUS]:\r\n  X, Y, Z: %.4f, %.4f, %.4f\r\n",oldX[0], oldX[1], oldX[2]);
+     // printf("[INITIALS]:\r\n  X, Y, Z: %.4f, %.4f, %.4f\r\n",initX[0], initX[1], initX[2]);
+     // printf("[PREVIOUS]:\r\n  X, Y, Z: %.4f, %.4f, %.4f\r\n",oldX[0], oldX[1], oldX[2]);
 
      /** Define our iSAM2 parameters */
      parameters.relinearizeThreshold = 0.01;
@@ -22,16 +26,79 @@ iSAM2::iSAM2(){
 
 	// Initialize noise models to be used by GTSAM libraries
 	Vector priorSigmas = Vector3(priorSig,priorSig,priorSig);
+	Vector odomSigmas = Vector3(0.5,0.5,0.5); // Randomly selected value for now TODO->should be based on model
 
      priorNoise = NM::Diagonal::Sigmas(priorSigmas);  //prior
+     odomNoise = NM::Diagonal::Sigmas(odomSigmas);  //odom
 	imuNoise = NM::Isotropic::Sigma(1, sigmaR);      // non-robust
+
+     /**------------- IMU Section --------------*/
+     // Assemble initial quaternion through gtsam constructor ::quaternion(w,x,y,z);
+     Rot3 prior_rotation = Rot3::Quaternion(1, 0, 0, 0);
+     Point3 prior_point(0, 0, 0);
+     Pose3 prior_pose(prior_rotation, prior_point);
+     Vector3 prior_velocity(0, 0, 0);
+
+     imuBias::ConstantBias prior_imu_bias; // assume zero initial bias
 
      // Add prior poses to the factor graph
 	initPose = prevPose = Pose2(initX[0], initX[1], initX[2]);
-	graph.push_back(PriorFactor<Pose2>(Symbol('A', 0), initPose, priorNoise));
+	graph.push_back(PriorFactor<Pose2>(Symbol('X', 0), initPose, priorNoise));
+
+     int correction_count = 0;
+     initial_values.insert(X(correction_count), prior_pose);
+     initial_values.insert(V(correction_count), prior_velocity);
+     initial_values.insert(B(correction_count), prior_imu_bias);
+
+     // Assemble prior noise model and add it the graph.
+     noiseModel::Diagonal::shared_ptr pose_noise_model = noiseModel::Diagonal::Sigmas((Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5).finished()); // rad,rad,rad,m, m, m
+     noiseModel::Diagonal::shared_ptr velocity_noise_model = noiseModel::Isotropic::Sigma(3,0.1); // m/s
+     noiseModel::Diagonal::shared_ptr bias_noise_model = noiseModel::Isotropic::Sigma(6,1e-3);
+
+     graph->add(PriorFactor<Pose3>(X(correction_count), prior_pose, pose_noise_model));
+     graph->add(PriorFactor<Vector3>(V(correction_count), prior_velocity,velocity_noise_model));
+     graph->add(PriorFactor<imuBias::ConstantBias>(B(correction_count), prior_imu_bias,bias_noise_model));
+
+     float accel_noise_sigma = 0.0003924;
+     float gyro_noise_sigma = 0.000205689024915;
+     float accel_bias_rw_sigma = 0.004905;
+     float gyro_bias_rw_sigma = 0.000001454441043;
+     Matrix33 measured_acc_cov = Matrix33::Identity(3,3) * pow(accel_noise_sigma,2);
+     Matrix33 measured_omega_cov = Matrix33::Identity(3,3) * pow(gyro_noise_sigma,2);
+     Matrix33 integration_error_cov = Matrix33::Identity(3,3)*1e-8; // error committed in integrating position from velocities
+     Matrix33 bias_acc_cov = Matrix33::Identity(3,3) * pow(accel_bias_rw_sigma,2);
+     Matrix33 bias_omega_cov = Matrix33::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
+     Matrix66 bias_acc_omega_int = Matrix::Identity(6,6)*1e-5; // error in the bias used for preintegration
+
+     boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
+     // PreintegrationBase params:
+     p->accelerometerCovariance = measured_acc_cov; // acc white noise in continuous
+     p->integrationCovariance = integration_error_cov; // integration uncertainty continuous
+     // should be using 2nd order integration
+     // PreintegratedRotation params:
+     p->gyroscopeCovariance = measured_omega_cov; // gyro white noise in continuous
+     // PreintegrationCombinedMeasurements params:
+     p->biasAccCovariance = bias_acc_cov; // acc bias in continuous
+     p->biasOmegaCovariance = bias_omega_cov; // gyro bias in continuous
+     p->biasAccOmegaInt = bias_acc_omega_int;
+
+     #ifdef USE_COMBINED
+          imu_preintegrated_ = new PreintegratedCombinedMeasurements(p, prior_imu_bias);
+     #else
+          imu_preintegrated_ = new PreintegratedImuMeasurements(p, prior_imu_bias);
+     #endif
+
+     // Store previous state for the imu integration and the latest predicted outcome.
+     NavState prev_state(prior_pose, prior_velocity);
+     NavState prop_state = prev_state;
+     imuBias::ConstantBias prev_bias = prior_imu_bias;
+
+     // Keep track of the total error over the entire run for a simple performance metric.
+     float current_position_error = 0.0, current_orientation_error = 0.0;
+
 
      // Store Initial poses into the 'Values' containers for later analysis
-	initialEstimate.insert(Symbol('A', 0), initPose);
+	initialEstimate.insert(Symbol('X', 0), initPose);
 	// Print out stored variables for debugging
 	initialEstimate.print("Initial Pose: ");
 
@@ -41,73 +108,24 @@ iSAM2::iSAM2(){
 
 iSAM2::~iSAM2(){}
 
-void iSAM2::update_odometry(float deltas[3]){
-     num_odom++;
+void iSAM2::update_odometry(float dist_traveled, float dyaw){
+     num_odom_updates++;
 
-     int odom_counter;
-	float temp_x, temp_y, qx, qy, qz, qw, yaw;
-	float x, y, dist_traveled;
-	float covX, covY, covYaw;
-	float dx, dy, dyaw;
-	Pose2 newPose;
-
-     odometry = Pose2(deltas[0], deltas[1], deltas[2]);
-
-     // Update Global counter
-	numOdomUno = numOdomUno + 1;
-
-	// Load up our incoming data locally
-	// odom_counter_1 = msg->header.seq;
-     //
-	// temp_x = msg->pose.pose.position.x;
-	// temp_y = msg->pose.pose.position.y;
-	// qx = msg->pose.pose.orientation.x;
-	// qy = msg->pose.pose.orientation.y;
-	// qz = msg->pose.pose.orientation.z;
-	// qw = msg->pose.pose.orientation.w;
-     //
-	// covX = msg->pose.covariance[0];
-	// covY = msg->pose.covariance[7];
-	// covYaw = msg->pose.covariance[35];
-
-	// Setup the noise model
-	Vector odoCov = Vector3(covX,covY,covYaw);
-	odomNoise = NM::Diagonal::Variances(odoCov);
-
-	// Calculate yaw from quaternions
-	yaw = atan2(2*qw*qz+2*qx*qy,1-2*qy*qy-2*qz*qz);
-
-	rawOdom << temp_x << endr << temp_y << endr;
-
-	// Extract data from matrix into usable form
-	rawOdom = rawOdom.t();
-	odom_x = rawOdom.col(0);
-	odom_y = rawOdom.col(1);
-
-	// Put Rotated Odom data into global frame
-    	x = x1_init + odom_x(0);
-    	y = y1_init + odom_y(0);
-    	yaw = yaw1_init + yaw;
-
-	// Calculate change in pose since our last recorded odometry pose
-	dx = x - old_x1;
-	dy = y - old_y1;
-	dyaw = yaw - old_yaw1;
-	dist_traveled = sqrt(dx*dx + dy*dy);
+     // // Setup the noise model
+     // Vector odoCov = Vector3(covX,covY,covYaw);
+     // odomNoise = NM::Diagonal::Variances(odoCov);
 
 	// BetweenFactor was found to work when only using the change in pose relative to the body frame
-	odometryUno = Pose2(dist_traveled, 0, dyaw);
+	odometry = Pose2(dist_traveled, 0, dyaw);
 
 	// Store important variables for later analysis
-	// TODO: re-organization of what we want to use for later analysis
-	newPose = Pose2(x, y, yaw);
-	odomValues.insert(numOdomUno, odometryUno);
+	odomValues.insert(num_odom_updates, odometry);
 
 	// Ensure we load the BetweenFactor in the factor graph with proper linking of keys
     	if(flag_odom_initialized) {
-        	graph.push_back(BetweenFactor<Pose2>(Symbol('A',old_odom_counter), Symbol('A',odom_counter), odometry, odomNoise));
+        	graph.push_back(BetweenFactor<Pose2>(Symbol('X',num_odom_updates-1), Symbol('X',num_odom_updates), odometry, odomNoise));
 	} else {
-        	graph.push_back(BetweenFactor<Pose2>(Symbol('A',0), Symbol('A',odom_counter), odometry, odomNoise));
+        	graph.push_back(BetweenFactor<Pose2>(Symbol('X',0), Symbol('X',num_odom_updates), odometry, odomNoise));
 	}
 
 	/** NOTE:
@@ -115,39 +133,22 @@ void iSAM2::update_odometry(float deltas[3]){
 	recieved from the dead-reckoned path easily obtained from Turtlebot,
 	predict our new pose estimate from our last known pose
 	*/
-    	Pose2 predPose = prev.compose(odometry);
+    	Pose2 predPose = prevPose.compose(odometry);
 
 	// Add this predicted pose to our initial estimate
-	initialEstimate.insert(Symbol('A', odom_counter), predPose);
-
-	/** Print out any debug values */
-	// cout << "[AGENT 1] Covariance: " << covX << "	" << covY << " 	" << covYaw << endl;
+	initialEstimate.insert(Symbol('X', num_odom_updates), predPose);
 
 	// Update Global variables
-	old_x = x;
-	old_y = y;
-	old_yaw = yaw;
 	prevPose = predPose;
 
-	old_odom_counter = odom_counter;
 	flag_odom_initialized = true;
-
-}
-
-void iSAM2::update_odometry(float deltas[2]){
-     num_odom++;
-
-     odometry = Pose2(deltas[0], 0, deltas[1]);
 
 }
 
 void iSAM2::update_imu(){
 
-	float xhat, yhat;
-	float error, dx, dy;
-
 	// Update Global counter
-  	num_imu++;
+  	num_imu_updates++;
 
 	// Add IMU factor to the factor graph
   	// graph.push_back(RangeFactor<Pose2, Pose2>(Symbol('A', old_odom_counter), Symbol('B', old_odom_counter_2), range_in, rangeNoise));
@@ -160,18 +161,7 @@ void iSAM2::update_imu(){
 	// currentEstimate.print("Current Estimate");
 
 	// Retrieve most recent estimate of each agent
-	Pose2 pose1 = currentEstimate.at<Pose2>(Symbol('P', old_odom_counter));
-	xhat = pose.x();
-	yhat = pose.y();
-
-
-	// Calculate the estimate error compared to truth
-	dx = true_x - xhat;
-	dy = true_y - yhat;
-
-	error = sqrt(dx*dx + dy*dy);
-
-	SSE = SSE + error*error;
+	Pose2 curEstimate = currentEstimate.at<Pose2>(Symbol('X', num_updates));
 
 	// Reset factor graph and initial estimate values for next update step
 	graph.resize(0);
@@ -182,26 +172,33 @@ void iSAM2::update_imu(){
 
 
 void iSAM2::update(){
+     num_updates++;
+
      // gttic_(update);
-	// // Update iSAM with the new factors
-	// isam.update(graph, initialEstimate);
-	// // Each call to iSAM2 update(*) performs one iteration of the iterative nonlinear solver.
-	// // If accuracy is desired at the expense of time, update(*) can be called additional times
-	// // to perform multiple optimizer iterations every step.
-	// isam.update();
+	// Update iSAM with the new factors
+	isam.update(graph, initialEstimate);
+
+     // Each call to iSAM2 update(*) performs one iteration of the iterative nonlinear solver.
+	// If accuracy is desired at the expense of time, update(*) can be called additional times
+	// to perform multiple optimizer iterations every step.
+	isam.update();
 	// gttoc_(update);
+
 	// gttic_(calculateEstimate);
-	// currentEstimate = isam.calculateEstimate();
+	currentEstimate = isam.calculateEstimate();
 	// gttoc_(calculateEstimate);
-	// cout << "****************************************************" << endl;
-	// currentEstimate.print("Current estimate: ");
-	//
-	// // Print timings
-	// tictoc_print_();
-	//
-	// // Clear the factor graph and values for the next iteration
-	// graph.resize(0);
-	// initialEstimate.clear();
+
+     // Print timings
+     // tictoc_print_();
+
+     // cout << "****************************************************" << endl;
+	currentEstimate.print("Current estimate: ");
+	Pose2 curEstimate = currentEstimate.at<Pose2>(Symbol('X', num_odom_updates));
+     curEstimate.print("Latest Estimate: ");
+
+	// Clear the factor graph and values for the next iteration
+	graph.resize(0);
+	initialEstimate.clear();
 }
 
 void iSAM2::predict(){}

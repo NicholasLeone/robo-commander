@@ -60,11 +60,11 @@ private:
 	bool fresh_odom;
 
      // Set Noise parameters
-	float priorSig = 0.0001;     // Std dev of priors (meters)
+	float priorSig = 0.00001;     // Std dev of priors (meters)
 	float sigmaR = 0.01;         // Std dev of imu measurements
 
      // State Variables
-     float initX[3] = {1.709, -2.1478, 1.8315};
+     float initX[3] = {0, 0, 0};
      float oldX[3];
 
      // Performance Analysis Values
@@ -76,6 +76,7 @@ private:
 	Values initialEstimate;
 	Values currentEstimate;
 	Values estimated_odom;
+	Values ihatodomVals;
 	Values odomValues;
 
      // Define Noise Models for the various sensors (for iSAM2)
@@ -84,8 +85,11 @@ private:
 	NM::Isotropic::shared_ptr imuNoise;
 
      // Define the odometry inputs as a Pose2
-	Pose2 initPose, prevPose;
+	Pose2 initPose, prevPose, curPose;
 	Pose2 odometry;
+
+     PreintegrationType *imu_preintegrated_;
+     const string output_filename = "imuFactorExampleResults.csv";
 
 public:
 
@@ -93,8 +97,8 @@ public:
      int m;                   // Number of observed variables
      float dt;                // Change in time from last measurement period
      int num_updates = 0;     // Number of updates since initialization
-     int num_odom = 0;        // Number of odometry samples since initialization
-     int num_imu = 0;         // Number of imu samples since initialization
+     int num_odom_updates = 0;// Number of odometry samples since initialization
+     int num_imu_updates = 0; // Number of imu samples since initialization
 
 
      iSAM2();
@@ -106,7 +110,7 @@ public:
      *
      *    @param deltas: the currently observed sensor readings
      */
-     void update_odometry(float deltas[3]);
+     void update_odometry(float dist_traveled, float dyaw);
 
      /**
      * Updates the locally stored observations for use in next prediction step
