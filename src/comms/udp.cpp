@@ -140,7 +140,7 @@ int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
 
      n = recvfrom(_config->sock,(void*)_buf,num_bytes,0,(struct sockaddr *)&_config->myAddr,&(len=sizeof(struct sockaddr_in)));
 
-     if(flag_verbose == 0){
+     if(flag_verbose == 1){
           cout << "Raw UDP Bytes: ";
           for(int i = 0; i < num_bytes; i++){
                cout << (int)buf[i] << ", ";

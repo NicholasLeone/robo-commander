@@ -21,6 +21,14 @@ typedef struct UDP_PARAMS{
      struct timeval tv;
 }UDP_PARAMS;
 
+typedef struct Udp_Msg_Header{
+     int32_t id;
+     int32_t msg_type;
+     int32_t data_type;
+     int32_t measurement_type;
+     int32_t measurement_length;
+}Udp_Msg_Header;
+
 typedef struct CommunicationHeaderByte{
      int32_t header;
      int32_t msg_type;
@@ -31,9 +39,15 @@ typedef struct CommunicationHeaderByte{
 
 typedef struct RC_COMMAND_MSG{
      int32_t yaw;
-     int32_t pitch;
+     int32_t limit;
 	int32_t speed;
 }RC_COMMAND_MSG;
+
+typedef struct Sim_Msg_MotionCommands{
+     int32_t normalized_yaw_rate;
+	int32_t padding;
+     int32_t normalized_speed;
+}Sim_Msg_MotionCommands;
 
 class UDP{
 

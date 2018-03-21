@@ -28,9 +28,13 @@ int main(int argc, char *argv[]){
 
           bot = new SwansonV2(pi);
           bot->rc_in->set_verbose(1);
-          
+
           while(1){
-               bot->read_rc();
+
+               bot->read_udp_header();
+
+
+               // bot->read_udp_commands();
                float accel = (float) bot->controls.speed / 1000000;
                float omega = (float) bot->controls.yaw / 1000000;
 

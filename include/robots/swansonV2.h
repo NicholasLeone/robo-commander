@@ -33,6 +33,7 @@ public:
 
      UDP* rc_in;
      RC_COMMAND_MSG controls;
+     Udp_Msg_Header udp_header;
 
      DualClaw* claws;
      IMU* imu;
@@ -41,7 +42,9 @@ public:
 	SwansonV2(int pi);
      ~SwansonV2();
 
-     void read_rc();
+     void read_udp_header();
+     void read_udp_commands();
+
      void drive(float v, float w);
      void update_sensors();
      vector<float> get_sensor_data();
@@ -49,6 +52,8 @@ public:
      void open_datalog(string file_path);
      void close_datalog();
      void add_datalog_entry(vector<float> data);
+
+     void print_udp_header(Udp_Msg_Header* header);
 };
 
 

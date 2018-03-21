@@ -55,14 +55,48 @@ void SwansonV2::drive(float v, float w){
      claws->drive(cmds);
 }
 
-void SwansonV2::read_rc(){
-     int i = 0;
+void SwansonV2::read_udp_header(){
+	UDP* udp_line = rc_in;
+     Udp_Msg_Header* data = &udp_header;
+
+	char* dat = udp_line->read(sizeof(Udp_Msg_Header));
+	memcpy(data, &dat[0],sizeof(Udp_Msg_Header));
+     print_udp_header(data);
+}
+
+void SwansonV2::read_udp_commands(){
 
      UDP* udp_line = rc_in;
      RC_COMMAND_MSG* data = &controls;
 
      char* dat = udp_line->read(sizeof(data)+24);
      memcpy(data, &dat[16],sizeof(data)+8);
+
+
+     // CommunicationHeaderByte* tmpHead;
+     //      char* dat;
+     //      int ready = 0;
+     //
+     //      //printf("Data Size, &Data Size, *Data Size, Data/Data size: %d, %d, %d, %d\r\n",sizeof(data),sizeof(&data),sizeof(*data),sizeof(data)/sizeof(data[0]));
+     //
+     //      while(ready == 0){
+     //           dat = udp_line->read(sizeof(*data)+sizeof(*header));
+     //           tmpHead = (CommunicationHeaderByte*)&dat[0];
+     //
+     //           int data_type = tmpHead->data_type;
+     //           // TODO: Add in functionality to check for specific sensor index (needed for multiple same type of sensors)
+     //
+     //           if(data_type == SIMULATOR_DATA_IMU)
+     //                ready = 1;
+     //           else
+     //                ready = 0;
+     //      }
+     //
+     //      header = (CommunicationHeaderByte*)&dat[0];
+     //      data = (Sim_Msg_IMUData*)&dat[20];
+     //
+     //      // printImu(*data);
+
 }
 
 
@@ -117,4 +151,24 @@ void SwansonV2::add_datalog_entry(vector<float> data){
                datalog << data.at(i) << ",";
      }
      datalog << endl;
+}
+
+void SwansonV2::print_udp_header(Udp_Msg_Header* header){
+
+     int32_t header_byte, msg_type, data_type, measurement_type, measurement_length;
+
+     header_byte = (int32_t) header->id / 1000000;
+     msg_type = (int32_t) header->msg_type / 1000000;
+     data_type = (int32_t) header->data_type / 1000000;
+     measurement_type = (int32_t) header->measurement_type / 1000000;
+     measurement_length = (int32_t) header->measurement_length / 1000000;
+
+	printf("=========== UDP Packet Info     =================\r\n");
+     printf("UDP Packet Header:\r\n");
+     printf("  Header Byte: %d\r\n", header_byte);
+     printf("  Message Type: %d\r\n", msg_type);
+     printf("  Data Type: %d\r\n", data_type);
+     printf("  Measurement Type: %d\r\n", measurement_type);
+     printf("  Measurement Length: %d\r\n", measurement_length);
+
 }
