@@ -39,13 +39,15 @@ public:
 
      int init(string path, string file);
      void update();
-     int get_update_period();
 
      void print_settings(); // TODO: extract settings from calibration.ini file
      void print_data();
      void print_angles();
+
+     int get_update_period();
      vector<float> get_raw_data();
-     
+     vector<float> get_all_data();
+
      // TODO: Add these functions for ease-of-use later
      // void reset_yaw();
 

@@ -17,7 +17,7 @@ private:
 
      int _pi;
      int _port;
-     int NStates = 14;
+     int NStates = 20;
 
      float max_speed;
      float centerToWheelRadius;

@@ -119,7 +119,7 @@ void IMU::update(){
 vector<float> IMU::get_raw_data(){
      vector<float> out;
      out.reserve(9);
-     
+
      out.push_back(accel[0]);
      out.push_back(accel[1]);
      out.push_back(accel[2]);
@@ -129,6 +129,36 @@ vector<float> IMU::get_raw_data(){
      out.push_back(mag[0]);
      out.push_back(mag[1]);
      out.push_back(mag[2]);
+
+     return out;
+}
+
+vector<float> IMU::get_all_data(){
+     vector<float> out;
+     out.reserve(16);
+
+     out.push_back(accel[0]);
+     out.push_back(accel[1]);
+     out.push_back(accel[2]);
+     out.push_back(gyro[0]);
+     out.push_back(gyro[1]);
+     out.push_back(gyro[2]);
+     out.push_back(mag[0]);
+     out.push_back(mag[1]);
+     out.push_back(mag[2]);
+
+     out.push_back(quats[0]);
+     out.push_back(quats[1]);
+     out.push_back(quats[2]);
+     out.push_back(quats[3]);
+
+     float roll = fmod((euler[0]*M_RAD2DEG + 360.0),360.0);
+     float pitch = fmod((euler[1]*M_RAD2DEG + 360.0),360.0);
+     float yaw = fmod((euler[2]*M_RAD2DEG + 360.0),360.0);
+
+     out.push_back(roll);
+     out.push_back(pitch);
+     out.push_back(yaw);
 
      return out;
 }

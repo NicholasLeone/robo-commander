@@ -118,7 +118,7 @@ vector<float> SwansonV2::get_sensor_data(){
 
      // Grab Stored Data
      imu_dt = imu->get_update_period();
-     vector<float> imu_data = imu->get_raw_data();
+     vector<float> imu_data = imu->get_all_data();
      vector<float> encoder_data = claws->get_odom_deltas();
 
      // Reformat into single data vector
@@ -127,9 +127,6 @@ vector<float> SwansonV2::get_sensor_data(){
      raw_data.insert(raw_data.end(), encoder_data.begin(), encoder_data.end());
 
      // Miscellaneous Debugging
-     roll = fmod((imu->euler[0]*M_RAD2DEG + 360.0),360.0);
-     pitch = fmod((imu->euler[1]*M_RAD2DEG + 360.0),360.0);
-     yaw = fmod((imu->euler[2]*M_RAD2DEG + 360.0),360.0);
 
      return raw_data;
 }
@@ -137,7 +134,7 @@ vector<float> SwansonV2::get_sensor_data(){
 void SwansonV2::open_datalog(string file_path){
      datalog.open(file_path + ".csv");
      //time,ax,ay,az,gx,gy,gz,mx,my,mz,roll,pitch,yaw,od,oyaw,ox,oy;
-     datalog << "Time (sec), Accel X (m/s^2), Accel Y (m/s^2), Accel Z (m/s^2), Gyro X (rad/s), Gyro Y (rad/s), Gyro Z (rad/s), Mag X (μT), Mag Y (μT), Mag Z (μT), Roll (deg), Pitch (deg), Yaw (deg), Δdistance (m), ΔYaw (rad), ΔX (m), ΔY (m)\n";
+     datalog << "Time (sec), Accel X (m/s^2), Accel Y (m/s^2), Accel Z (m/s^2), Gyro X (rad/s), Gyro Y (rad/s), Gyro Z (rad/s), Mag X (μT), Mag Y (μT), Mag Z (μT), Roll (deg), Pitch (deg), Yaw (deg), Quat X, Quat Y, Quat Z, Quat W, Δdistance (m), ΔYaw (rad), ΔX (m), ΔY (m)\n";
 }
 
 void SwansonV2::close_datalog(){datalog.close();}
