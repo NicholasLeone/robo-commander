@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
      if (pi >= 0){
 
           bot = new SwansonV2(pi);
-          bot->rc_in->set_verbose(1);
+          bot->rc_in->set_verbose(0);
 
           while(1){
 
