@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
                accel = max_vel * accel * gain;
                omega = max_omega * omega;
 
-               cout << "Controls: " << accel << ",          " << omega << ",          " << gain << endl;
+               // cout << "Controls: " << accel << ",          " << omega << ",          " << gain << endl;
                bot->drive(accel, omega);
                bot->update_sensors();
                vector<float> data = bot->get_sensor_data();
