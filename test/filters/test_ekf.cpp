@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 
 #include "ekf.h"
 #include "utils/utils.h"
@@ -10,56 +11,43 @@
 
 using namespace std;
 
+int main(int argc, char *argv[]){
 
-int numUpdates = 0;
-int flag_exit = 0;
-
-void my_handler(int s){
-	flag_exit = 1;
-	printf("DONE\r\n");
-}
-
-void up_handler(int s){
-	numUpdates++;
-	printf("VARIABLES UPDATED\r\n");
-}
-
-int main(){
-
-	// VARIABLES
-	int i = 0;
-	float dt = 1;
 	int n;
-	// fmat testData, xInit, pInit, xhat, F, H, Q, R, sensorData, dataOut;
+	vector<float> initials;
+	fmat outputs;
+	string csv;
+	string output_filename = "/home/hunter/devel/robo-dev/data/fusion/output/ekf_outputs.csv";
 
-	string file = "/home/hunter/Documents/Data/Swanson/1m_straight_slow.csv";
-	vector<vector<float>> entries = csv_extract_columns(file.c_str());
-	vector<float> entry = entries.at(0);
+	if (argc < 2) {
+		printf("Using Straight Line (~1m) .csv data file...\n");
+		// csv = "/home/hunter/devel/robo-dev/data/fusion/1-0859m_straight_slow.csv";
+		// csv = "/home/hunter/Documents/Swanson/1m_straight_slow.csv";
+		csv = "/home/hunter/devel/robo-dev/data/fusion/ccw_turn_slow.csv";
+	} else {
+		csv = argv[1];
+	}
 
-	int nData = entries.size();
-	int nVar = entry.size();
-	printf("Test Data Size: %d, %d\n\r",nData,nVar);
-// 	testData.load(file, csv_ascii);
-// 	dataOut = zeros<fmat>(testData.n_rows, testData.n_cols);
-//
-// 	float initNoise = as_scalar(testData.row(0))*as_scalar(testData.row(0));
-//
-// 	xInit << 0 << endr
-// 		 << 0 << endr;
-//
-// 	pInit << 0 << 0 << endr
-// 		 << 0 << initNoise << endr;
-//
-// 	F << 1 << 0 << endr
-// 	  << 0 << 1 << endr;
-//
-// 	H << 0 << 1 << endr;
-//
-// 	Q << 0 << 0 << endr
-// 	  << 0 << 1 << endr;
-//
-// 	R << 0.01 << endr;
-//
+	// FILE* fp_out = fopen(output_filename.c_str(), "w+");
+  	// fprintf(fp_out, "Time(s),x(m),y(m),yaw(rad),v(m/s),w(rad/s),\n\r");
+
+	fmat times, qx, qy, qz, qw, ax, ay, az, gx, gy, gz, mx, my, mz, ex, ey, ez, dDistances, dYaws;
+     fmat data = csv_to_matrix(csv);
+
+	times = data.col(0);
+	ax = data.col(1); ay = data.col(2); az = data.col(3);
+	gx = data.col(4); gy = data.col(5); gz = data.col(6);
+	mx = data.col(7); my = data.col(8); mz = data.col(9);
+	qx = data.col(10); qy = data.col(11); qz = data.col(12); qw = data.col(13);
+	ex = data.col(14); ey = data.col(15); ez = data.col(16);
+	dDistances = data.col(17); dYaws = data.col(18);
+
+	initials.push_back(0);
+	initials.push_back(0);
+	initials.push_back(as_scalar(ez.row(0))*M_DEG2RAD);
+	initials.push_back(as_scalar(dDistances.row(0)));
+	initials.push_back(as_scalar(dYaws.row(0)));
+
 // #ifdef DEBUG_VERBOSE
 // 	testData.print("Input Data");
 // 	//dataOut.print();
@@ -67,45 +55,41 @@ int main(){
 // 	xInit.print("Initial States");
 // #endif
 
-		EKF ekf();
+	EKF ekf(5, 3);
+	ekf.init(initials);
 
-		for(int j=0;j<nData;j++){
+	for(int t = 1;t<data.n_rows;t++){
+		fmat obs,row;
+		float tk,xk,yk,yawk,vk,wk;
+		float dt = as_scalar(times.row(t) - times.row(t-1));
 
-// 			float recorded = as_scalar(testData.row(j));
-//
-// 			sensorData << recorded << endr;
-//
-// 			// Update Sensors
-// 			ekf.updateObservations(sensorData);
-//
-// 			// Predict States
-// 			ekf.predict();
-//
-// 			// Check Predicted Value
-// 			fmat tmpData = ekf.params_pred.x;
-// 			float estimates = as_scalar(tmpData.row(1));
-//
-// 			cout << "Recorded Data, Estimated Data: " << recorded << ", 	" << estimates << endl;
-//
-// 			dataOut.row(j) = estimates;
-//
-// #ifdef DEBUG_VERBOSE
-//
-// #endif
-			// cout << "Step, Prediction: " << j << ",		" << ekf.params_pred.x << endl;
-		}
+		float wi = as_scalar(gz.row(t));
+		float dV = as_scalar(dDistances.row(t)) / dt;
+		float dW = as_scalar(dYaws.row(t)) / dt;
 
+		obs << dV << endr
+	 	    << dW << endr
+	 	    << wi << endr;
+
+		ekf.predict(dt);
+		ekf.update(obs);
+
+		tk = as_scalar(times.row(t));
+		xk = as_scalar(ekf.xhat.row(0));
+		yk = as_scalar(ekf.xhat.row(1));
+		yawk = as_scalar(ekf.xhat.row(2));
+		vk = as_scalar(ekf.xhat.row(3));
+		wk = as_scalar(ekf.xhat.row(4));
+
+		row << tk << xk << yk << yawk << vk << wk << endr;
+		outputs = join_vert(outputs,row);
+
+		// printf("t, Δdistance (m), ΔYaw (rad): %.5f, %.8f,  %.8f\n\r", d[0], d[1], d[2]);
+	}
 
 	//dataOut.print("Estimates");
-	// dataOut.save("ekf_output.csv", csv_ascii);
+	outputs.save(output_filename, csv_ascii);
 	// cout << " Estimation Completed in " << ekf.steps << "! " << endl;
     	return 0;
 
 }
-
-
-/** TO COMPILE:
-
-	g++ -w test_ekf.cpp ekf.cpp -o TestEkf -lpigpiod_if2 -larmadillo -Wall -pthread
-
-*/

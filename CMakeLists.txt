@@ -60,6 +60,8 @@ find_package(pigpio REQUIRED)
 find_package(GTSAMCMakeTools)
 find_package(GTSAM REQUIRED)
 
+# Find OpenCV libraries
+find_package(OpenCV REQUIRED)
 
 include_directories(
      include
@@ -69,6 +71,7 @@ include_directories(
      ${BLAS_INCLUDE_DIRS}
      ${ARMADILLO_INCLUDE_DIRS}
      ${GTSAM_INCLUDE_DIR}
+     ${OpenCV_INCLUDE_DIRS}
 )
 
 set(LIBS
@@ -78,6 +81,7 @@ set(LIBS
      ${ARMADILLO_LIBRARIES}
      ${LAPACK_LIBRARIES}
      ${BLAS_LIBRARIES}
+     ${OpenCV_LIBS}
      ${CMAKE_THREAD_LIBS_INIT}
 )
 

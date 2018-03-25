@@ -19,6 +19,10 @@ target_link_libraries(imu RTIMULib ${LIBS})
 add_library(mpu9250 SHARED mpu9250.cpp)
 target_link_libraries(mpu9250 utils ${LIBS})
 
+# Camera
+add_library(camera SHARED camera.cpp)
+target_link_libraries(camera ${LIBS})
+
 if(BUILD_TESTS)
      if(VERBOSE)
      message(STATUS "------------ Building tests")
@@ -36,4 +40,8 @@ if(BUILD_TESTS)
      # MPU-9250
      add_executable(test_mpu9250 ${TEST_DIR}/sensors/test_mpu9250.cpp)
      target_link_libraries(test_mpu9250 mpu9250 serial)
+
+     # MPU-9250
+     add_executable(test_camera ${TEST_DIR}/sensors/test_camera.cpp)
+     target_link_libraries(test_camera camera utils)
 endif(BUILD_TESTS)

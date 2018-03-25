@@ -70,8 +70,8 @@ private:
 	float sigmaR = 0.01;         // Std dev of imu measurements
 
      // State Variables
-     float initX[3] = {0, 0, 0};
-     float oldX[3];
+     float initX[7];
+     float oldX[7];
 
      // Performance Analysis Values
      float SSE = 0;
@@ -97,6 +97,7 @@ private:
      NM::Diagonal::shared_ptr pose_noise_model;
      NM::Diagonal::shared_ptr velocity_noise_model;
      NM::Diagonal::shared_ptr bias_noise_model;
+     NM::Diagonal::shared_ptr correction_noise;
 
      // Define the odometry inputs as a Pose2
 	Pose2 initPose, prevPose, curPose;
@@ -107,7 +108,9 @@ private:
      PreintegrationType *imu_preintegrated_;
      imuBias::ConstantBias prior_imu_bias; // assume zero initial bias
      imuBias::ConstantBias prev_bias;
-     NavState prop_state;
+     imuBias::ConstantBias zero_bias;
+
+     NavState prev_state, cur_state, pred_state;
 
      string output_filename = "imuFactorExampleResults.csv";
 
@@ -120,10 +123,10 @@ public:
      int num_odom_updates = 0;// Number of odometry samples since initialization
      int num_imu_updates = 0; // Number of imu samples since initialization
 
-
      iSAM2();
      ~iSAM2();
 
+     void init(vector<float> params);
 
      /**
      * Updates the locally stored observations for use in next prediction step
@@ -131,6 +134,13 @@ public:
      *    @param deltas: the currently observed sensor readings
      */
      void update_odometry(float dist_traveled, float dyaw);
+
+     /**
+     * Updates the locally stored observations for use in next prediction step
+     *
+     *    @param deltas: the currently observed sensor readings
+     */
+     void update_gps();
 
      /**
      * Updates the locally stored observations for use in next prediction step
@@ -155,6 +165,8 @@ public:
      * Set the model transitions
      */
      void model();
+
+
 };
 
 
