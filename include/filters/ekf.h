@@ -37,10 +37,16 @@ private:
      fmat Q;         // Process Noise Covariance             [N x N]
      fmat R;         // Measurement Error Covariance         [M x M]
      fmat K;         // Kalman gain                          [N x M]
-     fmat I;         // Identity Matrix                      [N x N]
+     fmat In;        // Identity Matrix                      [N x N]
+     fmat Im;        // Identity Matrix                      [M x M]
+
+     fmat g_offset;  // Gravity compensation matrix
+     fmat g_offset_m;  // Gravity compensation matrix
 public:
 
      float dt;       // Change in time from last measurement period
+     float prev_dt;
+     float cur_dt;
      int steps = 0;  // Number of updates since initialization
      float yaw_offset;
      fmat xhat;
@@ -74,6 +80,26 @@ public:
      * Set the model transitions
      */
      void model();
+
+     /**
+     * Set the Sensor Covariance
+     */
+     void set_R(fmat r);
+
+     /**
+     * Set the Process Covariance
+     */
+     void set_Q(fmat q);
+
+     /**
+     * Print out the internal matrices for debugging
+     */
+     void print_internals();
+     
+     /**
+     * Print out the size of the internal matrices for debugging
+     */
+     void print_stats();
 };
 
 
