@@ -2,6 +2,7 @@
 #define ISAM_H_
 
 #include <vector>
+#include <armadillo>
 #include "base/definitions.h"
 
 // Both relative poses and recovered trajectory poses will be stored as Pose2 objects
@@ -43,6 +44,7 @@
 #include <gtsam/navigation/ImuFactor.h>
 
 using namespace std;
+using namespace arma;
 using namespace gtsam;
 namespace NM = gtsam::noiseModel;
 
@@ -93,6 +95,7 @@ private:
      // Define Noise Models for the various sensors (for iSAM2)
 	NM::Diagonal::shared_ptr priorNoise;
 	NM::Diagonal::shared_ptr odomNoise;
+	NM::Diagonal::shared_ptr odomNoise3;
 	NM::Isotropic::shared_ptr imuNoise;
      NM::Diagonal::shared_ptr pose_noise_model;
      NM::Diagonal::shared_ptr velocity_noise_model;
@@ -102,6 +105,7 @@ private:
      // Define the odometry inputs as a Pose2
 	Pose2 initPose, prevPose, curPose;
 	Pose2 odometry;
+     Pose3 odometry3;
 
      boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p;
 
@@ -110,7 +114,7 @@ private:
      imuBias::ConstantBias prev_bias;
      imuBias::ConstantBias zero_bias;
 
-     NavState prev_state, cur_state, pred_state;
+     NavState prev_state, cur_state, pred_state, last_odom_state, last_imu_state;
 
      string output_filename = "imuFactorExampleResults.csv";
 
@@ -120,6 +124,7 @@ public:
      int m;                   // Number of observed variables
      float dt;                // Change in time from last measurement period
      int num_updates = 0;     // Number of updates since initialization
+     int num_estimate_updates = 0;     // Number of updates since initialization
      int num_odom_updates = 0;// Number of odometry samples since initialization
      int num_imu_updates = 0; // Number of imu samples since initialization
 
@@ -133,7 +138,7 @@ public:
      *
      *    @param deltas: the currently observed sensor readings
      */
-     void update_odometry(float dist_traveled, float dyaw);
+     void update_odometry(float dt, float dist_traveled, float dyaw, float dx, float dy);
 
      /**
      * Updates the locally stored observations for use in next prediction step
@@ -147,7 +152,7 @@ public:
      *
      *    @param z: the currently observed sensor readings
      */
-     void update_imu(vector<float> data);
+     void update_imu(float dt, fmat data);
 
      /**
      * Updates the locally stored observations for use in next prediction step
@@ -157,9 +162,14 @@ public:
      void update();
 
      /**
-     * Updates predicted states and covariances.
+     * Saves current estimated values to a .csv
      */
-     void predict();
+     void save(string _path);
+
+     /**
+     * Converts current estimated values to a Armadillo matrix
+     */
+     fmat convert_current_estimate();
 
      /**
      * Set the model transitions

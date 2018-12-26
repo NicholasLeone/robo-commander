@@ -99,7 +99,6 @@ void EKF::update_measurements(){
     */
 
     // this->z = readings;
-
 }
 
 void EKF::set_R(fmat r){

@@ -77,6 +77,10 @@ int main(int argc, char *argv[]){
 	while(!flag_exit){
 		cv::Mat E, R, t, mask;
 		vector<Point2f> cur_pts;
+
+		// Start timer
+        	double timer = (double)getTickCount();
+
 		cam.update();
 		frame = cam.get_corrected_frame();
 		cur_img = cam.greyscale_frame(frame);
@@ -127,6 +131,10 @@ int main(int argc, char *argv[]){
                // points[1].push_back(tmp[0]);
                // addRemovePt = false;
 		}
+
+		// Calculate Frames per second (FPS)
+        	float fps = getTickFrequency() / ((double)getTickCount() - timer);
+		printf("Output FPS: %.3f\r\n",fps);
 
 		drawKeypoints(frame,cur_keypts, image2, Scalar(255,0,0));
 		// imshow("distorted", frame);

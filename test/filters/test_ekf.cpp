@@ -13,13 +13,12 @@ int main(int argc, char *argv[]){
 	float xf = 1.0859;
 	float x0 = 0, y0 = 0, z0 = 0.15, q;
 	fmat times, qx, qy, qz, qw, ax, ay, az, gx, gy, gz, mx, my, mz, ex, ey, ez, dDistances, dYaws, dXs, dYs;
-	fmat outputs, inputsI, inputs, R, Q;
+	fmat outputs, inputsI, inputs, R, Q, offsets, zer;
 	fmat rx, ry, rz; // Euler angles converted into radians
 	string csv;
 	string output_filename = "/home/hunter/devel/robo-dev/data/fusion/output/ekf_outputs.csv";
 	string config_path = "";
-
-
+	zer << 0 << endr;
 
 	if (argc < 2) {
 		// printf("Using Straight Line (~1m) .csv data file...\n");
@@ -54,7 +53,6 @@ int main(int argc, char *argv[]){
 
 	// Initial conditions: (x0, y0, z0, yaw0)
 	vector<float> initials{x0, y0, z0, as_scalar(rz.row(0))};
-	// vector<float> initials{0, 0, as_scalar(rz.row(0),as_scalar(dDistances.row(0)),as_scalar(dYaws.row(0))};
 
 	std::map<std::string, float> variables;
      LoadInitialVariables("/home/hunter/devel/robo-dev/config/filters/ekf.config", variables);
@@ -110,6 +108,16 @@ int main(int argc, char *argv[]){
 	inputsI = join_horiz(inputsI,gx); inputsI = join_horiz(inputsI,gy);
 	inputsI = join_horiz(inputsI,gz);
 
+	// offsets = inputsI.row(1);
+	offsets = join_horiz(offsets,zer); offsets = join_horiz(offsets,zer);
+	offsets = join_horiz(offsets, inputsI.row(1));
+	offsets = join_horiz(offsets,zer);
+
+	offsets.print("Offsets: ");
+	offsets = offsets.t();
+	sleep(1);
+
+
 	for(int t = 1;t<data.n_rows;t++){
 		fmat obs,row;
 		if(t == 0){
@@ -148,7 +156,7 @@ int main(int argc, char *argv[]){
 		// wk = as_scalar(ekf.xhat.row(4));
 
 		ekf.predict(dt);
-		ekf.update(obs);
+		ekf.update(obs-offsets);
 
 		tk = as_scalar(times.row(t));
 		xhatk = as_scalar(ekf.xhat.row(0));
