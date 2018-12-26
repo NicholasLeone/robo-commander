@@ -27,7 +27,8 @@ int PCA9685::setFrequency(int freq){
      prescale_val /= 4096.0;                      // 12-bit Resolution
      prescale_val /= float(freq);                 // Desired Frequency
      prescale_val -= 1.0;
-     int prescale = int(floor(prescale_val + 0.5));
+     // int prescale = int(floor(prescale_val + 0.5));
+     int prescale = int(round(25000000.0 / (4096.0 * freq)) - 1);
 
      if(prescale < 3)
           prescale = 3;
@@ -42,7 +43,7 @@ int PCA9685::setFrequency(int freq){
      err = I2C::_write_byte(MODE1,newmode);                    // Sleep
      err = I2C::_write_byte(PRE_SCALE,prescale);               // PWM Frequency Multiplyer
      err = I2C::_write_byte(MODE1, oldmode);
-     usleep(0.005 * 1000000);
+     usleep(0.0005 * 1000000);
      err = I2C::_write_byte(MODE1, oldmode | PCA9685_RESTART); // Restart
 
      _frequency = (25000000.0 / 4096.0) / (prescale + 1);
