@@ -50,10 +50,11 @@ int BNO055::_imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length){
      tmp[2] = (uint8_t)reg;
      tmp[3] = (unsigned)length;
      for(int i = 0; i < length; ++i){
-		tmp[i+4] = *((uint8_t*)bytes+i);
+		// tmp[i+4] = *((uint8_t*)bytes+i);
+		tmp[i+4] = &bytes[i];
 	}
 
-     int err = _write(tmp, length);
+     int err = _write(&tmp[0], length);
 	if(err >= 0)
 		return 0;
 	else{
