@@ -1,0 +1,16 @@
+dev = /dev/ttyS0
+baud = 115200
+roboclaw_address[1] = 128
+roboclaw_address[2] = 129
+
+base_width = 0.219
+maxQPPS = 14000
+maxSpeed = 2.5
+
+ticks_per_meter = 19660.19
+
+# robot_direction = 1
+# motor_direction[1] = 1
+# motor_direction[2] = 1
+# motor_direction[3] = 1
+# motor_direction[4] = 1

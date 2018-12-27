@@ -6,7 +6,10 @@
 
 using namespace std;
 
-int getch(void){
+int getCh(void);
+int getkey(void);
+
+int getCh(void){
      int ch;
      struct termios oldt;
      struct termios newt;
@@ -24,10 +27,10 @@ int getKey(void){
      int y = ' ';
      int z = ' ';
 
-     x = getch();
+     x = getCh();
      if(x == 27){
-          y = getch();
-          z = getch();
+          y = getCh();
+          z = getCh();
           // printf("Key code y is %d\n", y);
           // printf("Key code z is %d\n", z);
      }
@@ -40,14 +43,16 @@ int getKey(void){
 }
 
 int main(int argc, char *argv[]){
+	cout << "[START] Testing PCA-9685 Demo." << endl;
      int err;
      int bus = 1;
      int add = 0x70;
      int width, channel, freq, flag_test;
      float duty;
      char c;
-
+	cout << "[START] PigpioD..." << endl;
      int pi = pigpio_start(NULL,NULL);
+	cout << "[START] PCA-9685..." << endl;
      PCA9685 pwm(pi, bus, add);
 
      cout << "Please enter what frequency you'd like to try (24Hz - 1000Hz)." << endl;
@@ -86,12 +91,12 @@ int main(int argc, char *argv[]){
 
                if(z == 65){
                     curDuty += 10.0;
-                    curPulse += 1;
+                    curPulse += 10.0;
                     cout << "Current Duty/Pulsewidth: " << curDuty << "/" << curPulse << endl;
                     pwm.setPulsewidth(channel,curPulse);
                }else if(z == 66){
                     curDuty -= 10.0;
-                    curPulse -= 1;
+                    curPulse -= 10.0;
                     cout << "Current Duty/Pulsewidth: " << curDuty << "/" << curPulse << endl;
                     pwm.setPulsewidth(channel,curPulse);
                }else
