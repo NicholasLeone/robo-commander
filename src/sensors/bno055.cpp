@@ -51,7 +51,7 @@ int BNO055::_imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length){
      tmp[3] = (unsigned)length;
      for(int i = 0; i < length; ++i){
 		// tmp[i+4] = *((uint8_t*)bytes+i);
-		tmp[i+4] = &bytes[i];
+		tmp[i+4] = bytes[i];
 	}
 
      int err = _write(&tmp[0], length);
@@ -89,7 +89,7 @@ int BNO055::_write(uint8_t* bytes, int length, bool ack, int max_trys){
                if(!(recv_data[0]==0xEE && recv_data[1]==0x01) )
                     return 0;
           }
-
+		printf("[BNO055::_write] ---- No ack recieved, Trying again....\r\n");
           // # Else there was a bus error so resend, as recommended in UART app
           trys += 1;
      }
@@ -104,8 +104,8 @@ int BNO055::_read(uint8_t* buf, int length){
 
 	if(bytesRead > 0){
           printf("[BNO055::_read] ---- # of bytes received: %d\r\n", bytesRead);
-     }else
-		cout << "Pigpiod: Serial read error" << endl;
+     }
+	//else cout << "Pigpiod: Serial read error" << endl;
 
 	return bytesRead;
 }
@@ -149,18 +149,19 @@ int BNO055::begin(BNO055OpMode mode){
 
      if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_CONFIG) < 0)
           return -1;
-     // if(_imu_write_byte(PAGE0_PWR_MODE,PWR_MODE_NORMAL) < 0)
-     //      return -2;
-     // if(_imu_write_byte(PAGE_ID,0) < 0)
-     //      return -3;
-     // if(_imu_write_byte(PAGE0_SYS_TRIGGER,0x00) < 0)
-     //      return -4;
-     // if(_imu_write_byte(PAGE0_UNIT_SEL,0x83) < 0)
-     //      return -5;
-     // if(_imu_write_byte(PAGE0_AXIS_MAP_CONFIG,0x24) < 0)
-     //      return -6;
-     // if(_imu_write_byte(PAGE0_AXIS_MAP_SIGN,0x06) < 0)
-     //      return -7;
-     // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
-     //      return -8;
+     if(_imu_write_byte(PAGE0_PWR_MODE,PWR_MODE_NORMAL) < 0)
+          return -2;
+     if(_imu_write_byte(PAGE_ID,0) < 0)
+          return -3;
+     if(_imu_write_byte(PAGE0_SYS_TRIGGER,0x00) < 0)
+          return -4;
+     if(_imu_write_byte(PAGE0_UNIT_SEL,0x83) < 0)
+          return -5;
+     if(_imu_write_byte(PAGE0_AXIS_MAP_CONFIG,0x24) < 0)
+          return -6;
+     if(_imu_write_byte(PAGE0_AXIS_MAP_SIGN,0x06) < 0)
+          return -7;
+     if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
+          return -8;
+	return 1;
 }
