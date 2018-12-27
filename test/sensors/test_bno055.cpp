@@ -18,6 +18,7 @@ int main(int argc, char *argv[]){
 		BNO055 imu(pi, ttyDev, baud);
 		int err = imu.begin();
 		printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
+		imu.update();
 	}
 
      return 0;

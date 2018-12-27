@@ -208,20 +208,31 @@ private:
      int _pi;
 	int _handle;
 	int _baud;
+	char _uart_buffer[4096];
 
 	int max_retry_attempts = 2;
 	float timeout;
      bool _initialized = false;
      ImuData _readings;
 
-     int _write(uint8_t* bytes, int length, bool ack = true, int max_trys = 5);
-	int _imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length);
-     int _read(uint8_t* buf, int length);
+	float Caccel_fct = 1000.0;
+	float Cmag_fct = 16.0;
+	float Cgyro_fct = 900.0;
 
-     float Caccel_fct = 1000.0;
-     float Cmag_fct = 16.0;
-     float Cgyro_fct = 900.0;
+	char* _pi_read(int num_bytes, bool verbose = false);
+	char* _uart_send(char* cmds, bool ack = true, int max_trys = 5);
 
+	int _write_bytes(uint8_t _address, uint8_t* bytes, bool ack = true);
+	int _write_byte(uint8_t _address, uint8_t byte, bool ack = true);
+
+	int _read_bytes(uint8_t _address, int length, uint8_t* recv_data);
+	int _read_byte(uint8_t _address, uint8_t* recv_data);
+	int8_t _read_signed_byte(uint8_t _address);
+
+	// int _write(uint8_t* bytes, int length, bool ack = true, int max_trys = 5);
+	// int _imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length);
+	// int _imu_write_byte(BNO055Register reg, uint8_t byte);
+	// int _read(uint8_t* buf, int length);
 public:
 
      // FUNCTIONS
@@ -230,37 +241,13 @@ public:
 
      int begin(BNO055OpMode mode = OP_MODE_NDOF);
 
-     int _imu_write_byte(BNO055Register reg, uint8_t byte);
-     int read(BNO055Register reg, uint8_t *data, int length);
+     // int read(BNO055Register reg, uint8_t *data, int length);
 
      void flush();
      int available();
      void update();
 
-     // // Accelerometer
-     // void updateAccel();
-     // float getAccelSens();
-     // void calibrateAccel();
-     //
-     // // Gyroscope
-     // void updateGyro();
-     // float getGyroSens();
-     // void calibrateGyro();
-     //
-     // /** TODO: MAGNETOMETER */
-     // void updateMag();   //TODO: Handle i2c
-     // // void calibrateMag();
-     // float getMagSens();
-     //
-     // // Derived Measurements
-     // float getEulerX();
-     // float getEulerY();
-     // float getEulerZ();
-     // vector<float> getEuler();
-     //
-     // // TODO: Test and verify actual changing of stored settings
-     // IMU_CONFIG getConfig();
-     // int setConfig(IMU_CONFIG config);
+
 };
 
 #endif // BNO055_H_
