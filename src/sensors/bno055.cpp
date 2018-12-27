@@ -111,14 +111,14 @@ int BNO055::_read(uint8_t* buf, int length){
 
 int BNO055::read(BNO055Register reg, uint8_t *data, int length){
      uint8_t* buf;
-     char tmp[4];
+     uint8_t tmp[4];
      tmp[0] = 0xAA;
      tmp[1] = 1;
      tmp[2] = (uint8_t)reg;
      tmp[3] = (unsigned)length;
 
      this->flush();
-     int err = serial_write(_pi,_handle, tmp, length+2);
+     int err = serial_write(_pi,_handle, (char*)tmp, length+2);
      // If bytes successful sent out and ackowledgement received then read in data
 	if(err > 0){
           int nRead = _read(buf,length+2);
