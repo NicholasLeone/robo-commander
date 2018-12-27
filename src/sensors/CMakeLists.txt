@@ -19,9 +19,13 @@ target_link_libraries(imu RTIMULib ${LIBS})
 add_library(mpu9250 SHARED mpu9250.cpp)
 target_link_libraries(mpu9250 utils ${LIBS})
 
-# Camera
-add_library(camera SHARED camera.cpp)
-target_link_libraries(camera ${LIBS})
+# BNO-055
+add_library(bno055 SHARED bno055.cpp)
+target_link_libraries(bno055 ${LIBS})
+
+# # Camera
+# add_library(camera SHARED camera.cpp)
+# target_link_libraries(camera ${LIBS})
 
 if(BUILD_TESTS)
      if(VERBOSE)
@@ -41,7 +45,11 @@ if(BUILD_TESTS)
      add_executable(test_mpu9250 ${TEST_DIR}/sensors/test_mpu9250.cpp)
      target_link_libraries(test_mpu9250 mpu9250 serial)
 
-     # MPU-9250
-     add_executable(test_camera ${TEST_DIR}/sensors/test_camera.cpp)
-     target_link_libraries(test_camera camera utils)
+     # # Camera
+     # add_executable(test_camera ${TEST_DIR}/sensors/test_camera.cpp)
+     # target_link_libraries(test_camera camera utils)
+
+     # BNO-055
+     add_executable(test_bno055 ${TEST_DIR}/sensors/test_bno055.cpp)
+     target_link_libraries(test_bno055 bno055)
 endif(BUILD_TESTS)
