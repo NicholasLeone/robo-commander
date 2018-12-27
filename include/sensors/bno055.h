@@ -212,11 +212,15 @@ private:
 	int max_retry_attempts = 2;
 	float timeout;
      bool _initialized = false;
-
+     ImuData _readings;
 
      int _write(uint8_t* bytes, int length, bool ack = true, int max_trys = 5);
 	int _imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length);
      int _read(uint8_t* buf, int length);
+
+     float Caccel_fct = 1000.0;
+     float Cmag_fct = 16.0;
+     float Cgyro_fct = 900.0;
 
 public:
 
@@ -231,6 +235,8 @@ public:
 
      void flush();
      int available();
+     void update();
+
      // // Accelerometer
      // void updateAccel();
      // float getAccelSens();

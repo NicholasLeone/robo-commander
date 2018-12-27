@@ -29,6 +29,8 @@ BNO055::BNO055(int pi, std::string dev, int baud){
           this->_initialized = false;
           std::exit(1);
      }
+
+     // this->_readings = new ImuData();
 }
 
 BNO055::~BNO055(){
@@ -125,7 +127,7 @@ int BNO055::read(BNO055Register reg, uint8_t *data, int length){
           int nRead = _read(buf,length+2);
           if(buf[0]==0xBB && buf[1]==length){
      		memcpy(data,&buf[2],length);
-               return 0;
+               return nRead;
           }
      }else{
           printf("[BNO055::_write_bytes] ---- ERROR! Unsuccessful write...\r\n");
@@ -164,4 +166,17 @@ int BNO055::begin(BNO055OpMode mode){
      if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
           return -8;
 	return 1;
+}
+
+void BNO055::update(){
+     float a[3];
+
+     int nRead = this->read(PAGE0_ACC_DATA_X_LSB, (uint8_t*)&this->_readings,46);
+
+     a[0] = ((float)(this->_readings.imu.LinearAccelerationDataX)) / Caccel_fct;
+	a[1] = ((float)(this->_readings.imu.LinearAccelerationDataY)) / Caccel_fct;
+	a[2] = ((float)(this->_readings.imu.LinearAccelerationDataZ)) / Caccel_fct;
+
+     printf("[BNO055::Accelerometer] ---- X, Y, Z: %.3f\t|\t%.3f\t|\t%.3f\r\n", a[0],a[1],a[2]);
+
 }
