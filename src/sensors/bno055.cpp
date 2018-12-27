@@ -79,7 +79,7 @@ int BNO055::_write(uint8_t* bytes, int length, bool ack, int max_trys){
 
           // # Stop if no acknowledgment is expected.
           if(!ack)
-               return 0;
+               return err;
 
           // # Read acknowledgement response (2 bytes).
           if(_read(&recv_data[0], 2) == 2){
@@ -95,7 +95,7 @@ int BNO055::_write(uint8_t* bytes, int length, bool ack, int max_trys){
 
      printf("[BNO055::_write] ---- Exceeded maximum attempts to acknowledge serial command without bus error!\r\n");
 
-     return -1;
+     return -4;
 }
 
 int BNO055::_read(uint8_t* buf, int length){
@@ -140,4 +140,26 @@ void BNO055::flush(){
 	char* tmp;
 	int buf = available();
 	serial_read(_pi,_handle,tmp, buf);
+}
+
+int BNO055::begin(BNO055OpMode mode){
+     int err;
+     this->flush();
+
+     if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_CONFIG) < 0)
+          return -1;
+     if(_imu_write_byte(PAGE0_PWR_MODE,PWR_MODE_NORMAL) < 0)
+          return -2;
+     if(_imu_write_byte(PAGE_ID,0) < 0)
+          return -3;
+     if(_imu_write_byte(PAGE0_SYS_TRIGGER,0x00) < 0)
+          return -4;
+     if(_imu_write_byte(PAGE0_UNIT_SEL,0x83) < 0)
+          return -5;
+     if(_imu_write_byte(PAGE0_AXIS_MAP_CONFIG,0x24) < 0)
+          return -6;
+     if(_imu_write_byte(PAGE0_AXIS_MAP_SIGN,0x06) < 0)
+          return -7;
+     if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
+          return -8;
 }

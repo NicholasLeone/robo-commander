@@ -16,7 +16,8 @@ int main(int argc, char *argv[]){
 	int pi = pigpio_start(NULL, NULL);
 	if(pi >= 0){
 		BNO055 imu(pi, ttyDev, baud);
-
+		int err = imu.begin();
+		printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
 	}
 
      return 0;

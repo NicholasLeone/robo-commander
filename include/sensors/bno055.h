@@ -213,11 +213,8 @@ private:
 	float timeout;
      bool _initialized = false;
 
-     void flush();
-	int available();
 
      int _write(uint8_t* bytes, int length, bool ack = true, int max_trys = 5);
-     int _imu_write_byte(BNO055Register reg, uint8_t byte);
 	int _imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length);
      int _read(uint8_t* buf, int length);
 
@@ -227,7 +224,13 @@ public:
 	BNO055(int pi, std::string dev, int baud);
      ~BNO055();
 
+     int begin(BNO055OpMode mode = OP_MODE_NDOF);
+
+     int _imu_write_byte(BNO055Register reg, uint8_t byte);
      int read(BNO055Register reg, uint8_t *data, int length);
+
+     void flush();
+     int available();
      // // Accelerometer
      // void updateAccel();
      // float getAccelSens();
