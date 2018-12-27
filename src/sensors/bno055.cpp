@@ -148,18 +148,18 @@ int BNO055::begin(BNO055OpMode mode){
 
      if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_CONFIG) < 0)
           return -1;
-     if(_imu_write_byte(PAGE0_PWR_MODE,PWR_MODE_NORMAL) < 0)
-          return -2;
-     if(_imu_write_byte(PAGE_ID,0) < 0)
-          return -3;
-     if(_imu_write_byte(PAGE0_SYS_TRIGGER,0x00) < 0)
-          return -4;
-     if(_imu_write_byte(PAGE0_UNIT_SEL,0x83) < 0)
-          return -5;
-     if(_imu_write_byte(PAGE0_AXIS_MAP_CONFIG,0x24) < 0)
-          return -6;
-     if(_imu_write_byte(PAGE0_AXIS_MAP_SIGN,0x06) < 0)
-          return -7;
-     if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
-          return -8;
+     // if(_imu_write_byte(PAGE0_PWR_MODE,PWR_MODE_NORMAL) < 0)
+     //      return -2;
+     // if(_imu_write_byte(PAGE_ID,0) < 0)
+     //      return -3;
+     // if(_imu_write_byte(PAGE0_SYS_TRIGGER,0x00) < 0)
+     //      return -4;
+     // if(_imu_write_byte(PAGE0_UNIT_SEL,0x83) < 0)
+     //      return -5;
+     // if(_imu_write_byte(PAGE0_AXIS_MAP_CONFIG,0x24) < 0)
+     //      return -6;
+     // if(_imu_write_byte(PAGE0_AXIS_MAP_SIGN,0x06) < 0)
+     //      return -7;
+     // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
+     //      return -8;
 }
