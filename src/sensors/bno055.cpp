@@ -84,7 +84,7 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      // char* tmp;
      int nRead = serial_read(_pi,_handle, buffer, num_bytes);
 
-     if(nRead > 0){
+     if(nRead >= 0){
           // memcpy(tmp,&buffer[0],nRead*sizeof(char));
      }else{
           printf("[ERROR] BNO055::_pi_read ---- pigpiod 'serial_read' failed with error code [%d]\r\n", nRead);
