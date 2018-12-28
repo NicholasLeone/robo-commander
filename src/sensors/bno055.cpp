@@ -79,7 +79,7 @@ void BNO055::flush(){
 // }
 
 char* BNO055::_pi_read(int num_bytes, bool verbose){
-     if(verbose) printf("[BNO055::_pi_read] ---- # of bytes to read: %d\r\n", num_bytes);
+     if(verbose) printf("[BNO055::_pi_read] ---- num_bytes, available: %d, %d\r\n", num_bytes, this->available());
      char* buffer;
      // char* tmp;
      int nRead = serial_read(_pi,_handle, buffer, num_bytes);
