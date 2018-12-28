@@ -393,9 +393,33 @@ void BNO055::set_external_crystal(bool use_external_crystal){
 
 
 
-int BNO055::begin(BNO055OpMode mode){
+int BNO055::begin(uint8_t mode){
      int err;
-     this->flush();
+     uint8_t bnoId;
+     // this->flush();
+     this->_mode = mode;
+     this->_write_byte(BNO055_PAGE_ID_ADDR, 0, false);
+     this->_config_mode();
+     this->_write_byte(BNO055_PAGE_ID_ADDR, 0);
+
+     this->_read_byte(BNO055_CHIP_ID_ADDR, &bnoId);
+     printf("[INFO] BNO055::begin ---- Read BNO-055 Chip ID: %#x\r\n", bnoId);
+
+     // Mis-matching Chip ID's = Failure to begin
+     if(bnoId != BNO055_ID)
+          return -1;
+     // Reset Device
+     this->_write_byte(BNO055_SYS_TRIGGER_ADDR, 0x20, false);
+     usleep(0.65 * 1000000);
+
+     // Set to normal power mode.
+     this->_write_byte(BNO055_PWR_MODE_ADDR, POWER_MODE_NORMAL);
+     // Default to internal oscillator.
+     this->_write_byte(BNO055_SYS_TRIGGER_ADDR, 0x0);
+     // Enter normal operation mode.
+     this->_operation_mode();
+
+     return 1;
      // usleep(0.1 * 1000000);
      // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_CONFIG) < 0)
      //      return -1;
@@ -413,7 +437,6 @@ int BNO055::begin(BNO055OpMode mode){
      //      return -7;
      // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
      //      return -8;
-	return 1;
 }
 
 void BNO055::update(){

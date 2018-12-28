@@ -20,7 +20,26 @@ int main(int argc, char *argv[]){
 	if(pi >= 0){
 		BNO055 imu(pi, ttyDev, baud);
 		int err = imu.begin();
-		printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
+		if(err < 0)
+			printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
+		// Check Status
+		int* ret = imu.get_system_status();
+
+		printf("===========    BNO-055 Status Response    =================\r\n");
+	     printf("BNO-055 Status:\r\n");
+	     printf("\tSystem Status: %d\r\n", ret[0]);
+	     printf("\tSelf-Test Result: %d\r\n", ret[1]);
+	     printf("\tSystem Error Status: %d\r\n", ret[2]);
+
+		int* ret2 = imu.get_revision();
+		printf("===========    BNO-055 Software Revision Response    =================\r\n");
+	     printf("BNO-055 Software Revision:\r\n");
+	     printf("\tSoftware Version: %d\r\n", ret[0]);
+	     printf("\tBootloader Version: %d\r\n", ret[1]);
+	     printf("\tAccelerometer ID: %d\r\n", ret[2]);
+	     printf("\tGyroscope ID: %d\r\n", ret[3]);
+	     printf("\tMagnetometer ID: %d\r\n", ret[4]);
+
 		imu.update();
 	}
 

@@ -276,7 +276,7 @@ public:
 	int* get_revision();
 	int* get_system_status(bool run_self_test = true);
 
-     int begin(BNO055OpMode mode = OPERATION_MODE_NDOF);
+     int begin(uint8_t mode = OPERATION_MODE_NDOF);
 
      // int read(BNO055Register reg, uint8_t *data, int length);
 
