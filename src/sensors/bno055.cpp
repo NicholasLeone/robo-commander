@@ -108,13 +108,13 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
      if(verbose){
           printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
           cout << "[BNO055::_uart_send] ---- command bytes sending: ";
-          for(int i = 0; i == length; i++){
+          for(int i = 0; i <= length; i++){
                cout << "0x" << std::hex << (int)cmds[i] << ", ";
           }
           cout << endl;
      }
 
-     while(trys < max_trys + 1){
+     while(trys <= max_trys + 1){
           // Flush any pending received data to get into a clean state.
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Flushing...\n\r");
           this->flush();
