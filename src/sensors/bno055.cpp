@@ -92,7 +92,7 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      }
 
      if(verbose){
-          cout << "[BNO055::_pi_read] ---- bytes received: ";
+          cout << "[BNO055::_pi_read] ---- bytes received [N = " << nRead <<"]: ";
           for(int i = 0; i <= nRead; i++){
                cout << "0x" << std::hex << (int)buffer[i] << ", ";
           }
