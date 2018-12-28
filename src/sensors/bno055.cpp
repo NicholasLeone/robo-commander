@@ -81,11 +81,11 @@ void BNO055::flush(){
 char* BNO055::_pi_read(int num_bytes, bool verbose){
      if(verbose) printf("[BNO055::_pi_read] ---- # of bytes to read: %d\r\n", num_bytes);
      char* buffer;
-     char* tmp;
+     // char* tmp;
      int nRead = serial_read(_pi,_handle, buffer, num_bytes);
 
      if(nRead > 0){
-          memcpy(tmp,&buffer[0],nRead*sizeof(char));
+          // memcpy(tmp,&buffer[0],nRead*sizeof(char));
      }else{
           printf("[ERROR] BNO055::_pi_read ---- pigpiod 'serial_read' failed with error code [%d]\r\n", nRead);
           return nullptr;
@@ -94,11 +94,11 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      if(verbose){
           cout << "[BNO055::_pi_read] ---- bytes received: ";
           for(int i = 0; i < nRead; i++){
-               cout << "0x" << std::hex << (int)tmp[i] << ", ";
+               cout << "0x" << std::hex << (int)buffer[i] << ", ";
           }
           cout << endl;
      }
-     return tmp;
+     return buffer;
 }
 
 char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
@@ -112,11 +112,13 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           }
           cout << endl;
      }
-     
+
      while(trys < max_trys + 1){
           // Flush any pending received data to get into a clean state.
+          if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Flushing...\n\r");
           this->flush();
           // Send the data.
+          if(verbose) printf("[DEBUG] BNO055::_uart_send ----- sending commands with 'serial_write'...\n\r");
           int err = serial_write(_pi,_handle, cmds, length);
           if(err < 0){
                printf("[ERROR] BNO055::_uart_send ---- pigpiod 'serial_write' failed with error code [%d]\r\n", err);
@@ -126,8 +128,10 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           if(!ack) return 0;
 
           // Read acknowledgement response (2 bytes).
+          if(verbose) printf("[DEBUG] BNO055::_uart_send ----- About to '_pi_read'...\n\r");
           char* resp = this->_pi_read(2,true);
           int recv_bytes = (sizeof(resp)/sizeof(*resp));
+          if(verbose) printf("[DEBUG] BNO055::_uart_send ----- recieved [%d] bytes from '_pi_read'...\n\r", recv_bytes);
           if((recv_bytes != 2) || (resp == nullptr) ){
                printf("[ERROR] BNO055::_uart_send ---- UART ACK not received, is the BNO055 connected? (HINT: nbytes = %d, or nullptr)\r\n", recv_bytes);
                trys += 1;
