@@ -39,6 +39,16 @@ BNO055::~BNO055(){
      int err = serial_close(this->_pi, this->_handle);
 }
 
+int BNO055::available(){
+	return serial_data_available(_pi,_handle);
+}
+
+void BNO055::flush(){
+	char* tmp;
+	int buf = available();
+	serial_read(_pi,_handle,tmp, buf);
+}
+
 // int BNO055::_imu_write_byte(BNO055Register reg, uint8_t byte){
 //      int err = _imu_write_bytes(reg, &byte, 1);
 //      return err;
@@ -70,14 +80,12 @@ BNO055::~BNO055(){
 
 char* BNO055::_pi_read(int num_bytes, bool verbose){
      if(verbose) printf("[BNO055::_pi_read] ---- # of bytes to read: %d\r\n", num_bytes);
-
-     int nRead = serial_read(_pi,_handle, this->_uart_buffer, num_bytes);
-     char tmp[nRead*sizeof(char)];
-     memset(tmp, 0, sizeof(tmp));
+     char* buffer;
+     char* tmp;
+     int nRead = serial_read(_pi,_handle, buffer, num_bytes);
 
      if(nRead > 0){
-          // tmp = &_uart_buffer[0];
-          memcpy(&tmp[0],&_uart_buffer[0],nRead*sizeof(char));
+          memcpy(tmp,&buffer[0],nRead*sizeof(char));
      }else{
           printf("[ERROR] BNO055::_pi_read ---- pigpiod 'serial_read' failed with error code [%d]\r\n", nRead);
           return nullptr;
@@ -218,7 +226,8 @@ int BNO055::_read_bytes(uint8_t _address, int length, uint8_t* recv_data){
           return -2;
      }
      // Store
-     recv_data = (uint8_t*)resp2;
+     // recv_data = (uint8_t*)resp2;
+     memcpy(recv_data, &resp2[0],sizeof(resp2));
      return 1;
 }
 
@@ -229,17 +238,16 @@ int BNO055::_read_byte(uint8_t _address, uint8_t* recv_data){
           printf("[ERROR] BNO055::_read_byte ---- 'BNO055::_read_bytes' failed with error code [%d]\r\n", err);
           return -1;
      }
-     *recv_data = tmp[0];
+     memcpy(recv_data, &tmp[0],sizeof(tmp));
      return 1;
 }
 
 int8_t BNO055::_read_signed_byte(uint8_t _address){
-     uint8_t* tmp;
+     uint8_t tmp;
      int8_t out;
-
-     int err = this->_read_byte(_address, tmp);
+     int err = this->_read_byte(_address, &tmp);
      if(err > 0){
-          memcpy(&out, &tmp[0], sizeof(int8_t));
+          memcpy(&out, &tmp, sizeof(int8_t));
      }else{
           printf("[ERROR] BNO055::_read_signed_byte ---- 'BNO055::_read_byte' failed with error code [%d]\r\n", err);
           return -1;
@@ -248,6 +256,117 @@ int8_t BNO055::_read_signed_byte(uint8_t _address){
      return out;
 }
 
+void BNO055::_config_mode(){this->set_mode(OPERATION_MODE_CONFIG);}
+void BNO055::_operation_mode(){this->set_mode(this->_mode);}
+
+int BNO055::set_mode(uint8_t mode){
+     int err = this->_write_byte(BNO055_OPR_MODE_ADDR, mode & 0xFF);
+     usleep(0.03 * 1000000);
+     return err;
+}
+
+/**
+* @desc: Returns the following revision information about the BNO055 chip.
+*
+*    @return[0]: Software revision      - 2 bytes (MSB + LSB)
+*    @return[1]: Bootloader version     - 1 byte
+*    @return[2]: Accelerometer ID       - 1 byte
+*    @return[4]: Gyro ID                - 1 byte
+*    @return[3]: Magnetometer ID        - 1 byte
+*/
+int* BNO055::get_revision(){
+     // Initialize bytes
+     uint8_t sw_msb, sw_lsb, blId, accelId, gyroId, magId;
+     int* out;
+
+     // Read registers
+     this->_read_byte(BNO055_SW_REV_ID_MSB_ADDR, &sw_msb);
+     this->_read_byte(BNO055_SW_REV_ID_LSB_ADDR, &sw_lsb);
+     this->_read_byte(BNO055_BL_REV_ID_ADDR, &blId);
+     this->_read_byte(BNO055_ACCEL_REV_ID_ADDR, &accelId);
+     this->_read_byte(BNO055_GYRO_REV_ID_ADDR, &gyroId);
+     this->_read_byte(BNO055_MAG_REV_ID_ADDR, &magId);
+
+     uint16_t swId = ((sw_msb << 8) | sw_lsb) & 0xFFFF;
+
+     int tmp[5] = {(int)swId, (int)blId, (int)accelId, (int)gyroId, (int)magId};
+     memcpy(out,&tmp[0],5*sizeof(int));
+     return out;
+}
+
+/**
+* @desc: Return a tuple with status information.  Three values will be returned:
+*
+*    @output - System status register value with the following meaning:
+*         0 = Idle
+*         1 = System Error
+*         2 = Initializing Peripherals
+*         3 = System Initialization
+*         4 = Executing Self-Test
+*         5 = Sensor fusion algorithm running
+*         6 = System running without fusion algorithms
+*    @output - Self test result register value with the following meaning:
+*         Bit value: 1 = test passed, 0 = test failed
+*         Bit 0 = Accelerometer self test
+*         Bit 1 = Magnetometer self test
+*         Bit 2 = Gyroscope self test
+*         Bit 3 = MCU self test
+*         Value of 0x0F = all good!
+*    @output - System error register value with the following meaning:
+*         0 = No error
+*         1 = Peripheral initialization error
+*         2 = System initialization error
+*         3 = Self test result failed
+*         4 = Register map value out of range
+*         5 = Register map address out of range
+*         6 = Register map write error
+*         7 = BNO low power mode not available for selected operation mode
+*         8 = Accelerometer power mode not available
+*         9 = Fusion algorithm configuration error
+*         10 = Sensor configuration error
+*
+* If run_self_test is passed in as False then no self test is performed and
+* None will be returned for the self test result.  Note that running a
+* self test requires going into config mode which will stop the fusion
+* engine from running.
+*/
+int* BNO055::get_system_status(bool run_self_test){
+     uint8_t sys_trigger, status, error;
+     uint8_t self_test = -1;
+     int* out;
+
+     if(run_self_test){
+          // Switch to configuration mode if running self test.
+          this->_config_mode();
+          // Perform a self test.
+          this->_read_byte(BNO055_SYS_TRIGGER_ADDR, &sys_trigger);
+          this->_write_byte(BNO055_SYS_TRIGGER_ADDR, sys_trigger | 0x1);
+          // Wait for self test to finish.
+          usleep(1000000);
+          // Read test result.
+          this->_read_byte(BNO055_SELFTEST_RESULT_ADDR, &self_test);
+          // Go back to operation mode.
+          this->_operation_mode();
+     }
+     // Now read status and error registers.
+     this->_read_byte(BNO055_SYS_STAT_ADDR, &status);
+     this->_read_byte(BNO055_SYS_ERR_ADDR, &error);
+
+     int tmp[3] = {(int)status, (int)self_test, (int)error};
+     memcpy(out,&tmp[0],3*sizeof(int));
+     return out;
+}
+
+void BNO055::set_external_crystal(bool use_external_crystal){
+     // Switch to configuration mode.
+     this->_config_mode();
+     if(use_external_crystal)
+          this->_write_byte(BNO055_SYS_TRIGGER_ADDR, 0x80);
+     else
+          this->_write_byte(BNO055_SYS_TRIGGER_ADDR, 0x00);
+     // Go back to normal operation mode.
+     this->_operation_mode();
+}
 
 // int BNO055::read(BNO055Register reg, uint8_t *data, int length){
 //      uint8_t* buf;
@@ -272,19 +391,11 @@ int8_t BNO055::_read_signed_byte(uint8_t _address){
 //      }
 // }
 
-int BNO055::available(){
-	return serial_data_available(_pi,_handle);
-}
 
-void BNO055::flush(){
-	char* tmp;
-	int buf = available();
-	serial_read(_pi,_handle,tmp, buf);
-}
 
 int BNO055::begin(BNO055OpMode mode){
-     // int err;
-     // this->flush();
+     int err;
+     this->flush();
      // usleep(0.1 * 1000000);
      // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_CONFIG) < 0)
      //      return -1;

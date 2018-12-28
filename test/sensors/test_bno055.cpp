@@ -13,6 +13,9 @@ int main(int argc, char *argv[]){
 	string ttyDev = "/dev/ttyS0";
 	int baud = 115200;
 
+	// string ttyDev = "/dev/pts/3";
+	// int baud = 9762;
+
 	int pi = pigpio_start(NULL, NULL);
 	if(pi >= 0){
 		BNO055 imu(pi, ttyDev, baud);
