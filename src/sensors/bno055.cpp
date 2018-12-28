@@ -82,7 +82,7 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      if(verbose) printf("[BNO055::_pi_read] ---- # of bytes to read: %d\r\n", num_bytes);
      char* buffer;
      // char* tmp;
-     int nRead = serial_read(_pi,_handle, buffer, num_bytes);
+     int nRead = serial_read(_pi,_handle, (char*)buffer, num_bytes);
 
      if(nRead >= 0){
           // memcpy(tmp,&buffer[0],nRead*sizeof(char));
@@ -139,14 +139,15 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           // Read acknowledgement response (2 bytes).
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- About to '_pi_read'...\n\r");
           char* resp = this->_pi_read(2,true);
-          int recv_bytes = (sizeof(resp)/sizeof(resp[0]));
+          int recv_bytes = (sizeof(resp)/sizeof(*resp));
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- recieved [%d] bytes from '_pi_read'...\n\r", recv_bytes);
+          printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp[0],(int)resp[1]);
           if((recv_bytes != 2) || (resp == nullptr) ){
                printf("[ERROR] BNO055::_uart_send ---- UART ACK not received, is the BNO055 connected? (HINT: nbytes = %d, or nullptr)\r\n", recv_bytes);
           }
           // Stop if there's no bus error (0xEE07 response) and return response bytes.
-          uint8_t resp_header = (uint8_t)resp[0];
-          uint8_t resp_status = (uint8_t)resp[1];
+          uint8_t resp_header = (int)resp[0];
+          uint8_t resp_status = (int)resp[1];
           bool resp_check = ((resp_header == 0xEE) && (resp_status == 0x07) );
           if(!resp_check){
                printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
@@ -426,14 +427,17 @@ void BNO055::set_external_crystal(bool use_external_crystal){
 
 
 int BNO055::begin(uint8_t mode){
+     printf(" ============ BNO055::begin ============r\n");
      int err;
      uint8_t bnoId;
-     // this->flush();
      this->_mode = mode;
+     printf(" ---------- Byte #1\r\n");
      this->_write_byte(BNO055_PAGE_ID_ADDR, 0, false);
+     printf(" ---------- Config Mode\r\n");
      this->_config_mode();
+     printf(" ---------- Byte #2\r\n");
      this->_write_byte(BNO055_PAGE_ID_ADDR, 0);
-
+     printf(" ---------- Chip ID\r\n");
      this->_read_byte(BNO055_CHIP_ID_ADDR, &bnoId);
      printf("[INFO] BNO055::begin ---- Read BNO-055 Chip ID: %#x\r\n", bnoId);
 
@@ -441,34 +445,21 @@ int BNO055::begin(uint8_t mode){
      if(bnoId != BNO055_ID)
           return -1;
      // Reset Device
+     printf(" ---------- Resetting\r\n");
      this->_write_byte(BNO055_SYS_TRIGGER_ADDR, 0x20, false);
      usleep(0.65 * 1000000);
 
      // Set to normal power mode.
+     printf(" ---------- Normal PWR Mode\r\n");
      this->_write_byte(BNO055_PWR_MODE_ADDR, POWER_MODE_NORMAL);
      // Default to internal oscillator.
+     printf(" ---------- Defaulting to Internal Oscillator\r\n");
      this->_write_byte(BNO055_SYS_TRIGGER_ADDR, 0x0);
      // Enter normal operation mode.
+     printf(" ---------- Normal Operation Mode\r\n");
      this->_operation_mode();
 
      return 1;
-     // usleep(0.1 * 1000000);
-     // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_CONFIG) < 0)
-     //      return -1;
-     // if(_imu_write_byte(PAGE0_PWR_MODE,PWR_MODE_NORMAL) < 0)
-     //      return -2;
-     // if(_imu_write_byte(PAGE_ID,0) < 0)
-     //      return -3;
-     // if(_imu_write_byte(PAGE0_SYS_TRIGGER,0x00) < 0)
-     //      return -4;
-     // if(_imu_write_byte(PAGE0_UNIT_SEL,0x83) < 0)
-     //      return -5;
-     // if(_imu_write_byte(PAGE0_AXIS_MAP_CONFIG,0x24) < 0)
-     //      return -6;
-     // if(_imu_write_byte(PAGE0_AXIS_MAP_SIGN,0x06) < 0)
-     //      return -7;
-     // if(_imu_write_byte(PAGE0_OPR_MODE,OP_MODE_NDOF) < 0)
-     //      return -8;
 }
 
 void BNO055::update(){
