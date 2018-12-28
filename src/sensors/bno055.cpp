@@ -101,11 +101,18 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      return tmp;
 }
 
-char* BNO055::_uart_send(char* cmds, bool ack, int max_trys){
+char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
      int trys = 0;
      int length = (sizeof(cmds)/sizeof(*cmds));
-     printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
-
+     if(verbose){
+          printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
+          cout << "[BNO055::_uart_send] ---- command bytes sending: ";
+          for(int i = 0; i < length; i++){
+               cout << "0x" << std::hex << (int)cmds[i] << ", ";
+          }
+          cout << endl;
+     }
+     
      while(trys < max_trys + 1){
           // Flush any pending received data to get into a clean state.
           this->flush();

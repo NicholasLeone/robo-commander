@@ -244,8 +244,8 @@ private:
 	float Cmag_fct = 16.0;
 	float Cgyro_fct = 900.0;
 
-	char* _pi_read(int num_bytes, bool verbose = false);
-	char* _uart_send(char* cmds, bool ack = true, int max_trys = 5);
+	char* _pi_read(int num_bytes, bool verbose = true);
+	char* _uart_send(char* cmds, bool ack = true, bool verbose = true, int max_trys = 5);
 
 	int _write_bytes(uint8_t _address, uint8_t* bytes, bool ack = true);
 	int _write_byte(uint8_t _address, uint8_t byte, bool ack = true);
