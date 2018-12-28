@@ -82,7 +82,7 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      if(verbose) printf("[BNO055::_pi_read] ---- # of bytes to read: %d\r\n", num_bytes);
      char* buffer;
      // char* tmp;
-     int nRead = serial_read(_pi,_handle, (char*)buffer, num_bytes);
+     int nRead = serial_read(_pi,_handle, buffer, num_bytes);
 
      if(nRead >= 0){
           // memcpy(tmp,&buffer[0],nRead*sizeof(char));
@@ -94,7 +94,7 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
      if(verbose){
           cout << "[BNO055::_pi_read] ---- bytes received [N = " << nRead <<"]: ";
           for(int i = 0; i <= nRead; i++){
-               cout << "0x" << std::hex << (int)buffer[i] << ", ";
+               cout << (int)buffer[i] << " (0x" << std::hex << (int)buffer[i] << ") , ";
           }
           cout << endl;
      }
