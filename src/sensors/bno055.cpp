@@ -127,7 +127,10 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
                return nullptr;
           }
           // Stop if no acknowledgment is expected.
-          if(!ack) return 0;
+          if(!ack){
+               if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Not looking for ACK, exiting from 'BNO055::_uart_send'...\n\r");
+               return nullptr;
+          }
 
           // Read acknowledgement response (2 bytes).
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- About to '_pi_read'...\n\r");
