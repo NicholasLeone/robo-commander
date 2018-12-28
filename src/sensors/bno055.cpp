@@ -131,6 +131,8 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           // Stop if no acknowledgment is expected.
           if(!ack){
                if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Not looking for ACK, exiting from 'BNO055::_uart_send'...\n\r");
+               success = true;
+               output = nullptr;
                break;
           }
 
