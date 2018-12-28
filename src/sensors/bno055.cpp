@@ -105,7 +105,7 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
      char* output;
      bool success = false;
      int trys = 0;
-     int length = sizeof(cmds) / sizeof(cmds[0]);
+     int length = sizeof(cmds) / sizeof(&cmds[0]);
      char* _cmds = &cmds[0];
      if(verbose){
           printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
