@@ -202,6 +202,7 @@ int BNO055::_write_bytes(uint8_t _address, uint8_t* bytes, bool ack){
 
 int BNO055::_write_byte(uint8_t _address, uint8_t byte, bool ack){
      char* resp;
+     uint8_t resp_header, resp_status;
      // Load up Array of bytes for UART <-> BNO-055 register relations
      uint8_t outbytes[5];
      outbytes[0] = 0xAA;                // Start byte
@@ -213,10 +214,12 @@ int BNO055::_write_byte(uint8_t _address, uint8_t byte, bool ack){
      // Transmit via UART and get response
      printf("[DEBUG] BNO055::_write_byte ---- sending byte out using '_uart_send'...\r\n");
      resp = this->_uart_send((char*)outbytes, ack);
-     printf("[DEBUG] BNO055::_write_byte ---- '_uart_send' Response Received (header, status): %#x,\t%#x\r\n", (int)resp[0],(int)resp[1]);
-     uint8_t resp_header = (int)resp[0];
-     uint8_t resp_status = (int)resp[1];
-     printf("[DEBUG] BNO055::_write_byte ---- Verifying proper ACK...\r\n");
+     if(ack){
+          printf("[DEBUG] BNO055::_write_byte ---- '_uart_send' Response Received (header, status): %#x,\t%#x\r\n", (int)resp[0],(int)resp[1]);
+          resp_header = (int)resp[0];
+          resp_status = (int)resp[1];
+          printf("[DEBUG] BNO055::_write_byte ---- Verifying proper ACK...\r\n");
+     }
      // Verify register write succeeded if there was an acknowledgement.
      if( (ack) && (resp_header != 0xEE) && (resp_status != 0x01) ){
           printf("[ERROR] BNO055::_write_byte ---- Could not verify UART ACK (0xEE01). 'write' Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
