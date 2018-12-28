@@ -102,6 +102,8 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
 }
 
 char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
+     char* output;
+     bool success = false;
      int trys = 0;
      int length = sizeof(cmds) / sizeof(cmds[0]);
      char* _cmds = &cmds[0];
@@ -124,12 +126,12 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- commands sent with 'serial_write' with err = %d.\n\r", err);
           if(err < 0){
                printf("[ERROR] BNO055::_uart_send ---- pigpiod 'serial_write' failed with error code [%d]\r\n", err);
-               return nullptr;
+               break;
           }
           // Stop if no acknowledgment is expected.
           if(!ack){
                if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Not looking for ACK, exiting from 'BNO055::_uart_send'...\n\r");
-               return nullptr;
+               break;
           }
 
           // Read acknowledgement response (2 bytes).
@@ -139,8 +141,6 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- recieved [%d] bytes from '_pi_read'...\n\r", recv_bytes);
           if((recv_bytes != 2) || (resp == nullptr) ){
                printf("[ERROR] BNO055::_uart_send ---- UART ACK not received, is the BNO055 connected? (HINT: nbytes = %d, or nullptr)\r\n", recv_bytes);
-               trys += 1;
-               continue;
           }
           // Stop if there's no bus error (0xEE07 response) and return response bytes.
           uint8_t resp_header = (uint8_t)resp[0];
@@ -148,7 +148,9 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           bool resp_check = ((resp_header == 0xEE) && (resp_status == 0x07) );
           if(!resp_check){
                printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
-               return resp;
+               output = resp;
+               success = true;
+               break;
           }
 
           // Else there was a bus error so resend, as recommended in UART app
@@ -156,8 +158,13 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           // printf("[INFO] BNO055::_uart_send ---- No ack recieved, Trying again....\r\n");
      }
 
-     printf("[ERROR] BNO055::_uart_send ---- Exceeded maximum attempts to acknowledge serial command without bus error!\r\n");
-     return nullptr;
+     // Choose what to return
+     if(success)
+          return output;
+     else{
+          printf("[ERROR] BNO055::_uart_send ---- Exceeded maximum attempts to acknowledge serial command without bus error!\r\n");
+          return nullptr;
+     }
 }
 
 int BNO055::_write_bytes(uint8_t _address, uint8_t* bytes, bool ack){
@@ -192,7 +199,7 @@ int BNO055::_write_bytes(uint8_t _address, uint8_t* bytes, bool ack){
 }
 
 int BNO055::_write_byte(uint8_t _address, uint8_t byte, bool ack){
-
+     char* resp;
      // Load up Array of bytes for UART <-> BNO-055 register relations
      uint8_t outbytes[5];
      outbytes[0] = 0xAA;                // Start byte
@@ -202,7 +209,8 @@ int BNO055::_write_byte(uint8_t _address, uint8_t byte, bool ack){
      outbytes[4] = byte & 0xFF;
 
      // Transmit via UART and get response
-     char* resp = this->_uart_send((char*)outbytes, ack);
+     printf("[DEBUG] BNO055::_write_byte ---- sending byte out using '_uart_send'...\r\n");
+     resp = this->_uart_send((char*)outbytes, ack);
      printf("[DEBUG] BNO055::_write_byte ---- '_uart_send' Response Received (header, status): %#x,\t%#x\r\n", (int)resp[0],(int)resp[1]);
      uint8_t resp_header = (int)resp[0];
      uint8_t resp_status = (int)resp[1];
