@@ -104,12 +104,12 @@ char* BNO055::_pi_read(int num_bytes, bool verbose){
 char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
      int trys = 0;
      int length = sizeof(cmds) / sizeof(cmds[0]);
-
+     char* _cmds = &cmds[0];
      if(verbose){
           printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
           cout << "[BNO055::_uart_send] ---- command bytes sending: ";
           for(int i = 0; i <= length; i++){
-               cout << "0x" << std::hex << (int)cmds[i] << ", ";
+               cout << "0x" << std::hex << (int)_cmds[i] << ", ";
           }
           cout << endl;
      }
@@ -120,7 +120,7 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           this->flush();
           // Send the data.
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- sending commands with 'serial_write'...\n\r");
-          int err = serial_write(_pi,_handle, cmds, length);
+          int err = serial_write(_pi,_handle, _cmds, length);
           if(err < 0){
                printf("[ERROR] BNO055::_uart_send ---- pigpiod 'serial_write' failed with error code [%d]\r\n", err);
                return nullptr;
