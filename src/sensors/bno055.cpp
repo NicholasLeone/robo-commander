@@ -111,7 +111,7 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
           cout << "[BNO055::_uart_send] ---- command bytes sending: ";
           for(int i = 0; i <= length; i++){
-               cout << "0x" << std::hex << (int)_cmds[i] << ", ";
+               cout << (int)_cmds[i] << " (0x" << std::hex << (int)_cmds[i] << "), ";
           }
           cout << endl;
      }
