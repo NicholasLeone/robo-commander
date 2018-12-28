@@ -115,14 +115,14 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           }
           cout << endl;
      }
-     this->flush();
+
      while(trys <= max_trys + 1){
           // Flush any pending received data to get into a clean state.
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Flushing...\n\r");
-          // this->flush();
+          this->flush();
           // Send the data.
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- sending commands with 'serial_write'...\n\r");
-          int err = serial_write(_pi,_handle, _cmds, length+1);
+          int err = serial_write(_pi,_handle, &cmds[0], (unsigned)length+1);
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- commands sent with 'serial_write' with err = %d.\n\r", err);
           if(err < 0){
                printf("[ERROR] BNO055::_uart_send ---- pigpiod 'serial_write' failed with error code [%d]\r\n", err);
