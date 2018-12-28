@@ -158,6 +158,7 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
 int BNO055::_write_bytes(uint8_t _address, uint8_t* bytes, bool ack){
      int length = (sizeof(bytes)/sizeof(*bytes));
      uint8_t n = (uint8_t)length;
+     printf("[DEBUG] 'BNO055::_write_bytes' ----- # of bytes going out (length, n): %d, %d\r\n", length, (int)n);
      // Load up Array of bytes for UART <-> BNO-055 register relations
      uint8_t outbytes[4+length];
      outbytes[0] = 0xAA;                // Start byte
