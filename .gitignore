@@ -5,4 +5,4 @@ lib
 build/*
 .tags
 .ctags
-*/test_bno0552.py
+*test_bno0552.py
