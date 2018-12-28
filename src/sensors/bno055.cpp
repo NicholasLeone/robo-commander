@@ -139,7 +139,7 @@ char* BNO055::_uart_send(char* cmds, bool ack, bool verbose, int max_trys){
           // Read acknowledgement response (2 bytes).
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- About to '_pi_read'...\n\r");
           char* resp = this->_pi_read(2,true);
-          int recv_bytes = (sizeof(resp)/sizeof(*resp));
+          int recv_bytes = (sizeof(resp)/sizeof(resp[0]));
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- recieved [%d] bytes from '_pi_read'...\n\r", recv_bytes);
           if((recv_bytes != 2) || (resp == nullptr) ){
                printf("[ERROR] BNO055::_uart_send ---- UART ACK not received, is the BNO055 connected? (HINT: nbytes = %d, or nullptr)\r\n", recv_bytes);
