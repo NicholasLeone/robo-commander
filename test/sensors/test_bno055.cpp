@@ -10,15 +10,17 @@ int main(int argc, char *argv[]){
 	float angle;
 	int dt;
 
-	string ttyDev = "/dev/ttyS0";
+	string ttyDev = "/dev/ttyUSB0";
 	int baud = 115200;
 
 	// string ttyDev = "/dev/pts/3";
 	// int baud = 9762;
 
 	int pi = pigpio_start(NULL, NULL);
+	pi = 0;
 	if(pi >= 0){
-		BNO055 imu(pi, ttyDev, baud);
+		// BNO055 imu(pi, ttyDev, baud);
+		BNO055 imu(ttyDev, baud);
 		int err = imu.begin();
 		if(err < 0)
 			printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);

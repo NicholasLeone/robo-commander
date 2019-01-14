@@ -3,7 +3,7 @@
 
 #include "base/params.h"
 #include "base/peripherals.h"
-#include "comms/serial.h"
+#include "comms/uart.h"
 
 // Power Modes
 typedef enum{
@@ -231,6 +231,7 @@ class BNO055 {
 private:
      int _pi;
 	int _handle;
+	UartDev* _sd;
 	int _baud;
 	char _uart_buffer[4096];
 	uint8_t _mode;
@@ -238,6 +239,7 @@ private:
 	int max_retry_attempts = 2;
 	float timeout;
      bool _initialized = false;
+	bool _verbose = true;
      ImuData _readings;
 
 	float Caccel_fct = 1000.0;
@@ -246,6 +248,9 @@ private:
 
 	char* _pi_read(int num_bytes, bool verbose = true);
 	char* _uart_send(char* cmds, bool ack = true, bool verbose = true, int max_trys = 5);
+
+	int _read(int num_bytes, char* data);
+	int _send(char* cmds, int length, char* data, bool ack = true, bool verbose = true, int max_trys = 5);
 
 	int _write_bytes(uint8_t _address, uint8_t* bytes, bool ack = true);
 	int _write_byte(uint8_t _address, uint8_t byte, bool ack = true);
@@ -265,7 +270,8 @@ private:
 public:
 
      // FUNCTIONS
-	BNO055(int pi, std::string dev, int baud);
+	BNO055(std::string dev, int baud);
+	// BNO055(int pi, std::string dev, int baud);
      ~BNO055();
 
 	void flush();
@@ -273,7 +279,54 @@ public:
 
 	int set_mode(uint8_t mode);
 	void set_external_crystal(bool use_external_crystal);
+
+	/**
+	* @desc: Returns the following revision information about the BNO055 chip.
+	*
+	*    @return[0]: Software revision      - 2 bytes (MSB + LSB)
+	*    @return[1]: Bootloader version     - 1 byte
+	*    @return[2]: Accelerometer ID       - 1 byte
+	*    @return[4]: Gyro ID                - 1 byte
+	*    @return[3]: Magnetometer ID        - 1 byte
+	*/
 	int* get_revision();
+
+	/**
+	* @desc: Return a tuple with status information.  Three values will be returned:
+	*
+	*    @output - System status register value with the following meaning:
+	*         0 = Idle
+	*         1 = System Error
+	*         2 = Initializing Peripherals
+	*         3 = System Initialization
+	*         4 = Executing Self-Test
+	*         5 = Sensor fusion algorithm running
+	*         6 = System running without fusion algorithms
+	*    @output - Self test result register value with the following meaning:
+	*         Bit value: 1 = test passed, 0 = test failed
+	*         Bit 0 = Accelerometer self test
+	*         Bit 1 = Magnetometer self test
+	*         Bit 2 = Gyroscope self test
+	*         Bit 3 = MCU self test
+	*         Value of 0x0F = all good!
+	*    @output - System error register value with the following meaning:
+	*         0 = No error
+	*         1 = Peripheral initialization error
+	*         2 = System initialization error
+	*         3 = Self test result failed
+	*         4 = Register map value out of range
+	*         5 = Register map address out of range
+	*         6 = Register map write error
+	*         7 = BNO low power mode not available for selected operation mode
+	*         8 = Accelerometer power mode not available
+	*         9 = Fusion algorithm configuration error
+	*         10 = Sensor configuration error
+	*
+	* If run_self_test is passed in as False then no self test is performed and
+	* None will be returned for the self test result.  Note that running a
+	* self test requires going into config mode which will stop the fusion
+	* engine from running.
+	*/
 	int* get_system_status(bool run_self_test = true);
 
      int begin(uint8_t mode = OPERATION_MODE_NDOF);

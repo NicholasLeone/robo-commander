@@ -21,7 +21,7 @@ target_link_libraries(mpu9250 utils ${LIBS})
 
 # BNO-055
 add_library(bno055 SHARED bno055.cpp)
-target_link_libraries(bno055 ${LIBS})
+target_link_libraries(bno055 uart ${LIBS})
 
 # # Camera
 # add_library(camera SHARED camera.cpp)

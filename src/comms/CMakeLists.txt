@@ -19,6 +19,10 @@ target_link_libraries(i2c ${LIBS})
 add_library(udp SHARED udp.cpp)
 target_link_libraries(udp ${LIBS})
 
+# UART
+add_library(uart SHARED uart.cpp)
+target_link_libraries(uart ${LIBS})
+
 if(BUILD_TESTS)
 
      if(VERBOSE)
@@ -38,5 +42,9 @@ if(BUILD_TESTS)
      # I2C
      add_executable(test_i2c ${TEST_DIR}/comms/test_i2c.cpp)
      target_link_libraries(test_i2c i2c ${LIBS})
+
+     # UART
+     add_executable(test_uart ${TEST_DIR}/comms/test_uart.cpp)
+     target_link_libraries(test_uart uart ${LIBS})
 
 endif(BUILD_TESTS)
