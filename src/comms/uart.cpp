@@ -41,29 +41,45 @@ int UartDev::write_byte(char byte){ return write(this->_fd,&byte,1); }
 
 int UartDev::write_bytes(char* bytes, int num_bytes){
 	int size = sizeof(bytes)/sizeof(*bytes);
-	int bytes_written = write(this->_fd,bytes,num_bytes);
-	printf("UartDev::write_bytes ---- num_bytes , size, bytes_written: %d, %d, %d\r\n",num_bytes,size,bytes_written);
+	int bytes_written = write(this->_fd,&bytes[0],num_bytes);
+	if(this->_verbose){
+		printf("UartDev::write_bytes ---- bytes_written: ");
+		for(int i = 0; i < bytes_written; i++){
+			cout << (int)bytes[i] << " (0x" << std::hex << (int)bytes[i] << "), ";
+		}
+		std::cout << std::endl;
+	}
+	// num_bytes,size,bytes_written);
 	return bytes_written;
 }
 
 int UartDev::read_byte(char* buffer_out){
 	char buffer[2];
-	int bytes_read = read(this->_fd, &buffer[0], sizeof(char));
-	printf("UartDev::read_byte ---- Byte read: %s\r\n",buffer);
-	memcpy(buffer_out,&buffer, sizeof(char));
+	int bytes_read = read(this->_fd, &buffer, sizeof(char));
+	// printf("UartDev::read_byte ---- Byte read: %s\r\n",buffer);
+	memcpy(buffer_out,buffer, sizeof(char));
      return bytes_read;
 }
 
 int UartDev::read_bytes(char* buffer_out, int num_bytes){
-	char buffer[4096];
-	int bytes_read = read(this->_fd, &buffer[0], num_bytes);
-	printf("UartDev::read_bytes ---- Bytes read [%d]: ", bytes_read);
-	for(int i = 0; i < num_bytes; i++){
-		cout << (int)buffer[i] << " (0x" << std::hex << (int)buffer[i] << "), ";
+	char buffer[num_bytes];
+	int bytes_read = read(this->_fd, &buffer, num_bytes);
+	memcpy(buffer_out,buffer, bytes_read);
+
+	if(this->_verbose){
+		printf("UartDev::read_bytes ---- Bytes read [%d]: ", bytes_read);
+		for(int i = 0; i < bytes_read; i++){
+			cout << (int)buffer[i] << " (0x" << std::hex << (int)buffer[i] << "), ";
+		}
+		std::cout << std::endl;
+
+		printf("UartDev::read_bytes ---- Bytes Copied [%d]: ", bytes_read);
+		for(int i = 0; i < bytes_read; i++){
+			cout << (int)buffer_out[i] << " (0x" << std::hex << (int)buffer_out[i] << "), ";
+		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
-	memcpy(buffer_out,&buffer[0], bytes_read);
-     return bytes_read;
+	return bytes_read;
 }
 
 int UartDev::writer(char* bytes, int num_bytes){
@@ -77,7 +93,7 @@ int UartDev::writer(char* bytes, int num_bytes){
 	while(trys <= max_trys + 1){
 		bytes_written = this->write_bytes(&bytes[0], num_bytes);
 		usleep(0.003 * 1000000);
-		printf("UartDev::write_bytes ---- num_bytes , size, bytes_written: %d, %d, %d\r\n",num_bytes,size,bytes_written);
+		// printf("UartDev::write_bytes ---- num_bytes , size, bytes_written: %d, %d, %d\r\n",num_bytes,size,bytes_written);
 		int nBytes = this->bytes_available();
 		char resp[nBytes];
 		// this->read_bytes(&_buf[0], nBytes);
@@ -98,7 +114,7 @@ int UartDev::writer(char* bytes, int num_bytes){
 int UartDev::bytes_available(){
 	int num_bytes = 0;
 	ioctl(this->_fd, FIONREAD, &num_bytes);
-	printf("UartDev::bytes_available ---- Bytes available: %d\r\n",num_bytes);
+	// printf("UartDev::bytes_available ---- Bytes available: %d\r\n",num_bytes);
 	return num_bytes;
 }
 

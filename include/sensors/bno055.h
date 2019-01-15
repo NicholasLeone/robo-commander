@@ -239,7 +239,7 @@ private:
 	int max_retry_attempts = 2;
 	float timeout;
      bool _initialized = false;
-	bool _verbose = true;
+	bool _verbose = false;
      ImuData _readings;
 
 	float Caccel_fct = 1000.0;
@@ -259,25 +259,23 @@ private:
 	int _read_byte(uint8_t _address, uint8_t* recv_data);
 	int8_t _read_signed_byte(uint8_t _address);
 
-	// int _write(uint8_t* bytes, int length, bool ack = true, int max_trys = 5);
-	// int _imu_write_bytes(BNO055Register reg, uint8_t* bytes, int length);
-	// int _imu_write_byte(BNO055Register reg, uint8_t byte);
-	// int _read(uint8_t* buf, int length);
-
 	void _config_mode();
 	void _operation_mode();
 
 public:
+	int read_vector(uint8_t _address, uint16_t* data, int count = 3);
 
      // FUNCTIONS
 	BNO055(std::string dev, int baud);
-	// BNO055(int pi, std::string dev, int baud);
      ~BNO055();
 
 	void flush();
 	int available();
-
 	int set_mode(uint8_t mode);
+
+
+	int begin(uint8_t mode = OPERATION_MODE_NDOF);
+     void update();
 	void set_external_crystal(bool use_external_crystal);
 
 	/**
@@ -286,10 +284,10 @@ public:
 	*    @return[0]: Software revision      - 2 bytes (MSB + LSB)
 	*    @return[1]: Bootloader version     - 1 byte
 	*    @return[2]: Accelerometer ID       - 1 byte
-	*    @return[4]: Gyro ID                - 1 byte
-	*    @return[3]: Magnetometer ID        - 1 byte
+	*    @return[3]: Gyro ID                - 1 byte
+	*    @return[4]: Magnetometer ID        - 1 byte
 	*/
-	int* get_revision();
+	int get_revision(int* revision_data);
 
 	/**
 	* @desc: Return a tuple with status information.  Three values will be returned:
@@ -327,13 +325,9 @@ public:
 	* self test requires going into config mode which will stop the fusion
 	* engine from running.
 	*/
-	int* get_system_status(bool run_self_test = true);
+	int get_system_status(int* status, bool run_self_test = true);
 
-     int begin(uint8_t mode = OPERATION_MODE_NDOF);
 
-     // int read(BNO055Register reg, uint8_t *data, int length);
-
-     void update();
 
 
 };
