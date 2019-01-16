@@ -7,7 +7,7 @@ using namespace std;
 int main(int argc, char *argv[]){
 
 	float angle;
-	int dt;
+	float dt = 0.05;
 	int imu_status[3];
 	int imu_revision[5];
 	string ttyDev = "/dev/ttyUSB0";
@@ -44,6 +44,7 @@ int main(int argc, char *argv[]){
 		imu.get_euler(&angs[0]);
 		printf(" Euler Angles: %f, %f, %f\r\n", angs[0], angs[1] , angs[2]);
 		// imu.update(true);
+		usleep(dt * 1000000);
 	}
 
 
