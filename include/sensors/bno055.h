@@ -262,22 +262,48 @@ private:
 	void _config_mode();
 	void _operation_mode();
 
+	int read_vector(uint8_t _address, int16_t* data, int count = 3);
+	void flush();
+	int available();
 public:
-	int read_vector(uint8_t _address, uint16_t* data, int count = 3);
 
      // FUNCTIONS
 	BNO055(std::string dev, int baud);
      ~BNO055();
 
-	void flush();
-	int available();
-	int set_mode(uint8_t mode);
-
-
 	int begin(uint8_t mode = OPERATION_MODE_NDOF);
-     void update();
+
+	void update(bool verbose = false);
+
+	/** ==================================================================
+	*						    SETTERS
+	* ==================================================================== */
+	int set_mode(uint8_t mode);
 	void set_external_crystal(bool use_external_crystal);
 
+	/**
+	*	@desc: Set the sensor's calibration data using a list of 22 bytes that
+   	* represent the sensor offsets and calibration data.  This data should be
+   	* a value that was previously retrieved with get_calibration (and then
+   	* perhaps persisted to disk or other location until needed again).
+	*/
+	int set_calibration(uint8_t* data);
+
+	/**
+	*	@desc: Set axis remap for each axis.  The x, y, z parameter values should
+   	* be set to one of AXIS_REMAP_X, AXIS_REMAP_Y, or AXIS_REMAP_Z and will
+   	* change the BNO's axis to represent another axis.  Note that two axises
+   	* cannot be mapped to the same axis, so the x, y, z params should be a
+   	* unique combination of AXIS_REMAP_X, AXIS_REMAP_Y, AXIS_REMAP_Z values.
+   	* The x_sign, y_sign, z_sign values represent if the axis should be positive
+   	* or negative (inverted).
+	*/
+	int set_axis_remap(int x, int y, int z, int xsign, int ysign, int zsign);
+
+
+	/** ==================================================================
+	*						    Getters
+	* ==================================================================== */
 	/**
 	* @desc: Returns the following revision information about the BNO055 chip.
 	*
@@ -287,7 +313,7 @@ public:
 	*    @return[3]: Gyro ID                - 1 byte
 	*    @return[4]: Magnetometer ID        - 1 byte
 	*/
-	int get_revision(int* revision_data);
+	void get_revision(int* revision_data);
 
 	/**
 	* @desc: Return a tuple with status information.  Three values will be returned:
@@ -325,10 +351,100 @@ public:
 	* self test requires going into config mode which will stop the fusion
 	* engine from running.
 	*/
-	int get_system_status(int* status, bool run_self_test = true);
+	void get_system_status(int* status, bool run_self_test = true);
 
+	/**
+	* @desc: Read the calibration status of the sensors
+	*
+	*    @return[0]: System		 - 3 (fully calibrated), 0 (not calibrated)
+	*    @return[1]: Gyroscope	 - 3 (fully calibrated), 0 (not calibrated)
+	*    @return[2]: Accelerometer - 3 (fully calibrated), 0 (not calibrated)
+	*    @return[3]: Magnetometer	 - 3 (fully calibrated), 0 (not calibrated)
+	*/
+	void get_calibration_status(int* status);
 
+	/**
+	*	@desc: Return the sensor's calibration data (made up of 22 bytes).
+	* Can be saved and reloaded with the set_calibration function for quick
+	* calibrate from a previously calculated set of calibration data.
+	*
+	*	@output data[0-2]:	Accelerometer Offset (X, Y, Z)
+	*	@output data[3-5]:	Magnetometer Offset (X, Y, Z)
+	*	@output data[6-8]:	Gyroscope Offset (X, Y, Z)
+	*	@output data[9]:	Radius of the Accelerometer
+	*	@output data[10]:	Radius of the Magnetometer
+	*/
+	void get_calibration(float* data);
 
+	/**
+	*	@desc: Return 6 axis remap register values
+   	*
+	*	@output data[0] - X axis remap (a value of AXIS_REMAP_X, AXIS_REMAP_Y,
+	*				  or AXIS_REMAP_Z, which indicates that the physical
+	*				  X axis of the chip is remapped to a different axis)
+	*	@output data[1] - Y axis remap (see above)
+	*	@output data[2] - Z axis remap (see above)
+	*	@output data[3] - X axis sign (a value of AXIS_REMAP_POSITIVE or
+	*				  AXIS_REMAP_NEGATIVE which indicates if the X axis
+	*				  values should be positive/normal or negative/inverted.
+	*				  The default is positive.)
+	*	@output data[4] - Y axis sign (see above)
+	*	@output data[5] - Z axis sign (see above)
+   	*
+	* 	@note: by default the axis orientation of the BNO-055 chip looks like
+   	* the following (taken from section 3.4, page 24 of the datasheet). Notice
+   	* the dot in the corner that corresponds to the dot on the BNO chip:
+	*			  | Z axis
+	*			  |
+	*			  |   / X axis
+	*		   ____|__/____
+	* Y axis   / *   | /    /|
+	*________ /______|/    //
+	*	    /___________ //
+	*	   |____________|/
+	*/
+	void get_axis_remap(int* data);
+
+	/**
+	*	@desc: Return the current orientation in degrees (roll, pitch, yaw)
+	*/
+	void get_euler(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current magnetometer reading in micro-Teslas.
+	*/
+	void get_magnetometer(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current gyroscope (angular velocity) in rad/sec.
+	*/
+	void get_gyroscope(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current accelerometer reading in m/s^2.
+	*/
+	void get_accelerometer(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current linear acceleration (i.e. acceleration
+	* from movement, not from gravity) in m/s^2.
+	*/
+	void get_linear_acceleration(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current gravity acceleration in m/s^2.
+	*/
+	void get_gravity(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current orientation as X, Y, Z, W quaternions.
+	*/
+	void get_quaternions(float* data, bool verbose = false);
+
+	/**
+	*	@desc: Return the current temperature in Celsius.
+	*/
+	float get_tempurature(bool verbose = false);
 
 };
 

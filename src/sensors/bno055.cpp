@@ -361,7 +361,7 @@ int BNO055::_read_bytes(uint8_t _address, int length, uint8_t* recv_data){
      int bytes_sent = this->_send((char*)outbytes, 4, &resp[0]);
      uint8_t resp_header = (uint8_t)resp[0] ;
      uint8_t resp_status = (uint8_t)resp[1];
-     printf("[INFO] BNO055::_read_bytes ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
+     // printf("[INFO] BNO055::_read_bytes ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
      // Verify register read succeeded.
      if(resp_header != 0xBB){
           printf("[ERROR] BNO055::_read_bytes ---- Could not verify UART ACK (0xBB). 'read' Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header, (int)resp_status);
@@ -381,7 +381,7 @@ int BNO055::_read_bytes(uint8_t _address, int length, uint8_t* recv_data){
      // Store
      // recv_data = (uint8_t*)resp2;
      memcpy(recv_data, &resp[2],sizeof(uint8_t)*length);
-     return 1;
+     return (int)resp_status;
 }
 
 int BNO055::_read_byte(uint8_t _address, uint8_t* recv_data){
@@ -396,32 +396,32 @@ int BNO055::_read_byte(uint8_t _address, uint8_t* recv_data){
 }
 
 int8_t BNO055::_read_signed_byte(uint8_t _address){
-     uint8_t tmp;
      int8_t out;
-     int err = this->_read_byte(_address, &tmp);
-     if(err > 0){
-          memcpy(&out, &tmp, sizeof(int8_t));
-     }else{
+     int err = this->_read_byte(_address, (uint8_t*)&out);
+     if(err < 0){
           printf("[ERROR] BNO055::_read_signed_byte ---- 'BNO055::_read_byte' failed with error code [%d]\r\n", err);
           return -1;
      }
-
+     if(out > 127) out -= 256;
      return out;
 }
 
-int BNO055::read_vector(uint8_t _address, uint16_t* data, int count){
+int BNO055::read_vector(uint8_t _address, int16_t* data, int count){
      int nBytes = count*2;
-     uint8_t buf[nBytes];
+     char buf[nBytes];
      uint16_t byte_array[count];
 
-     this->_read_bytes(_address, nBytes, &buf[0]);
+     int nRead = this->_read_bytes(_address, nBytes, (uint8_t*)&buf[0]);
+
      for(int i = 0; i < count; i++){
-          uint16_t tmp = ((buf[i*2+1] << 8) | buf[i*2]) & 0xFFFF;
-          int val = (int) tmp;
-          if(tmp > 32767) tmp -= 65536;
-          byte_array[i] = (uint16_t) tmp;
+          uint8_t byte_msb = (int)buf[i*2+1];
+          uint8_t byte_lsb = (int)buf[i*2];
+          uint16_t tmp_byte = byte_msb << 8 | (byte_lsb & 0xFF);
+          int tmp_val = (int)tmp_byte;
+          if(tmp_byte > 32767) uint16_t new_byte = tmp_byte - 65536;
+          byte_array[i] = (int16_t) tmp_val;
      }
-     memcpy(data,byte_array, sizeof(uint16_t) * count);
+     memcpy(data,byte_array, sizeof(int16_t) * count);
      return 1;
 }
 
@@ -436,59 +436,18 @@ int BNO055::read_vector(uint8_t _address, uint16_t* data, int count){
 void BNO055::_config_mode(){this->set_mode(OPERATION_MODE_CONFIG);}
 void BNO055::_operation_mode(){this->set_mode(this->_mode);}
 
+/*
+███████ ███████ ████████ ████████ ███████ ██████  ███████
+██      ██         ██       ██    ██      ██   ██ ██
+███████ █████      ██       ██    █████   ██████  ███████
+     ██ ██         ██       ██    ██      ██   ██      ██
+███████ ███████    ██       ██    ███████ ██   ██ ███████
+*/
+
 int BNO055::set_mode(uint8_t mode){
      int err = this->_write_byte(BNO055_OPR_MODE_ADDR, mode & 0xFF);
      usleep(0.03 * 1000000);
      return err;
-}
-
-
-int BNO055::get_revision(int* revision_data){
-     // Initialize bytes
-     uint8_t sw_msb, sw_lsb, blId, accelId, gyroId, magId;
-     int* out;
-
-     // Read registers
-     this->_read_byte(BNO055_SW_REV_ID_MSB_ADDR, &sw_msb);
-     this->_read_byte(BNO055_SW_REV_ID_LSB_ADDR, &sw_lsb);
-     this->_read_byte(BNO055_BL_REV_ID_ADDR, &blId);
-     this->_read_byte(BNO055_ACCEL_REV_ID_ADDR, &accelId);
-     this->_read_byte(BNO055_GYRO_REV_ID_ADDR, &gyroId);
-     this->_read_byte(BNO055_MAG_REV_ID_ADDR, &magId);
-
-     uint16_t swId = ((sw_msb << 8) | sw_lsb) & 0xFFFF;
-
-     int tmp[5] = {(int)swId, (int)blId, (int)accelId, (int)gyroId, (int)magId};
-     memcpy(revision_data,tmp,5*sizeof(int));
-     return 1;
-}
-
-
-int BNO055::get_system_status(int* status, bool run_self_test){
-     uint8_t sys_trigger, _status, error;
-     uint8_t self_test = -1;
-     int* out;
-
-     if(run_self_test){
-          // Switch to configuration mode if running self test.
-          this->_config_mode();
-          // Perform a self test.
-          this->_read_byte(BNO055_SYS_TRIGGER_ADDR, &sys_trigger);
-          this->_write_byte(BNO055_SYS_TRIGGER_ADDR, sys_trigger | 0x1);
-          // Wait for self test to finish.
-          usleep(1000000);
-          // Read test result.
-          this->_read_byte(BNO055_SELFTEST_RESULT_ADDR, &self_test);
-          // Go back to operation mode.
-          this->_operation_mode();
-     }
-     // Now read status and error registers.
-     this->_read_byte(BNO055_SYS_STAT_ADDR, &_status);
-     this->_read_byte(BNO055_SYS_ERR_ADDR, &error);
-
-     int tmp[3] = {(int)_status, (int)self_test, (int)error};
-     memcpy(status,tmp,3*sizeof(int));
-     return 1;
 }
 
 void BNO055::set_external_crystal(bool use_external_crystal){
@@ -502,7 +461,19 @@ void BNO055::set_external_crystal(bool use_external_crystal){
      this->_operation_mode();
 }
 
+/** ==================================================================
+*						    TODO
+* ==================================================================== */
 
+/** REFERENCE:
+* https://github.com/adafruit/Adafruit_Python_BNO055/blob/master/Adafruit_BNO055/BNO055.py
+*/
+int BNO055::set_calibration(uint8_t* data){return 0;}
+int BNO055::set_axis_remap(int x, int y, int z, int xsign, int ysign, int zsign){return 0;}
+
+/** ==================================================================
+*						   END TODO
+* ==================================================================== */
 
 /*
 ██████  ███████  ██████  ██ ███    ██
@@ -548,15 +519,170 @@ int BNO055::begin(uint8_t mode){
      return 1;
 }
 
-void BNO055::update(){
-     // float a[3];
-     //
-     // int nRead = this->read(PAGE0_ACC_DATA_X_LSB, (uint8_t*)&this->_readings,46);
-     //
-     // a[0] = ((float)(this->_readings.imu.LinearAccelerationDataX)) / Caccel_fct;
-	// a[1] = ((float)(this->_readings.imu.LinearAccelerationDataY)) / Caccel_fct;
-	// a[2] = ((float)(this->_readings.imu.LinearAccelerationDataZ)) / Caccel_fct;
+/*
+ ██████  ███████ ████████ ████████ ███████ ██████  ███████
+██       ██         ██       ██    ██      ██   ██ ██
+██   ███ █████      ██       ██    █████   ██████  ███████
+██    ██ ██         ██       ██    ██      ██   ██      ██
+ ██████  ███████    ██       ██    ███████ ██   ██ ███████
+*/
 
-     // printf("[BNO055::Accelerometer] ---- X, Y, Z: %.3f\t|\t%.3f\t|\t%.3f\r\n", a[0],a[1],a[2]);
+void BNO055::get_revision(int* revision_data){
+     // Initialize bytes
+     uint8_t sw_msb, sw_lsb, blId, accelId, gyroId, magId;
+     int* out;
 
+     // Read registers
+     this->_read_byte(BNO055_SW_REV_ID_MSB_ADDR, &sw_msb);
+     this->_read_byte(BNO055_SW_REV_ID_LSB_ADDR, &sw_lsb);
+     this->_read_byte(BNO055_BL_REV_ID_ADDR, &blId);
+     this->_read_byte(BNO055_ACCEL_REV_ID_ADDR, &accelId);
+     this->_read_byte(BNO055_GYRO_REV_ID_ADDR, &gyroId);
+     this->_read_byte(BNO055_MAG_REV_ID_ADDR, &magId);
+
+     uint16_t swId = ((sw_msb << 8) | sw_lsb) & 0xFFFF;
+
+     int tmp[5] = {(int)swId, (int)blId, (int)accelId, (int)gyroId, (int)magId};
+     memcpy(revision_data,tmp,5*sizeof(int));
+}
+
+void BNO055::get_system_status(int* status, bool run_self_test){
+     uint8_t sys_trigger, _status, error;
+     uint8_t self_test = -1;
+     int* out;
+
+     if(run_self_test){
+          // Switch to configuration mode if running self test.
+          this->_config_mode();
+          // Perform a self test.
+          this->_read_byte(BNO055_SYS_TRIGGER_ADDR, &sys_trigger);
+          this->_write_byte(BNO055_SYS_TRIGGER_ADDR, sys_trigger | 0x1);
+          // Wait for self test to finish.
+          usleep(1000000);
+          // Read test result.
+          this->_read_byte(BNO055_SELFTEST_RESULT_ADDR, &self_test);
+          // Go back to operation mode.
+          this->_operation_mode();
+     }
+     // Now read status and error registers.
+     this->_read_byte(BNO055_SYS_STAT_ADDR, &_status);
+     this->_read_byte(BNO055_SYS_ERR_ADDR, &error);
+
+     int tmp[3] = {(int)_status, (int)self_test, (int)error};
+     memcpy(status,tmp,3*sizeof(int));
+}
+
+/** ==================================================================
+*						    TODO
+* ==================================================================== */
+
+/** REFERENCE:
+* https://github.com/adafruit/Adafruit_Python_BNO055/blob/master/Adafruit_BNO055/BNO055.py
+*/
+void BNO055::get_calibration_status(int* status){}
+void BNO055::get_calibration(float* data){}
+void BNO055::get_axis_remap(int* data){}
+/** ==================================================================
+*						   END TODO
+* ==================================================================== */
+
+
+void BNO055::get_euler(float* data, bool verbose){
+     int16_t _data[3];
+     float tmp[3];
+     this->read_vector(BNO055_EULER_H_LSB_ADDR, &_data[0]);
+     /** Re-arrange reutrned array as R, P, Y b/c BNO-055 returns Y, R, P */
+     tmp[2] = (float) _data[0] / 16.0;
+     tmp[0] = (float) _data[1] / 16.0;
+     tmp[1] = (float) _data[2] / 16.0;
+     if(verbose) printf(" Euler Angles: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+void BNO055::get_magnetometer(float* data, bool verbose){
+     int16_t _data[3];
+     float tmp[3];
+     this->read_vector(BNO055_MAG_DATA_X_LSB_ADDR, &_data[0]);
+     tmp[0] = (float) _data[0] / 16.0;
+     tmp[1] = (float) _data[1] / 16.0;
+     tmp[2] = (float) _data[2] / 16.0;
+     if(verbose) printf("Magnetometer (micro-Teslas) X, Y, Z: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+void BNO055::get_gyroscope(float* data, bool verbose){
+     int16_t _data[3];
+     float tmp[3];
+     this->read_vector(BNO055_GYRO_DATA_X_LSB_ADDR, &_data[0]);
+     tmp[0] = (float) _data[0] / 900.0;
+     tmp[1] = (float) _data[1] / 900.0;
+     tmp[2] = (float) _data[2] / 900.0;
+     if(verbose) printf("Gyroscope (rad/sec) X, Y, Z: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+void BNO055::get_accelerometer(float* data, bool verbose){
+     int16_t _data[3];
+     float tmp[3];
+     this->read_vector(BNO055_ACCEL_DATA_X_LSB_ADDR, &_data[0]);
+     tmp[0] = (float) _data[0] / 100.0;
+     tmp[1] = (float) _data[1] / 100.0;
+     tmp[2] = (float) _data[2] / 100.0;
+     if(verbose) printf("Accelerometer (m/s^2) X, Y, Z: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+void BNO055::get_linear_acceleration(float* data, bool verbose){
+     int16_t _data[3];
+     float tmp[3];
+     this->read_vector(BNO055_LINEAR_ACCEL_DATA_X_LSB_ADDR, &_data[0]);
+     tmp[0] = (float) _data[0] / 100.0;
+     tmp[1] = (float) _data[1] / 100.0;
+     tmp[2] = (float) _data[2] / 100.0;
+     if(verbose) printf("Linear Acceleration (m/s^2) X, Y, Z: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+void BNO055::get_gravity(float* data, bool verbose){
+     int16_t _data[3];
+     float tmp[3];
+     this->read_vector(BNO055_GRAVITY_DATA_X_LSB_ADDR, &_data[0]);
+     tmp[0] = (float) _data[0] / 100.0;
+     tmp[1] = (float) _data[1] / 100.0;
+     tmp[2] = (float) _data[2] / 100.0;
+     if(verbose) printf("Gravity (m/s^2) X, Y, Z: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+void BNO055::get_quaternions(float* data, bool verbose){
+     int16_t _data[4];
+     float tmp[4];
+     float scale = (1.0 / (1<<14));
+     this->read_vector(BNO055_QUATERNION_DATA_W_LSB_ADDR, &_data[0], 4);
+     tmp[0] = (float) _data[0] * scale;
+     tmp[1] = (float) _data[1] * scale;
+     tmp[2] = (float) _data[2] * scale;
+     tmp[3] = (float) _data[3] * scale;
+     if(verbose) printf("Quaternion X, Y, Z, W: %f, %f, %f, %f\r\n", tmp[0], tmp[1], tmp[2], tmp[3]);
+     memcpy(data,tmp, sizeof(tmp));
+}
+
+float BNO055::get_tempurature(bool verbose){
+     int8_t data = this->_read_signed_byte(BNO055_TEMP_ADDR);
+     if(verbose) printf("Temperature [Celsius]: %f\r\n", (float)data);
+     return (float)data;
+}
+
+void BNO055::update(bool verbose){
+     float angs[3]; float accel[3]; float gyros[3]; float mags[3];
+     float lin_accel[3]; float grav[3]; float quats[4];
+     if(verbose) printf("==========================\r\n");
+     this->get_euler(&angs[0], verbose);
+     this->get_magnetometer(&mags[0], verbose);
+     this->get_gyroscope(&gyros[0], verbose);
+     this->get_accelerometer(&accel[0], verbose);
+     this->get_linear_acceleration(&lin_accel[0], verbose);
+     this->get_gravity(&grav[0], verbose);
+     this->get_quaternions(&quats[0], verbose);
+     float temp = this->get_tempurature(verbose);
 }
