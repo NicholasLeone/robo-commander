@@ -15,7 +15,7 @@ BNO055::BNO055(std::string dev, int baud){
 
      this->_sd = new UartDev(device, baud);
      this->_sd->set_verbosity(false);
-
+     this->_use_pi = false;
      /** ----- BNO-055 Initializations -----*/
      this->_baud = baud;
 
@@ -33,6 +33,7 @@ BNO055::BNO055(int pi, std::string dev, int baud){
           if(handle >= 0){
                this->_handle = handle;
                this->_baud = baud;
+	       this->_use_pi = true;
           }else{
                printf("[ERROR] BNO-055 at %s with Baud rate of %d could not establish UART connection! Exiting...\r\n",device,baud);
                this->_initialized = false;
@@ -49,6 +50,7 @@ BNO055::BNO055(int pi, std::string dev, int baud){
 
 BNO055::~BNO055(){
      this->_sd->_close();
+     serial_close(_pi,_handle);
      delete this->_sd;
 }
 
@@ -176,8 +178,12 @@ int BNO055::_write_bytes(uint8_t _address, uint8_t* bytes, int length, bool ack)
 		outbytes[i+4] = tmp & 0xFF;
 	}
      // Transmit via UART and get response
-     int bytes_sent = this->_send((char*)outbytes, 4+length, &resp[0], ack);
-
+     int bytes_sent;
+     if(!this->_use_pi)
+          bytes_sent = this->_send((char*)outbytes, 4+length, &resp[0], ack);
+     else
+          bytes_sent = this->_uart_send((char*)outbytes, 4+length, &resp[0], ack);
+     
      // Error Checking
      if(resp == nullptr){
           printf("[ERROR] BNO055::_write_bytes ---- 'NULL'  response received from BNO055::_uart_send\r\n");
@@ -205,7 +211,11 @@ int BNO055::_write_byte(uint8_t _address, uint8_t byte, bool ack){
      outbytes[4] = byte & 0xFF;
 
      // Transmit via UART and get response
-     int bytes_sent = this->_send((char*)outbytes, 5, &resp[0], ack);
+     int bytes_sent;
+     if(!this->_use_pi)
+          bytes_sent = this->_send((char*)outbytes, 5, &resp[0], ack);
+     else
+          bytes_sent = this->_uart_send((char*)outbytes, 5, &resp[0], ack);
 
      if(ack){
           if(this->_verbose) printf("[DEBUG] BNO055::_write_byte ---- '_uart_send' Response Received (header, status): %#x,\t%#x\r\n", (int)resp[0],(int)resp[1]);
@@ -239,7 +249,12 @@ int BNO055::_read_bytes(uint8_t _address, int length, uint8_t* recv_data){
      outbytes[3] = length & 0xFF;
 
      // Transmit via UART and get response
-     int bytes_sent = this->_send((char*)outbytes, 4, &resp[0]);
+     int bytes_sent;
+     if(!this->_use_pi)
+          bytes_sent = this->_send((char*)outbytes, 4, &resp[0]);
+     else
+          bytes_sent = this->_uart_send((char*)outbytes, 4, &resp[0]);
+     
      uint8_t resp_header = (uint8_t)resp[0] ;
      uint8_t resp_status = (uint8_t)resp[1];
      if(this->_verbose) printf("[INFO] BNO055::_read_bytes ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
@@ -565,7 +580,7 @@ void BNO055::update(bool verbose){
 
 int BNO055::_pi_read(int num_bytes, char* data, bool verbose){
      char buffer[num_bytes];
-     int nRead = serial_read(_pi,_handle, &buffer[0], num_bytes);
+     int nRead = serial_read(_pi,_handle, buffer, num_bytes);
 
      if(nRead >= 0){
           memcpy(data,buffer, sizeof(char)*nRead);
@@ -606,6 +621,7 @@ int BNO055::_uart_send(char* cmds, int length, char* data, bool ack, bool verbos
           this->_flush();
           // Send the data.
           int err = serial_write(_pi,_handle, &cmds[0], length);
+          usleep(0.03 * 1000000);
           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- commands sent with 'serial_write' with err = %d.\n\r", err);
           if(err < 0){
                printf("[ERROR] BNO055::_uart_send ---- pigpiod 'serial_write' failed with error code [%d]\r\n", err);
@@ -628,7 +644,7 @@ int BNO055::_uart_send(char* cmds, int length, char* data, bool ack, bool verbos
           uint8_t resp_header = (resp[0] & 0xFF);
           uint8_t resp_status = (resp[1] & 0xFF);
           bool resp_check = (((int)resp_header == 0xEE) && ((int)resp_status == 0x01) );
-          if(!resp_check){
+          if(resp_check){
                if(verbose) printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
                memcpy(data,resp, sizeof(char)*nBytes_read);
                success = true;
@@ -654,7 +670,7 @@ int BNO055::_uart_send(char* cmds, int length, char* data, bool ack, bool verbos
      }
 }
 void BNO055::_flush(){
-	char* tmp;
+	char tmp[4096];
 	int buf = _available();
 	serial_read(_pi,_handle,tmp, buf);
 }

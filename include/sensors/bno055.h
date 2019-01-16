@@ -232,6 +232,7 @@ private:
 	UartDev* _sd;
 	int _baud;
 	int _pi;
+	bool _use_pi = false;
 	int _handle;
 	uint8_t _mode;
 
@@ -257,7 +258,7 @@ private:
 
 	int read_vector(uint8_t _address, int16_t* data, int count = 3);
 
-	int _pi_read(int num_bytes, char* data, bool verbose = true);
+	int _pi_read(int num_bytes, char* data, bool verbose = false);
 	int _uart_send(char* cmds, int length, char* data, bool ack = true, bool verbose = false, int max_trys = 5);
 	void _flush();
 	int _available();

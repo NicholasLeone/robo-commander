@@ -10,7 +10,7 @@ int main(int argc, char *argv[]){
 	float dt = 0.05;
 	int imu_status[3];
 	int imu_revision[5];
-	string ttyDev = "/dev/ttyS0";
+	string ttyDev = "/dev/serial0";
 	int baud = 115200;
 	bool use_pi = true;
 

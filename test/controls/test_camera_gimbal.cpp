@@ -23,11 +23,11 @@ int flag_start = 0;
 static ofstream myFile;
 static int flag_exit = 0;
 
-static float maxVal = 90.0;
-static int maxControl = 255;
+static float maxVal = 180.0;
+static int maxControl = 2000;
 static float targetVel = -1.0;
-static int null_pulse = 1500;
-static int motor_channel = 4;
+static int null_pulse = 1590;
+static int motor_channel = 3;
 
 void funDummy(int s){}
 
@@ -87,15 +87,9 @@ int main(){
 	float dt = 0.05;
 	float angles[3];
 	/** UART Configuration for BNO-055 IMU */
-	string device = "/dev/ttyUSB0";
+	string device = "/dev/serial0";
 	int baud = 115200;
-	/** BNO-055 IMU Start-Up */
-	BNO055 imu(device, baud);
-	int err = imu.begin();
-	if(err < 0)
-		printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
-	else
-		printf("[SUCCESS] BNO-055 Initialized \r\n\r\n");
+	
 
 	/** i2c Configuration for Gimbal Motors controlled via the PCA9685 */
 	int bus = 1;
@@ -119,6 +113,13 @@ int main(){
      cout << "Started" << endl;
 
      if(pi >= 0){
+                /** BNO-055 IMU Start-Up */
+		BNO055 imu(pi,device, baud);
+		int err = imu.begin();
+		if(err < 0)
+			printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
+		else
+			printf("[SUCCESS] BNO-055 Initialized \r\n\r\n");
 		pid1 = new PID(pidM1params);
 		pid1->set_dt(dt);
 
@@ -141,9 +142,10 @@ int main(){
 			angle = angles[1];
 			pwm = getControl(angle);
 			usleep(dt);
-          	gimbal->setPulsewidth(motor_channel,pwm);
+			pwm = pwm * maxControl + null_pulse;
+          		gimbal->setPulsewidth(motor_channel,(int)pwm);
 
-			// float dutycycle = pwm * maxControl;
+			
 
 			#ifdef DEBUG_VERBOSE
                cout << "Angle, Controls, Error: " << angle << "		" << pwm  << "		" << pid1->_integral << endl;
