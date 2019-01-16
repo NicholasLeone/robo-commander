@@ -2,37 +2,9 @@
 #include <iostream>
 #include <vector>
 #include <string.h>
-#include <pigpiod_if2.h>
 
 #include "bno055.h"
 
-
-// BNO055::BNO055(int pi, std::string dev, int baud){
-//      /** ----- Open UART -----*/
-//      int handle;
-//      int err;
-//      char* device = new char[dev.length()+1];
-//      std::strcpy(device, dev.c_str());
-//      if(pi >= 0){
-//           this->_pi = pi;
-//           handle = serial_open(pi, device, baud,0);
-//           if(handle >= 0){
-//                this->_handle = handle;
-//                this->_baud = baud;
-//           }else{
-//                printf("[ERROR] BNO-055 at %s with Baud rate of %d could not establish UART connection! Exiting...\r\n",device,baud);
-//                this->_initialized = false;
-//                std::exit(2);
-//           }
-//      }else{
-//           printf("[ERROR] PigpioD Not properly initialized! Exiting...\r\n");
-//           this->_initialized = false;
-//           std::exit(1);
-//      }
-//
-//      /** ----- BNO-055 Initializations -----*/
-//      memset(_uart_buffer, 0, sizeof(_uart_buffer));
-// }
 using namespace std;
 
 BNO055::BNO055(std::string dev, int baud){
