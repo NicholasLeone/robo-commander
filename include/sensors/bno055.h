@@ -229,30 +229,21 @@ using namespace std;
 class BNO055 {
 
 private:
-     int _pi;
-	int _handle;
 	UartDev* _sd;
 	int _baud;
-	char _uart_buffer[4096];
 	uint8_t _mode;
 
-	int max_retry_attempts = 2;
-	float timeout;
      bool _initialized = false;
 	bool _verbose = false;
-     ImuData _readings;
 
-	float Caccel_fct = 1000.0;
-	float Cmag_fct = 16.0;
-	float Cgyro_fct = 900.0;
+	float accel_conversion_factor = 1000.0;
+	float mag_conversion_factor = 16.0;
+	float gyro_conversion_factor = 900.0;
 
-	char* _pi_read(int num_bytes, bool verbose = true);
-	char* _uart_send(char* cmds, bool ack = true, bool verbose = true, int max_trys = 5);
+	int _read(int num_bytes, char* data, bool verbose = false);
+	int _send(char* cmds, int length, char* data, bool ack = true, int max_trys = 5, bool verbose = false);
 
-	int _read(int num_bytes, char* data);
-	int _send(char* cmds, int length, char* data, bool ack = true, bool verbose = true, int max_trys = 5);
-
-	int _write_bytes(uint8_t _address, uint8_t* bytes, bool ack = true);
+	int _write_bytes(uint8_t _address, uint8_t* bytes, int length, bool ack = true);
 	int _write_byte(uint8_t _address, uint8_t byte, bool ack = true);
 
 	int _read_bytes(uint8_t _address, int length, uint8_t* recv_data);
@@ -263,8 +254,7 @@ private:
 	void _operation_mode();
 
 	int read_vector(uint8_t _address, int16_t* data, int count = 3);
-	void flush();
-	int available();
+
 public:
 
      // FUNCTIONS
@@ -272,7 +262,6 @@ public:
      ~BNO055();
 
 	int begin(uint8_t mode = OPERATION_MODE_NDOF);
-
 	void update(bool verbose = false);
 
 	/** ==================================================================
