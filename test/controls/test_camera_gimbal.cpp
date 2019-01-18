@@ -88,8 +88,8 @@ int main(){
 	float angles[3];
 	/** UART Configuration for BNO-055 IMU */
 	string device = "/dev/serial0";
-	int baud = 115200;
-	
+	int baud = B115200;
+
 
 	/** i2c Configuration for Gimbal Motors controlled via the PCA9685 */
 	int bus = 1;
@@ -114,7 +114,7 @@ int main(){
 
      if(pi >= 0){
                 /** BNO-055 IMU Start-Up */
-		BNO055 imu(pi,device, baud);
+		BNO055 imu(device, baud);
 		int err = imu.begin();
 		if(err < 0)
 			printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
@@ -145,7 +145,7 @@ int main(){
 			pwm = pwm * maxControl + null_pulse;
           		gimbal->setPulsewidth(motor_channel,(int)pwm);
 
-			
+
 
 			#ifdef DEBUG_VERBOSE
                cout << "Angle, Controls, Error: " << angle << "		" << pwm  << "		" << pid1->_integral << endl;

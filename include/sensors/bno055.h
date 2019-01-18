@@ -258,15 +258,15 @@ private:
 
 	int read_vector(uint8_t _address, int16_t* data, int count = 3);
 
-	int _pi_read(int num_bytes, char* data, bool verbose = false);
-	int _uart_send(char* cmds, int length, char* data, bool ack = true, bool verbose = false, int max_trys = 5);
-	void _flush();
-	int _available();
+	// int _pi_read(int num_bytes, char* data, bool verbose = false);
+	// int _uart_send(char* cmds, int length, char* data, bool ack = true, bool verbose = false, int max_trys = 5);
+	// void _flush();
+	// int _available();
 public:
 
      // FUNCTIONS
 	BNO055(std::string dev, int baud);
-	BNO055(int pi, std::string dev, int baud);
+	// BNO055(int pi, std::string dev, int baud);
      ~BNO055();
 
 	int begin(uint8_t mode = OPERATION_MODE_NDOF);

@@ -11,18 +11,9 @@ int main(int argc, char *argv[]){
 	int imu_status[3];
 	int imu_revision[5];
 	string ttyDev = "/dev/serial0";
-	int baud = 115200;
-	bool use_pi = true;
+	int baud = B115200;
 
-
-	pi = pigpio_start(NULL, NULL);
-	if(pi < 0){
-		printf("[ERROR] BNO055::begin] ---- %d.\r\n", pi);
-		return -1;
-	}
-
-	BNO055 imu(pi, ttyDev, baud);
-	// BNO055 imu(ttyDev, baud);
+	BNO055 imu(ttyDev, baud);
 
 	int err = imu.begin();
 	if(err < 0)
