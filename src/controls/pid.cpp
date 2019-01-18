@@ -99,7 +99,7 @@ float PID::calculate(float current_state){
      this->_prev_time = now;
      this->_prev_output = control_output;
      this->_prev_state = current_state;
-     this->_prev_error = integral;
+     this->_prev_error = error;
 
      return control_output;
 }
