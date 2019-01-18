@@ -97,8 +97,8 @@ int main(){
 
 	/** PID Initial Configuration */
 	pidM1params.dt = 0.01;
-	pidM1params.max_cmd = maxControl;
-	pidM1params.min_cmd = -0.3;
+	pidM1params.max_cmd = 1.0;
+	pidM1params.min_cmd = -1.0;
 	pidM1params.max_error = 0.3;
 	pidM1params.min_error = -0.3;
 	pidM1params.pre_error = 0;
@@ -142,7 +142,7 @@ int main(){
 			angle = angles[1];
 			pwm = getControl(angle);
 			usleep(dt);
-			pwm = pwm * maxControl + null_pulse;
+			pwm = pwm * (600.0) + null_pulse;
 			gimbal->setPulsewidth(motor_channel,(int)pwm);
 			float error = pid1->get_integral_error();
 

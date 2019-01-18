@@ -43,6 +43,7 @@ private:
      float _prev_state;
      float _prev_output;
      float _prev_error;
+     float _prev_integral;
      float _target;
 
 public:

@@ -52,8 +52,8 @@ float PID::get_null_cmd(){ return this->_params.null_cmd; }
 *    Calculate New Command
 * ========================== */
 float PID::calculate(float current_state){
-     float control_output;
-     float integral, error;
+     float control_output, error;
+     float integral = this->_prev_integral;
 
      // Get dt since last sensor feedback
      high_resolution_clock::time_point now = high_resolution_clock::now();
@@ -100,6 +100,8 @@ float PID::calculate(float current_state){
      this->_prev_output = control_output;
      this->_prev_state = current_state;
      this->_prev_error = error;
+	this->_prev_integral = integral;
+
 
      return control_output;
 }
