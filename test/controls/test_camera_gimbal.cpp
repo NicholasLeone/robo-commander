@@ -97,7 +97,7 @@ int main(){
 
 	/** PID Initial Configuration */
 	pidM1params.dt = 0.01;
-	pidM1params.max_cmd = 0.3;
+	pidM1params.max_cmd = maxControl;
 	pidM1params.min_cmd = -0.3;
 	pidM1params.max_error = 0.3;
 	pidM1params.min_error = -0.3;
