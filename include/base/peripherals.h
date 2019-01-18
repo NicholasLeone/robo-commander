@@ -34,6 +34,11 @@ typedef struct SERIAL_PARAMS{
      unsigned int baud; // Baud Rate
 }SERIAL_PARAMS;
 
+typedef struct COMMUNICATION_PARAMS{
+     char* add; // Address of device, e.g "/dev/ttyACM0"
+     unsigned int baud; // Baud Rate
+}COMMUNICATION_PARAMS;
+
 typedef struct I2C_PARAMS{
      int add; // address of device
      int bus; // i2c bus of device

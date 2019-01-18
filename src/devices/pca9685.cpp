@@ -3,7 +3,6 @@
 #include <math.h>
 
 #include "devices/pca9685.h"
-#include "base/definitions.h"
 
 PCA9685::PCA9685(int dev, int bus, int address) : I2C(dev,bus,address){
      I2C::_device = dev;
