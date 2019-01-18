@@ -73,7 +73,7 @@ void funUpdate(int s){
 	pidM1params.Kd = kd;
 
      pid1->set_params(pidM1params);
-	pid1->set_target(targetVel/maxVal);
+	pid1->set_target_state(targetVel/maxVal);
 
      //printf("VARIABLES UPDATED\r\n");
      printf("TARGET SPEED, Kp, Ki, Kd:	%.2f	%.2f	%.2f	%.2f \r\n",targetVel,kp,ki,kd);
@@ -90,7 +90,6 @@ int main(){
 	string device = "/dev/serial0";
 	int baud = B115200;
 
-
 	/** i2c Configuration for Gimbal Motors controlled via the PCA9685 */
 	int bus = 1;
      int add = 0x70;
@@ -98,10 +97,11 @@ int main(){
 
 	/** PID Initial Configuration */
 	pidM1params.dt = 0.01;
-	pidM1params.max = 0.3;
-	pidM1params.min = -0.3;
+	pidM1params.max_cmd = 0.3;
+	pidM1params.min_cmd = -0.3;
+	pidM1params.max_error = 0.3;
+	pidM1params.min_error = -0.3;
 	pidM1params.pre_error = 0;
-	pidM1params.integral = 0;
 	pidM1params.Kp = 1.0;
 	pidM1params.Ki = 1.0;
 	pidM1params.Kd = 1.0;
@@ -143,12 +143,11 @@ int main(){
 			pwm = getControl(angle);
 			usleep(dt);
 			pwm = pwm * maxControl + null_pulse;
-          		gimbal->setPulsewidth(motor_channel,(int)pwm);
-
-
+			gimbal->setPulsewidth(motor_channel,(int)pwm);
+			float error = pid1->get_integral_error();
 
 			#ifdef DEBUG_VERBOSE
-               cout << "Angle, Controls, Error: " << angle << "		" << pwm  << "		" << pid1->_integral << endl;
+               cout << "Angle, Controls, Error: " << angle << "		" << pwm  << "		" << error << endl;
                // myFile << i << "," << targetVel << "," << speed/maxSpd << "," << pwm << "," << pid1->_integral << endl;
 			#endif
 

@@ -31,7 +31,6 @@ public:
 
      int write_byte(char byte);
      int write_bytes(char* bytes, int num_bytes);
-     int writer(char* bytes, int num_bytes);
 
      int read_byte(char* buffer_out);
      int read_bytes(char* buffer_out, int num_bytes);

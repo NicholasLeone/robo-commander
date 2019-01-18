@@ -14,10 +14,8 @@ UartDev::UartDev(const char* add, int baud){
 	}
 
 	tcgetattr(_handle, &this->_settings);
-	this->_settings.c_cflag = (speed_t)baud | CS8 | CLOCAL | CREAD;		//<Set baud rate
+	this->_settings.c_cflag = (speed_t)baud | CS8 | CLOCAL | CREAD;
 	this->_settings.c_iflag = IGNPAR;
-	this->_settings.c_oflag = 0;
-	this->_settings.c_lflag = 0;
 
 	/* Set the attributes to the termios structure*/
 	if((tcsetattr(_handle,TCSANOW,&this->_settings)) != 0)
@@ -49,14 +47,13 @@ int UartDev::write_bytes(char* bytes, int num_bytes){
 		}
 		std::cout << std::endl;
 	}
-	// num_bytes,size,bytes_written);
 	return bytes_written;
 }
 
 int UartDev::read_byte(char* buffer_out){
 	char buffer[2];
 	int bytes_read = read(this->_fd, &buffer, sizeof(char));
-	// printf("UartDev::read_byte ---- Byte read: %s\r\n",buffer);
+	if(this->_verbose) printf("UartDev::read_byte ---- Byte read: %s\r\n",buffer);
 	memcpy(buffer_out,buffer, sizeof(char));
      return bytes_read;
 }
@@ -82,39 +79,10 @@ int UartDev::read_bytes(char* buffer_out, int num_bytes){
 	return bytes_read;
 }
 
-int UartDev::writer(char* bytes, int num_bytes){
-	int size = sizeof(bytes)/sizeof(*bytes);
-	int max_trys = 4;
-	int trys = 0;
-	int bytes_written;
-	char _buf[4096];
-
-	this->flush();
-	while(trys <= max_trys + 1){
-		bytes_written = this->write_bytes(&bytes[0], num_bytes);
-		usleep(0.003 * 1000000);
-		// printf("UartDev::write_bytes ---- num_bytes , size, bytes_written: %d, %d, %d\r\n",num_bytes,size,bytes_written);
-		int nBytes = this->bytes_available();
-		char resp[nBytes];
-		// this->read_bytes(&_buf[0], nBytes);
-		this->read_bytes(&resp[0], nBytes);
-		uint8_t resp_header = (resp[0]) & 0xFF;
-          uint8_t resp_status = (resp[1]) & 0xFF;
-		printf("[INFO] Response Received (header, status): %d,\t%d\r\n", (int)resp_header,(int)resp_status);
-		bool resp_check = ((resp_header == 0xEE) && (resp_status == 0x01) );
-		if(resp_check){
-               break;
-          }
-		trys += 1;
-	}
-
-	return bytes_written;
-}
-
 int UartDev::bytes_available(){
 	int num_bytes = 0;
 	ioctl(this->_fd, FIONREAD, &num_bytes);
-	// printf("UartDev::bytes_available ---- Bytes available: %d\r\n",num_bytes);
+	if(this->_verbose) printf("UartDev::bytes_available ---- Bytes available: %d\r\n",num_bytes);
 	return num_bytes;
 }
 

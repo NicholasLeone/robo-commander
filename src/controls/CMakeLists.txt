@@ -18,9 +18,9 @@ if(BUILD_TESTS)
      endif(VERBOSE)
 
      # PID
-     include_directories(${TEST_DIR}/controls)
-     add_executable(test_pid ${TEST_DIR}/controls/test_pid.cpp)
-     target_link_libraries(test_pid pid dcmotor imu)
+     # include_directories(${TEST_DIR}/controls)
+     # add_executable(test_pid ${TEST_DIR}/controls/test_pid.cpp)
+     # target_link_libraries(test_pid pid dcmotor imu)
 
      # Camera Gimbal Angle Controller
      include_directories(${TEST_DIR}/controls)
