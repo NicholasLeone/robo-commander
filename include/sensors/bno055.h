@@ -264,11 +264,11 @@ private:
 	// int _available();
 public:
 
-     // FUNCTIONS
-	BNO055(std::string dev, int baud);
-	// BNO055(int pi, std::string dev, int baud);
-     ~BNO055();
+	// FUNCTIONS
+	BNO055();
+	~BNO055();
 
+	virtual void init(std::string dev, int baud);
 	int begin(uint8_t mode = OPERATION_MODE_NDOF);
 	void update(bool verbose = false);
 

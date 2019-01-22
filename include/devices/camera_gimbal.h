@@ -1,49 +1,35 @@
 #ifndef CAMERA_GIMBAL_H_
 #define CAMERA_GIMBAL_H_
 
-#include "comms/i2c.h"
+#include "base/peripherals.h"
 #include "devices/pca9685.h"
 #include "sensors/bno055.h"
 #include "controls/pid.h"
 
 class CameraGimbal : public PID{
 private:
-
-     float _frequency;
-     float _period_pulsewidth;
-     int _dev;
-     int _han;
-
+     COMMUNICATION_CONFIGURATION _comms;
+     int actuator_channel;
+     int loopCount = 0;
+     float max_state;
+     float min_state;
+     float neutral_state;
 public:
+     PCA9685* gimbal;
+     BNO055 sensor;
+
      CameraGimbal();
-	CameraGimbal(int dev, int bus, int address);
 	virtual ~CameraGimbal();
 
-     /**       Function: Sets the output frequency of the PWM signals from all the channels
-     *    @param freq: Desired PWM frequency (40Hz - 1000Hz)
-     */
-	int setFrequency(int freq);
+     virtual int init(COMMUNICATION_CONFIGURATION comms, int channel);
+     virtual int _init_sensor(COMMUNICATION_CONFIGURATION comms);
+     virtual int _init_actuator(COMMUNICATION_CONFIGURATION comms, int channel);
 
-     /**       Function: Sets the PWM channel dependant on steps on/off
-     *    @param channel: Desired PWM channel to manipulate (0 - 15) -> Use -1 for all channels
-     *    @param on_val:  Desired step value associated with the time on (0 - 4095)
-     *    @param off_val: Desired step value associated with the time off (0 - 4095)
-     */
-     int setStep(int channel, int on_val, int off_val);
+     virtual void goto_neutral_state();
+     virtual void updateOnce();
 
-     /**       Function: Sets the PWM channel's step value associated with desired dutycycle response
-     *    @param channel : Desired PWM channel to manipulate (0 - 15) -> Use -1 for all channels
-     *    @param duty    : Desired duty cycle (0 - 100%)
-     */
-	int setDutyCycle(int channel, float duty);
-
-     /**       Function: Sets the PWM channel's step value associated with the desired PWM pulsewidth
-     *    @param channel : Desired PWM channel to manipulate (0 - 15) -> Use -1 for all channels
-     *    @param width: Desired pulsewidth of the PWM signal (limited by the operating frequency)
-     */
-     int setPulsewidth(int channel, int width);
-
-     /**       Function: Sets all channels' values to zero and closes i2c line */
-     void shutdown();
+     void set_max_state(float value);
+     void set_min_state(float value);
+     void set_neutral_state(float value);
 };
 #endif /** CAMERA_GIMBAL_H_ */

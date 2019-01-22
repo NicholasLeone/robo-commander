@@ -34,10 +34,6 @@ typedef struct SERIAL_PARAMS{
      unsigned int baud; // Baud Rate
 }SERIAL_PARAMS;
 
-typedef struct COMMUNICATION_PARAMS{
-     char* add; // Address of device, e.g "/dev/ttyACM0"
-     unsigned int baud; // Baud Rate
-}COMMUNICATION_PARAMS;
 
 typedef struct I2C_PARAMS{
      int add; // address of device
@@ -57,6 +53,28 @@ typedef struct INTERFACE_PARAMS{
      int com;       // Communication Handle of device for pigpiod library
 
 }INTERFACE_PARAMS;
+
+// =====================================================
+typedef struct SERIAL_CONFIGURATION{
+     char* address; // Address of device, e.g "/dev/ttyACM0"
+     int handle;    //
+     int baud;
+}SERIAL_CONFIGURATION;
+
+typedef struct I2C_CONFIGURATION{
+     int bus;
+     int address;
+     int handle;
+     char* location;
+}I2C_CONFIGURATION;
+
+typedef struct COMMUNICATION_CONFIGURATION{
+     int platform;
+     SERIAL_CONFIGURATION serial;
+     I2C_CONFIGURATION i2c;
+}COMMUNICATION_CONFIGURATION;
+
+
 
 /** SECTION:
 
@@ -91,5 +109,9 @@ protected:
 
 };
 
+class CommunicationInterface{
+
+
+};
 
 #endif /** PERIPHERALS_H_ */

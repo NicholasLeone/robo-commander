@@ -2,12 +2,13 @@
 #include <iostream>
 #include <vector>
 #include <string.h>
-#include <pigpiod_if2.h>
 #include "bno055.h"
 
 using namespace std;
 
-BNO055::BNO055(std::string dev, int baud){
+BNO055::BNO055(){}
+
+void BNO055::init(std::string dev, int baud){
      /** ----- Open UART -----*/
      int err;
      char* device = new char[dev.length()+1];
@@ -18,38 +19,10 @@ BNO055::BNO055(std::string dev, int baud){
      this->_use_pi = false;
      /** ----- BNO-055 Initializations -----*/
      this->_baud = baud;
-
 }
-
-// BNO055::BNO055(int pi, std::string dev, int baud){
-//      /** ----- Open UART -----*/
-//      int handle;
-//      int err;
-//      char* device = new char[dev.length()+1];
-//      strcpy(device, dev.c_str());
-//      if(pi >= 0){
-//           this->_pi = pi;
-//           handle = serial_open(pi, device, baud,0);
-//           if(handle >= 0){
-//                this->_handle = handle;
-//                this->_baud = baud;
-//           }else{
-//                printf("[ERROR] BNO-055 at %s with Baud rate of %d could not establish UART connection! Exiting...\r\n",device,baud);
-//                this->_initialized = false;
-//                std::exit(2);
-//           }
-//      }else{
-//           printf("[ERROR] PigpioD Not properly initialized! Exiting...\r\n");
-//           this->_initialized = false;
-//           std::exit(1);
-//      }
-//
-//      /** ----- BNO-055 Initializations -----*/
-// }
 
 BNO055::~BNO055(){
      this->_sd->_close();
-     // serial_close(_pi,_handle);
      delete this->_sd;
 }
 
@@ -571,112 +544,3 @@ void BNO055::update(bool verbose){
      this->get_quaternions(&quats[0], verbose);
      float temp = this->get_tempurature(verbose);
 }
-
-/*
-██████  ██
-██   ██ ██
-██████  ██
-██      ██
-██      ██
-*/
-
-// int BNO055::_pi_read(int num_bytes, char* data, bool verbose){
-//      char buffer[num_bytes];
-//      int nRead = serial_read(_pi,_handle, buffer, num_bytes);
-//
-//      if(nRead >= 0){
-//           memcpy(data,buffer, sizeof(char)*nRead);
-//      }else{
-//           printf("[ERROR] BNO055::_pi_read ---- pigpiod 'serial_read' failed with error code [%d]\r\n", nRead);
-//           return -1;
-//      }
-//
-//      if(verbose){
-//           cout << "[BNO055::_pi_read] ---- bytes received [N = " << nRead <<"]: ";
-//           for(int i = 0; i <= nRead; i++){
-//                cout << (int)buffer[i] << " (0x" << std::hex << (int)buffer[i] << ") , ";
-//           }
-//           cout << endl;
-//      }
-//      return nRead;
-// }
-//
-// int BNO055::_uart_send(char* cmds, int length, char* data, bool ack, bool verbose, int max_trys){
-//      char* output;
-//      char* resp;
-//      bool success = false;
-//      int trys = 0;
-//      char* _cmds = &cmds[0];
-//      if(verbose){
-//           printf("[BNO055::_uart_send] ---- # of bytes to send: %d\r\n", length);
-//           cout << "[BNO055::_uart_send] ---- command bytes sending: ";
-//           for(int i = 0; i <= length; i++){
-//                cout << (int)_cmds[i] << " (0x" << std::hex << (int)_cmds[i] << "), ";
-//           }
-//           cout << endl;
-//      }
-//
-//      while(trys <= max_trys + 1){
-//           char resp[50];
-//           // Flush any pending received data to get into a clean state.
-//           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Flushing...\n\r");
-//           this->_flush();
-//           // Send the data.
-//           int err = serial_write(_pi,_handle, &cmds[0], length);
-//           usleep(0.03 * 1000000);
-//           if(verbose) printf("[DEBUG] BNO055::_uart_send ----- commands sent with 'serial_write' with err = %d.\n\r", err);
-//           if(err < 0){
-//                printf("[ERROR] BNO055::_uart_send ---- pigpiod 'serial_write' failed with error code [%d]\r\n", err);
-//                break;
-//           }
-//           // Stop if no acknowledgment is expected.
-//           if(!ack){
-//                if(verbose) printf("[DEBUG] BNO055::_uart_send ----- Not looking for ACK, exiting from 'BNO055::_uart_send'...\n\r");
-//                success = true;
-//                break;
-//           }
-//
-//           // Read acknowledgement response (2 bytes).
-//           int bytes_avail = this->_available();
-//           int nBytes_read = this->_pi_read(bytes_avail,&resp[0]);
-//
-//           if(verbose) printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp[0],(int)resp[1]);
-//
-//           // Stop if there's no bus error (0xEE07 response) and return response bytes.
-//           uint8_t resp_header = (resp[0] & 0xFF);
-//           uint8_t resp_status = (resp[1] & 0xFF);
-//           bool resp_check = (((int)resp_header == 0xEE) && ((int)resp_status == 0x01) );
-//           if(resp_check){
-//                if(verbose) printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
-//                memcpy(data,resp, sizeof(char)*nBytes_read);
-//                success = true;
-//                break;
-//           }else if((resp_header == 0xBB)){
-//                if(verbose) printf("[INFO] BNO055::_uart_send ---- Response Received (header, status): %#x,\t%#x\r\n", (int)resp_header,(int)resp_status);
-//                memcpy(data,resp, sizeof(char)*nBytes_read);
-//                success = true;
-//                break;
-//           }
-//
-//           // Else there was a bus error so resend, as recommended in UART app
-//           trys += 1;
-//           // printf("[INFO] BNO055::_uart_send ---- No ack recieved, Trying again....\r\n");
-//      }
-//
-//      // Choose what to return
-//      if(success)
-//           return 0;
-//      else{
-//           printf("[ERROR] BNO055::_uart_send ---- Exceeded maximum attempts to acknowledge serial command without bus error!\r\n");
-//           return -1;
-//      }
-// }
-// void BNO055::_flush(){
-// 	char tmp[4096];
-// 	int buf = _available();
-// 	serial_read(_pi,_handle,tmp, buf);
-// }
-//
-// int BNO055::_available(){
-// 	return serial_data_available(_pi,_handle);
-// }

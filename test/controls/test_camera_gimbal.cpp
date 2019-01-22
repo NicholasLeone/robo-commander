@@ -114,7 +114,8 @@ int main(){
 
      if(pi >= 0){
                 /** BNO-055 IMU Start-Up */
-		BNO055 imu(device, baud);
+		BNO055 imu;
+		imu.init(device, baud);
 		int err = imu.begin();
 		if(err < 0)
 			printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);

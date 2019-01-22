@@ -102,6 +102,5 @@ float PID::calculate(float current_state){
      this->_prev_error = error;
 	this->_prev_integral = integral;
 
-
      return control_output;
 }

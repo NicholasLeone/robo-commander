@@ -13,7 +13,8 @@ int main(int argc, char *argv[]){
 	string ttyDev = "/dev/serial0";
 	int baud = B115200;
 
-	BNO055 imu(ttyDev, baud);
+	BNO055 imu;
+	imu.init(ttyDev, baud);
 
 	int err = imu.begin();
 	if(err < 0)

@@ -36,7 +36,6 @@ typedef struct PID_PARAMS{
 class PID {
 
 private:
-     PID_PARAMS _params;
 
      high_resolution_clock::time_point _prev_time;
 
@@ -91,6 +90,7 @@ public:
      /** ========================
      *      Public Variables
      * ========================== */
+     PID_PARAMS _params;
      float current_cmd;
 };
 
