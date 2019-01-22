@@ -77,7 +77,7 @@ void CameraGimbal::updateOnce(){
      std::cout << "Angle, Controls, Error: " << angle << "		" << command  << "		" << error << std::endl;
 
      /** Sleep for specified time */
-     usleep(this->_params.dt);
+     usleep(this->_params.dt * 1000000);
 }
 
 void CameraGimbal::set_max_state(float value){ this->max_state = value; }
