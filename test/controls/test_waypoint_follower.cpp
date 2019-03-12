@@ -1,5 +1,5 @@
 #include <iostream>
-#include "waypoint_follower/waypoint_follower.h"
+#include "controls/waypoint_follower.h"
 #include <vector>
 
 using namespace std;
@@ -10,11 +10,11 @@ int main(){
 
 	WaypointFollower wf;
 
-	wf.load_path("/home/hunter/Documents/loaded_trajectory.csv");
-	wf.update(pose0);
+	wf.load_path("/home/hunter/Documents/key_waypoints.csv");
+	wf.update_target_waypoint(pose0);
 	vector<float> cmds = wf.get_commands(pose0, true);
 
-	float d2g = wf.get_distance_to_goal(pose0);
+	float d2g = wf.get_distance_to_goal(pose0, true);
 
 	wf.plot_pose_w_paths(pose0);
 

@@ -14,6 +14,13 @@ struct CoordinatePair{
 	float y;
 };
 
+enum WAYPOINT_TYPE{
+	KeyIncremental,
+	Interpolated,
+	ExternallyGiven,
+};
+
+
 typedef chrono::high_resolution_clock fineclock_t;
 typedef vector<float> vecf_t;
 typedef vector< vector<float> > mat_t;
@@ -26,9 +33,11 @@ private:
 	float _goal_radius_threshold;
 	float _target_radius_threshold;
 	float _maxv = 0.5;
-	float _maxw = 3.14;
+	float _maxw = 1.0;
+	float _max_turn_angle = M_PI/2;
+	float _steer_pwr = 0.5;
 
-	int follow_mode = 0;
+	WAYPOINT_TYPE waypoint_type = Interpolated;
 	int _lookahead_index_distance;
 
 	fineclock_t::time_point _prev_time;
@@ -53,20 +62,19 @@ private:
 	fmat _get_nearest_waypoint(fmat pose2d, bool verbose = false);
 	uword _get_nearest_waypoint_index(fmat pose2d, bool verbose = false);
 	int _update_target_index(fmat pose2d);
-	void _update_target_waypoint(fmat pose2d, bool verbose = true);
 
 public:
 	WaypointFollower();
-	WaypointFollower(fmat ref_path);
 	~WaypointFollower();
 
 	// Controller update function
 	void load_path(string file_path, bool switch_xy = false, bool verbose = false, bool plot = false);
-	void update(vector<float> cur_pose2d);
+	void update_target_waypoint(vector<float> pose2d, bool verbose = true);
+	float compute_turn_angle(vector<float> cur_pose2d, bool verbose = false);
 	vector<float> get_commands(vector<float> cur_pose2d, bool verbose = false);
 
 	// Setters
-	void set_follow_mode(int mode);
+	void set_waypoint_type(WAYPOINT_TYPE type);
 	void set_lookahead_distance(float distance);
 	void set_goal_radius_threshold(float radius);
 	void set_target_radius_threshold(float radius);
@@ -74,6 +82,8 @@ public:
 	void set_target(vector<float> xy_target);
 	void set_goal(vector<float> goal_pose2d);
 	void set_max_commands(vector<float> limits, bool verbose = false);
+	void set_max_turn_angle(float limit_deg, bool verbose = false);
+	void set_steering_power(float power);
 
 	// Getters
 	float get_distance_to_goal(vector<float> cur_pose2d, bool verbose = false);

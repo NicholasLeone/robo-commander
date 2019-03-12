@@ -1,7 +1,8 @@
 #include <iostream>
 
-#include "waypoint_follower/matplotlibcpp.h"
-#include "waypoint_follower/waypoint_follower.h"
+#include "base/definitions.h"
+#include "utils/matplotlibcpp.h"
+#include "controls/waypoint_follower.h"
 
 namespace plt = matplotlibcpp;
 using namespace std;
@@ -11,7 +12,6 @@ WaypointFollower::WaypointFollower(){
 	this->_goal << 0 << 0 << endr;
 	this->_cur_target << 0 << 0 << endr;
 }
-WaypointFollower::WaypointFollower(fmat ref_path){}
 WaypointFollower::~WaypointFollower(){}
 
 /** -----------------------
@@ -58,64 +58,48 @@ int WaypointFollower::_update_target_index(fmat pose2d){
 
 	// If there aren't any search points create one, otherwise use last search point
 	if(this->_target_idx_history.is_empty()){
-		chosen_index = this->_get_nearest_waypoint_index(pose2d);
+		if(this->waypoint_type == Interpolated)
+			chosen_index = this->_get_nearest_waypoint_index(pose2d);
+		else if(this->waypoint_type == KeyIncremental)
+			chosen_index = zeros<ucolvec>(1);
 		this->_target_idx_history = join_cols(this->_target_idx_history, chosen_index);
 		status = 0;
 	} else{
 		// Grab the last most recorded lookahead index
 		last_index = as_scalar(this->_target_idx_history.tail(1));
-		// Search for acceptable lookahead indices
-		int search_dist = 2 * this->_lookahead_index_distance;
-		if(last_index + search_dist < this->_reference_path.n_rows)
+		if(this->waypoint_type == Interpolated){
+			// Search for acceptable lookahead indices
+			int search_dist = 2 * this->_lookahead_index_distance;
+			if(last_index + search_dist < this->_reference_path.n_rows)
 			search_index = last_index + search_dist;
-		else search_index = this->_reference_path.n_rows - 1;
+			else search_index = this->_reference_path.n_rows - 1;
 
-		// Grab all the indices from the reference path that're within the search range
-		fmat dxs = this->_reference_path(span(last_index,search_index),0) - pose2d(0,0);
-		fmat dys = this->_reference_path(span(last_index,search_index),1) - pose2d(0,1);
+			// Grab all the indices from the reference path that're within the search range
+			fmat dxs = this->_reference_path(span(last_index,search_index),0) - pose2d(0,0);
+			fmat dys = this->_reference_path(span(last_index,search_index),1) - pose2d(0,1);
 
-		// Find the respective Euclidean distances for each point
-		fmat dists = sqrt(square(dxs) + square(dys));
-		float min_val = dists.min(nearest_index);
-		chosen_index = last_index + nearest_index;
+			// Find the respective Euclidean distances for each point
+			fmat dists = sqrt(square(dxs) + square(dys));
+			float min_val = dists.min(nearest_index);
+			chosen_index = last_index + nearest_index;
+		}else if(this->waypoint_type == KeyIncremental){
+			float dx = this->_reference_path(last_index,0) - pose2d(0,0);
+			float dy = this->_reference_path(last_index,1) - pose2d(0,1);
+
+			// Find the respective Euclidean distances for each point
+			float dist = sqrt(dx *dx + dy*dy);
+			if(dist <= this->_target_radius_threshold){
+				chosen_index = last_index + 1;
+				if(as_scalar(chosen_index) >= this->_reference_path.n_rows)
+					chosen_index = this->_reference_path.n_rows - 1;
+			} else{
+				chosen_index = last_index;
+			}
+		}
 		this->_target_idx_history = join_cols(this->_target_idx_history, chosen_index);
 		status = 1;
 	}
 	return status;
-}
-
-
-void WaypointFollower::_update_target_waypoint(fmat pose2d, bool verbose){
-
-	// Do the following if we are following a pre-defined path
-	if(this->follow_mode == 0){
-		this->_lookahead_index_distance = round(this->_lookahead_dist / this->_min_increment_dist);
-		if(verbose) cout << "Lookahead Index Distance: " << this->_lookahead_index_distance << endl;
-
-		int status = this->_update_target_index(pose2d);
-		if(status == 0){
-			int lookahead_point_index = as_scalar(this->_target_idx_history.tail(1));
-			this->_cur_target = this->_reference_path.row(lookahead_point_index);
-			if(verbose) cout << "No Previous Targets.\r\n 	 New Target Found at index: " << lookahead_point_index << endl;
-		}else{
-			int lookahead_point_index = as_scalar(this->_target_idx_history.tail(1)) + this->_lookahead_index_distance;
-
-			// If the proposed target index is within bounds then use the target at that index
-			if(lookahead_point_index < this->_reference_path.n_rows){
-				this->_cur_target = this->_reference_path.row(lookahead_point_index);
-				if(verbose) cout << "Updated Target Index: " << lookahead_point_index << endl;
-			} else{ // Otherwise use the last waypoint from the reference path
-				this->_cur_target = this->_reference_path.tail_rows(1);
-				if(verbose) cout << "Using Last Reference Index: " << this->_reference_path.n_rows << endl;
-			}
-		}
-	}else{             // Otherwise follow a single waypoint updated externally
-		if(verbose) cout << "Updated Target Waypoint: " << this->_cur_target << endl;
-	}
-	if(verbose) cout << "Updated Target Waypoint: " << this->_cur_target << endl;
-
-	// Record updated target information (index and waypoint at index)
-	this->_target_history = join_cols(this->_target_history, this->_cur_target);
 }
 
 fmat WaypointFollower::_saturate_controls(fmat raw_controls){
@@ -168,41 +152,87 @@ void WaypointFollower::load_path(string file_path, bool switch_xy, bool verbose,
 	if(plot) this->plot_paths();
 }
 
-void WaypointFollower::update(vector<float> cur_pose2d){
-	fmat pose;
-	pose << cur_pose2d.at(0) << cur_pose2d.at(1) << cur_pose2d.at(2) << endr;
-	this->_update_target_waypoint(pose);
+void WaypointFollower::update_target_waypoint(vector<float> pose2dvec, bool verbose){
+	fmat pose2d;
+	pose2d << pose2dvec.at(0) << pose2dvec.at(1) << pose2dvec.at(2) << endr;
 
+	// Do the following if we are following a pre-defined path
+	if(this->waypoint_type == Interpolated){
+		this->_lookahead_index_distance = round(this->_lookahead_dist / this->_min_increment_dist);
+		if(verbose) cout << "Lookahead Index Distance: " << this->_lookahead_index_distance << endl;
+
+		int status = this->_update_target_index(pose2d);
+		if(status == 0){
+			int lookahead_point_index = as_scalar(this->_target_idx_history.tail(1));
+			this->_cur_target = this->_reference_path.row(lookahead_point_index);
+			if(verbose) cout << "No Previous Targets.\r\n 	 New Target Found at index: " << lookahead_point_index << endl;
+		}else{
+			int lookahead_point_index = as_scalar(this->_target_idx_history.tail(1)) + this->_lookahead_index_distance;
+
+			// If the proposed target index is within bounds then use the target at that index
+			if(lookahead_point_index < this->_reference_path.n_rows){
+				this->_cur_target = this->_reference_path.row(lookahead_point_index);
+				if(verbose) cout << "Updated Target Index: " << lookahead_point_index << endl;
+			} else{ // Otherwise use the last waypoint from the reference path
+				this->_cur_target = this->_reference_path.tail_rows(1);
+				if(verbose) cout << "Using Last Reference Index: " << this->_reference_path.n_rows << endl;
+			}
+		}
+	}else if(this->waypoint_type == KeyIncremental){
+		int status = this->_update_target_index(pose2d);
+		int carot_index = as_scalar(this->_target_idx_history.tail(1));
+		this->_cur_target = this->_reference_path.row(carot_index);
+	}else if(this->waypoint_type == ExternallyGiven){ // Follow a single waypoint updated externally
+		if(verbose) cout << "Updated Target Waypoint: " << this->_cur_target << endl;
+	}
+	if(verbose) cout << "Updated Target Waypoint: " << this->_cur_target << endl;
+
+	// Record updated target information (index and waypoint at index)
+	this->_target_history = join_cols(this->_target_history, this->_cur_target);
 	// Store Current Pose in pose history for visualizing traversed trajectory
-	this->_pose_history = join_cols(this->_pose_history, pose);
+	this->_pose_history = join_cols(this->_pose_history, pose2d);
 }
 
-
-vector<float> WaypointFollower::get_commands(vector<float> cur_pose2d, bool verbose){
-	fmat raw_controls, controls, pose;
+float WaypointFollower::compute_turn_angle(vector<float> cur_pose2d, bool verbose){
 	fmat target = this->_cur_target;
+	fmat pose;
 	pose << cur_pose2d.at(0) << cur_pose2d.at(1) << cur_pose2d.at(2) << endr;
 
 	float dx = target(0) - pose(0);
 	float dy = target(1) - pose(1);
-
+	float target_dist = sqrt(dx*dx + dy*dy);
 	// Angle between robot heading and the line connecting robot and the current target waypoint
-	float slope = atan2(dy, dx);
-	float alpha = slope - pose(2);
+	float angle = atan2(dy, dx);
+	float alpha = angle - pose(2);
 
-	float vraw = this->_maxv;
 	// Angular velocity command for a differential drive robot is equal to the desired curvature to be followed by the robot.
-	float wraw = ( 2 * sin(alpha) ) / this->_lookahead_dist;
-
+	float turn_angle = ( 2 * sin(alpha) ) / this->_lookahead_dist;
 	// Pick a constant rotation when robot is facing in the opposite direction of the path
-	if(abs(abs(alpha) - datum::pi) < 1e-12) wraw = copysign(1.0, wraw);
+	if(abs(abs(alpha) - datum::pi) < 1e-12) turn_angle = copysign(1.0, turn_angle);
+	return turn_angle;
+}
 
-	raw_controls << vraw << wraw << endr;
-	controls = this->_saturate_controls(raw_controls);
+vector<float> WaypointFollower::get_commands(vector<float> cur_pose2d, bool verbose){
+	fmat raw_controls, controls;
+
+	// Compute Angular Velocity
+	float curvature = this->compute_turn_angle(cur_pose2d);
+	float absCurve = fabs(curvature);
+	if(absCurve >= this->_max_turn_angle)
+		absCurve = this->_max_turn_angle;
+
+	float ang_vel = pow(absCurve/this->_max_turn_angle, this->_steer_pwr) * this->_maxw;
+	if(curvature >= 0)
+   		ang_vel = ang_vel;
+	else
+   		ang_vel = -ang_vel;
+	// Compute Linear Velocity
+	float vgain = 1.0 - (absCurve/this->_max_turn_angle);
+	float lin_vel = this->_maxv * vgain;
+
+	controls << lin_vel << ang_vel << endr;
 
 	if(verbose){
-		// cout << "LookAheadPoint: " << lookAheadPoint << "			Slope to Path: " << slope << "				Alpha: " << alpha << endl;
-		// cout << "Controls Size: " << size(controls) << endl;
 		controls.print("	WaypointFollower --- Controls: ");
 	}
 
@@ -210,12 +240,10 @@ vector<float> WaypointFollower::get_commands(vector<float> cur_pose2d, bool verb
 	return vec_controls;
 }
 
-
-
 /** -----------------------
 *	Setter Functions
 * -------------------------- */
-void WaypointFollower::set_follow_mode(int mode){this->follow_mode = mode;}
+void WaypointFollower::set_waypoint_type(WAYPOINT_TYPE type){this->waypoint_type = type;}
 void WaypointFollower::set_lookahead_distance(float distance){this->_lookahead_dist = distance;}
 void WaypointFollower::set_goal_radius_threshold(float radius){this->_goal_radius_threshold = radius;}
 void WaypointFollower::set_target_radius_threshold(float radius){this->_target_radius_threshold = radius;}
@@ -235,6 +263,11 @@ void WaypointFollower::set_max_commands(vector<float> limits, bool verbose){
 	this->_maxw = limits.at(1);
 	if(verbose) cout << "	WaypointFollower --- Set Max Commands: " << this->_maxv << ", " << this->_maxw << endl;
 }
+void WaypointFollower::set_max_turn_angle(float limit_deg, bool verbose){
+	this->_max_turn_angle = limit_deg * M_DEG2RAD;
+	if(verbose) cout << "	WaypointFollower --- Set Max Turn Angle: " << this->_max_turn_angle << " (" << limit_deg << ")" << endl;
+}
+void WaypointFollower::set_steering_power(float power){this->_steer_pwr = power;}
 
 /** -----------------------
 *	Getter Functions
