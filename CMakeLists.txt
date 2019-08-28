@@ -1,27 +1,20 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(robo-commander)
+project(RoboCommander)
+
+set(RoboCommander_VERSION_MAJOR 1 CACHE STRING "major version" FORCE)
+set(RoboCommander_VERSION_MINOR 0 CACHE STRING "minor version" FORCE)
+set(RoboCommander_VERSION ${RoboCommander_VERSION_MAJOR}.${RoboCommander_VERSION_MINOR} CACHE STRING "version" FORCE)
 
 # ===========================
 #       Set Build Options
 # ===========================
-set(COMPILE_ARM     OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
-
 set(VERBOSE         OFF CACHE INTERNAL "CMake execution debugging")
-
-set(BUILD_ACTUATORS ON CACHE INTERNAL "Build all the hardware drivers used to control various standard actuators")
-set(BUILD_COMMS     ON CACHE INTERNAL "Build all the hardware drivers used to handle device communication protocols")
-set(BUILD_DEVICES   ON CACHE INTERNAL "Build all the hardware drivers used to")
-set(BUILD_SENSORS   ON CACHE INTERNAL "Build all the hardware drivers used to")
-set(BUILD_CONTROLS  ON CACHE INTERNAL "Build all the libraries used to handle the control systems")
-set(BUILD_FILTERS   ON CACHE INTERNAL "Build all the libraries used to filter and pre-process data")
-set(BUILD_UTILS     ON CACHE INTERNAL "Build all the classes useful throughout entire project that help make programming cleaner and quicker")
-set(BUILD_PROFILES  ON CACHE INTERNAL "Build all the robot configuration profiles responsible for combining all the usable device drivers to control the hardware")
-set(BUILD_ROBOTS    ON CACHE INTERNAL "Build all the robot configuration profiles responsible for combining all the usable device drivers to control the hardware")
+set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class")
 
 set(WITH_GTSAM      OFF CACHE INTERNAL "Include the GTSAM library")
 set(WITH_OPENCV     OFF CACHE INTERNAL "Include the OpenCV library")
 
-set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class")
+set(COMPILE_ARM     OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
 
 # ===========================
 #        Set Compiler
@@ -36,13 +29,17 @@ set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class
 # ===========================
 set(LIBRARY_OUTPUT_PATH "lib")
 set(EXECUTABLE_OUTPUT_PATH "bin")
-# set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-# set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBS_DIR ${LIBRARY_OUTPUT_PATH})
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
 set(INCS_DIR "${PROJECT_SOURCE_DIR}/include")
 set(TEST_DIR "${PROJECT_SOURCE_DIR}/tests")
 set(HOME_DIR "${PROJECT_SOURCE_DIR}")
+
+set(EXEC_DEST_DIR "bin/${PROJECT_NAME}-${RoboCommander_VERSION}")
+set(INC_DEST_DIR "include/${PROJECT_NAME}-${RoboCommander_VERSION}")
+set(PRJOECT_LIB_DEST "lib/${PROJECT_NAME}-${RoboCommander_VERSION}")
+
+set(CMAKE_INSTALL_PREFIX "${PROJECT_NAME}-${RoboCommander_VERSION}")
 
 # ============================================
 #       Find & Include Dependencies
@@ -80,22 +77,25 @@ if(WITH_OPENCV)
 endif(WITH_OPENCV)
 
 # For PurePursuit Controller
-if(BUILD_CONTROLS)
-     find_package(PythonLibs 2.7)
-     include_directories(
-     	${PYTHON_INCLUDE_DIRS}
-     	/usr/local/lib/python2.7/dist-packages/numpy/core/include
-     )
-endif(BUILD_CONTROLS)
+find_package(PythonLibs 2.7)
 
 include_directories(
      include
      ${Boost_INCLUDE_DIRS}
      ${pigpio_INCLUDE_DIR}
      ${EXTERNAL_PACKAGE_INCLUDES}
+     # For PurePursuit Controller
+     ${PYTHON_INCLUDE_DIRS}
+     /usr/local/lib/python2.7/dist-packages/numpy/core/include
 )
 
-set( RoboCommander_LIBRARIES
+# set( RoboCommander_LIBRARIES
+#      ${Boost_LIBRARIES}
+#      ${pigpiod_if2_LIBRARY}
+#      ${CMAKE_THREAD_LIBS_INIT}
+# )
+
+set( RoboCommander_EXTERNAL_LIBRARIES
      ${Boost_LIBRARIES}
      ${pigpiod_if2_LIBRARY}
      ${CMAKE_THREAD_LIBS_INIT}
@@ -114,6 +114,19 @@ set( RoboCommander_INCLUDE_DIRS
      "${INCS_DIR}/vehicle_profiles"
 )
 
+file(GLOB RoboCommander_HEADERS
+     "${INCS_DIR}/actuators/*.h"
+     "${INCS_DIR}/algorithms/*.h"
+     "${INCS_DIR}/communication/*.h"
+     "${INCS_DIR}/controllers/*.h"
+     "${INCS_DIR}/devices/*.h"
+     "${INCS_DIR}/robots/*.h"
+     "${INCS_DIR}/sensors/*.h"
+     "${INCS_DIR}/utilities/*.h"
+     "${INCS_DIR}/vehicle_profiles/*.h"
+     "${INCS_DIR}/base/*.h"
+)
+
 # ===========================
 #     Build Targets
 # ===========================
@@ -126,7 +139,36 @@ endif(BUILD_TESTS)
 # ===========================
 #     Install Targets
 # ===========================
+include(GNUInstallDirs)
 
+install(
+     EXPORT RoboCommander_TARGETS
+     DESTINATION "${PRJOECT_LIB_DEST}/cmake/RoboCommander"
+     NAMESPACE RoboCommander::
+     FILE RoboCommanderPkg.cmake # Not sure if this is still needed
+)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+     "RoboCommanderConfig.cmake.in"
+     "RoboCommanderConfig.cmake"
+     INSTALL_DESTINATION "${PRJOECT_LIB_DEST}/cmake/RoboCommander"
+     # PATH_VARS ${PRJOECT_LIB_DEST}
+)
+
+write_basic_package_version_file(
+     ${CMAKE_CURRENT_BINARY_DIR}/RoboCommanderConfigVersion.cmake
+     VERSION ${RoboCommander_VERSION}
+     COMPATIBILITY AnyNewerVersion
+)
+
+install(
+     FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/RoboCommanderConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/RoboCommanderConfigVersion.cmake"
+     DESTINATION
+          "${PRJOECT_LIB_DEST}/cmake/RoboCommander"
+)
 
 # ===========================
 #         DEBUG
