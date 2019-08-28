@@ -2,8 +2,8 @@
 #include <math.h>
 
 #include <pigpiod_if2.h>
-#include "dc_motor.h"
-#include "utils/utils.h"
+#include "actuators/dc_motor.h"
+#include "utilities/utils.h"
 
 using namespace std;
 

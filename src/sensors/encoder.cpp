@@ -3,7 +3,7 @@
 #include <chrono>
 #include <pigpiod_if2.h>
 
-#include "encoder.h"
+#include "sensors/encoder.h"
 
 using namespace std;
 using namespace chrono;

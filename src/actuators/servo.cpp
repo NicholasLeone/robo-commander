@@ -3,7 +3,7 @@
 #include <pigpiod_if2.h>
 
 #include "actuators/servo.h"
-#include "comms/i2c.h"
+#include "communication/i2c.h"
 
 using namespace std;
 

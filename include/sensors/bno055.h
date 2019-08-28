@@ -3,7 +3,7 @@
 
 #include "base/params.h"
 #include "base/peripherals.h"
-#include "comms/uart.h"
+#include "communication/uart.h"
 
 // Power Modes
 typedef enum{

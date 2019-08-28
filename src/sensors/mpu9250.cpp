@@ -2,8 +2,8 @@
 #include <iostream>
 #include <pigpiod_if2.h>
 
-#include "mpu9250.h"
-#include "utils/utils.h"
+#include "sensors/mpu9250.h"
+#include "utilities/utils.h"
 
 // TODO: Magnetometer  #define REG_MAG
 

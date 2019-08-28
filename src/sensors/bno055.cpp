@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <string.h>
-#include "bno055.h"
+#include "sensors/bno055.h"
 
 using namespace std;
 

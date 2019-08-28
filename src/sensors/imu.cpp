@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include "base/definitions.h"
-#include "imu.h"
+#include "sensors/imu.h"
 
 static const float G_TO_MPSS = 9.80665;
 static const int uT_TO_T = 1000000;

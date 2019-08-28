@@ -1,7 +1,7 @@
 #ifndef PCA9685_H_
 #define PCA9685_H_
 
-#include "comms/i2c.h"
+#include "communication/i2c.h"
 
 #define MODE1 0x00			// Mode  register  1
 #define MODE2 0x01			// Mode  register  2

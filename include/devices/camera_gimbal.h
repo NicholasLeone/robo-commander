@@ -4,7 +4,7 @@
 #include "base/peripherals.h"
 #include "devices/pca9685.h"
 #include "sensors/bno055.h"
-#include "controls/pid.h"
+#include "controllers/pid.h"
 
 class CameraGimbal : public PID{
 private:

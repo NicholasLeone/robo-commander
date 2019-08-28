@@ -1,7 +1,7 @@
 #include <thread>
 #include <pigpiod_if2.h>
 
-#include "utils/utils.h"
+#include "utilities/utils.h"
 #include "four_wd.h"
 
 using namespace std;

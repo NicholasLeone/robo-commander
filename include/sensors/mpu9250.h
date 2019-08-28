@@ -3,7 +3,7 @@
 
 #include "base/params.h"
 #include "base/peripherals.h"
-#include "comms/serial.h"
+#include "communication/serial.h"
 
 #define DEBUG_INTERMEDIATE_IMU
 #define MAX_CAL_STEPS 1000

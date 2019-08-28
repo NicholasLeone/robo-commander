@@ -6,9 +6,9 @@
 // #include "base/params.h"
 #include "actuators/dc_motor.h"
 #include "sensors/encoder.h"
-#include "comms/udp.h"
+#include "communication/udp.h"
 #include "devices/roboclaw.h"
-#include "controls/pid.h"
+#include "controllers/pid.h"
 
 class Swanson {
 

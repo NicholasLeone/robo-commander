@@ -4,8 +4,8 @@
 #include <fstream>
 #include <chrono>
 
-#include "comms/udp.h"
-#include "profiles/dual_roboclaw.h"
+#include "communication/udp.h"
+#include "vehicle_profiles/dual_roboclaw.h"
 #include "sensors/imu.h"
 
 using namespace std;
