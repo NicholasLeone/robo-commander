@@ -39,7 +39,7 @@ set(EXEC_DEST_DIR "bin/${PROJECT_NAME}-${RoboCommander_VERSION}")
 set(INC_DEST_DIR "include/${PROJECT_NAME}-${RoboCommander_VERSION}")
 set(PRJOECT_LIB_DEST "lib/${PROJECT_NAME}-${RoboCommander_VERSION}")
 
-set(CMAKE_INSTALL_PREFIX "${PROJECT_NAME}-${RoboCommander_VERSION}")
+# set(CMAKE_INSTALL_PREFIX "outputs")
 
 # ============================================
 #       Find & Include Dependencies
@@ -89,12 +89,6 @@ include_directories(
      /usr/local/lib/python2.7/dist-packages/numpy/core/include
 )
 
-# set( RoboCommander_LIBRARIES
-#      ${Boost_LIBRARIES}
-#      ${pigpiod_if2_LIBRARY}
-#      ${CMAKE_THREAD_LIBS_INIT}
-# )
-
 set( RoboCommander_EXTERNAL_LIBRARIES
      ${Boost_LIBRARIES}
      ${pigpiod_if2_LIBRARY}
@@ -139,7 +133,7 @@ endif(BUILD_TESTS)
 # ===========================
 #     Install Targets
 # ===========================
-include(GNUInstallDirs)
+# include(GNUInstallDirs)
 
 install(
      EXPORT RoboCommander_TARGETS

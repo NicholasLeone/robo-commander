@@ -128,7 +128,6 @@ install(
 
 install(
      FILES ${RoboCommander_HEADERS}
-     EXPORT RoboCommander_TARGETS
      DESTINATION "${INC_DEST_DIR}"
 )
 
