@@ -137,9 +137,9 @@ list(APPEND RoboCommander_TESTS test_dualclaw)
 # ===========================
 #          INSTALL
 # ===========================
-message(STATUS " Tests to install ------")
-foreach(dir ${RoboCommander_TESTS})
-     message(STATUS "         included='${dir}'")
-endforeach()
+# message(STATUS " Tests to install ------")
+# foreach(dir ${RoboCommander_TESTS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
 
-install(TARGETS ${RoboCommander_TESTS} EXPORT RoboCommander_TARGETS DESTINATION "${EXEC_DEST_DIR}")
+install(TARGETS ${RoboCommander_TESTS} EXPORT RoboCommanderTargets DESTINATION "${EXEC_DEST_DIR}")

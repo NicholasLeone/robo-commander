@@ -35,9 +35,24 @@ set(INCS_DIR "${PROJECT_SOURCE_DIR}/include")
 set(TEST_DIR "${PROJECT_SOURCE_DIR}/tests")
 set(HOME_DIR "${PROJECT_SOURCE_DIR}")
 
-set(EXEC_DEST_DIR "bin/${PROJECT_NAME}-${RoboCommander_VERSION}")
-set(INC_DEST_DIR "include/${PROJECT_NAME}-${RoboCommander_VERSION}")
-set(PRJOECT_LIB_DEST "lib/${PROJECT_NAME}-${RoboCommander_VERSION}")
+set(EXEC_DEST_DIR "bin/${PROJECT_NAME}")
+set(INC_DEST_DIR "include/${PROJECT_NAME}")
+set(PRJOECT_LIB_DEST "lib/${PROJECT_NAME}")
+set(PRJOECT_CMAKE_DEST "lib/cmake/${PROJECT_NAME}")
+
+set(INSTALL_LIB_DIR lib) # CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR bin) # CACHE PATH "Installation directory for executables")
+set(INSTALL_INCLUDE_DIR include) # CACHE PATH "Installation directory for header files")
+set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME}) # PATH "Installation directory for CMake files")
+
+# Make relative paths absolute (needed later on)
+foreach(p LIB BIN INCLUDE CMAKE)
+     set(var INSTALL_${p}_DIR)
+     if(NOT IS_ABSOLUTE "${${var}}")
+          set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+          message(STATUS "Changed FilePath INSTALL_${p}_DIR ------> ${${var}}")
+     endif()
+endforeach()
 
 # set(CMAKE_INSTALL_PREFIX "outputs")
 
@@ -133,36 +148,95 @@ endif(BUILD_TESTS)
 # ===========================
 #     Install Targets
 # ===========================
-# include(GNUInstallDirs)
+export(
+     TARGETS ${RoboCommander_LIBRARIES}
+     FILE "${PROJECT_BINARY_DIR}/RoboCommanderTargets.cmake"
+)
+export(PACKAGE RoboCommander)
 
-install(
-     EXPORT RoboCommander_TARGETS
-     DESTINATION "${PRJOECT_LIB_DEST}/cmake/RoboCommander"
-     NAMESPACE RoboCommander::
-     FILE RoboCommanderPkg.cmake # Not sure if this is still needed
+# Create the RoboCommanderConfig.cmake and RoboCommanderConfigVersion files
+file(RELATIVE_PATH
+     REL_INCLUDE_DIR
+     "${INSTALL_CMAKE_DIR}"
+     "${INSTALL_INCLUDE_DIR}"
+)
+# ... for the build tree
+set(CONF_INCLUDE_DIRS
+     "${PROJECT_SOURCE_DIR}"
+     "${PROJECT_BINARY_DIR}"
+     "${INC_DEST_DIR}"
+     "${PRJOECT_LIB_DEST}"
 )
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-     "RoboCommanderConfig.cmake.in"
-     "RoboCommanderConfig.cmake"
-     INSTALL_DESTINATION "${PRJOECT_LIB_DEST}/cmake/RoboCommander"
-     # PATH_VARS ${PRJOECT_LIB_DEST}
+set(CONF_DEST_DIRS
+     "${EXEC_DEST_DIR}"
+     "${INC_DEST_DIR}"
+     "${PRJOECT_LIB_DEST}"
+     "${PRJOECT_CMAKE_DEST}"
 )
+set(CONF_LOCAL_SRC_ROOT "${PROJECT_SOURCE_DIR}")
+set(CONF_INC_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${INC_DEST_DIR}")
+set(CONF_LIB_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${PRJOECT_LIB_DEST}")
+set(CONF_CMAKE_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${PRJOECT_CMAKE_DEST}")
+set(CONF_EXEC_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${EXEC_DEST_DIR}")
+set(CONF_LIBRARIES "${RoboCommander_LIBRARIES}")
+set(CONF_HEADERS "${RoboCommander_HEADERS}")
+set(CONF_INCLUDES "${RoboCommander_INCLUDE_DIRS}")
+configure_file(cmake/RoboCommanderConfig.cmake.in "${PROJECT_BINARY_DIR}/RoboCommanderConfig.cmake" @ONLY)
 
-write_basic_package_version_file(
-     ${CMAKE_CURRENT_BINARY_DIR}/RoboCommanderConfigVersion.cmake
-     VERSION ${RoboCommander_VERSION}
-     COMPATIBILITY AnyNewerVersion
-)
+# ... for the install tree
+set(CONF_INCLUDE_DIRS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_LIBRARIES "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_HEADERS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_INCLUDES "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_LOCAL_SRC_ROOT "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_DEST_DIRS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_CMAKE_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_LIB_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_INC_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_EXEC_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+configure_file(cmake/RoboCommanderConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RoboCommanderConfig.cmake" @ONLY)
 
+# ... for both
+configure_file(cmake/RoboCommanderConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/RoboCommanderConfigVersion.cmake" @ONLY)
+
+# Install the RoboCommanderConfig.cmake and RoboCommanderConfigVersion.cmake
 install(
      FILES
-          "${CMAKE_CURRENT_BINARY_DIR}/RoboCommanderConfig.cmake"
-          "${CMAKE_CURRENT_BINARY_DIR}/RoboCommanderConfigVersion.cmake"
-     DESTINATION
-          "${PRJOECT_LIB_DEST}/cmake/RoboCommander"
+          "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RoboCommanderConfig.cmake"
+          "${PROJECT_BINARY_DIR}/RoboCommanderConfigVersion.cmake"
+     DESTINATION "${PROJECT_BINARY_DIR}"
 )
+
+install(EXPORT RoboCommanderTargets
+     DESTINATION "${PRJOECT_CMAKE_DEST}"
+)
+# -----------------------------------------------------------------------------
+
+# message(STATUS "PROJECT_SOURCE_DIR ------ ${PROJECT_SOURCE_DIR}")
+# message(STATUS "PROJECT_BINARY_DIR ------ ${PROJECT_BINARY_DIR}")
+# message(STATUS "REL_INCLUDE_DIR ------ ${REL_INCLUDE_DIR}")
+# message(STATUS "INSTALL_CMAKE_DIR ------ ${INSTALL_CMAKE_DIR}")
+# message(STATUS "PRJOECT_CMAKE_DEST ------ ${PRJOECT_CMAKE_DEST}")
+# message(STATUS "CMAKE_FILES_DIRECTORY ------ ${CMAKE_FILES_DIRECTORY}")
+# message(STATUS "CONF_INCLUDE_DIRS ------ ${CONF_INCLUDE_DIRS}")
+# message(STATUS "RoboCommander_CMAKE_DIR ------ ${RoboCommander_CMAKE_DIR}")
+
+# -----------------------------------------------------------------------------
+# message(STATUS "Headers to install ------")
+# foreach(dir ${RoboCommander_HEADERS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+#
+# message(STATUS "Libraries to install ------")
+# foreach(dir ${RoboCommander_LIBRARIES})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+#
+# message(STATUS "Header Directories to install ------")
+# foreach(dir ${RoboCommander_INCLUDE_DIRS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
 
 # ===========================
 #         DEBUG

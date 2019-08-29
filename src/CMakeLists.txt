@@ -110,25 +110,26 @@ set(RoboCommander_LIBRARIES ${RoboCommander_LIBRARIES} PARENT_SCOPE)
 # ===========================
 #          INSTALL
 # ===========================
-message(STATUS "Headers to install ------")
-foreach(dir ${RoboCommander_HEADERS})
-     message(STATUS "         included='${dir}'")
-endforeach()
-
-message(STATUS "Libraries to install ------")
-foreach(dir ${RoboCommander_LIBRARIES})
-     message(STATUS "         included='${dir}'")
-endforeach()
+# message(STATUS "Headers to install ------")
+# foreach(dir ${RoboCommander_HEADERS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+#
+# message(STATUS "Libraries to install ------")
+# foreach(dir ${RoboCommander_LIBRARIES})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
 
 install(
      TARGETS ${RoboCommander_LIBRARIES}
-     EXPORT RoboCommander_TARGETS
+     EXPORT RoboCommanderTargets
      DESTINATION "${PRJOECT_LIB_DEST}"
 )
 
 install(
-     FILES ${RoboCommander_HEADERS}
+     DIRECTORY "${INCS_DIR}/"
      DESTINATION "${INC_DEST_DIR}"
+     FILES_MATCHING PATTERN "*.h"
 )
 
 # ===========================
