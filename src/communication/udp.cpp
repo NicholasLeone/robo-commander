@@ -20,6 +20,8 @@ UDP::UDP(int port, char* address){
      // Added for timeout read
      nFail = 0;
      timeout_begin = time(0);
+     timeout_wait = 0;
+
      flag_wait = 0;
      flag_verbose = 0;
 }
@@ -146,9 +148,10 @@ int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
                cout << (int)buf[i] << ", ";
           }
           cout << endl;
-     }else{
-          for(int i = 0; i < num_bytes; i++){}
      }
+     // else{
+     //      for(int i = 0; i < num_bytes; i++){}
+     // }
 
      if(n < -1){
           perror("recvfrom");
@@ -159,16 +162,51 @@ int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
 }
 
 char* UDP::read(int num_bytes){
+     int nBytes;
+     char* tmp;
+     char dummy[32] = {111, 0, 0, 0, -48, -24, -64, 118, 8, 112, -69, 118, -48, -49, -78, 0, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-     while(_read(config, buf, num_bytes) > 0){}
+     nBytes = _read(config, buf, num_bytes);
+     // cout << "Bytes Read, Failed: " << nBytes << ", " << nFail << endl;
+     this->bytesRead = nBytes;
 
-     char* tmp = &buf[0];
+     time_t now = time(0);
+     int dt = now - timeout_begin;
+
+     if(timeout_wait == 0){
+          if(nBytes < 0){
+               nFail++;
+          }
+          if(dt >= 1){
+               if(nFail >= 9){
+                    timeout_wait = 1;
+               }
+               timeout_begin = time(0);
+               nFail = 0;
+          }
+          tmp = &buf[0];
+     }else{
+          cout << "Waiting" << endl;
+          if(nBytes > 0){
+               timeout_wait = 0;
+          }
+          tmp = dummy;
+     }
+
+     // while(_read(config, buf, num_bytes) > 0){}
+     // char* tmp = &buf[0];
 
      return tmp;
 }
 
-int UDP::write(char* buf, int num_bytes, char* address, int port){
+// Backup
+// char* UDP::read(int num_bytes){
+//      while(_read(config, buf, num_bytes) > 0){}
+//      char* tmp = &buf[0];
+//      return tmp;
+// }
 
+int UDP::write(char* buf, int num_bytes, char* address, int port){
      int num = _write(config,buf,num_bytes,port,address);
      return num;
 }
@@ -207,6 +245,10 @@ char* UDP::readtimeout(int num_bytes){
      }
 
      return tmp;
+}
+
+void UDP::flush(){
+     while(_read(config, buf, 4096) > 0){}
 }
 
 void UDP::set_verbose(int flag){

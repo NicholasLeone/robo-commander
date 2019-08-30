@@ -124,6 +124,11 @@ add_executable(test_swansonV2 ${TEST_DIR}/robots/test_swansonV2.cpp)
 target_link_libraries(test_swansonV2 PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_swansonV2)
 
+# DualClaw
+add_executable(test_swanson_comm ${TEST_DIR}/robots/test_swansonV2_comms.cpp)
+target_link_libraries(test_swanson_comm PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_TESTS test_swanson_comm)
+
 # # 4WD
 # add_executable(test_4WD ${TEST_DIR}/profiles/test_4wd.cpp)
 # target_link_libraries(test_4WD 4WD)

@@ -9,6 +9,11 @@ using namespace std;
 using namespace chrono;
 
 SwansonV2::SwansonV2(int pi){
+     // Declare constants
+	_count = 0;
+     _rc_msg_count = 0;
+     _header_count = 0;
+	_gimbal_msg_count = 0;
 
      /**************************************************************************
      * LOAD CONFIG FILE
@@ -24,21 +29,24 @@ SwansonV2::SwansonV2(int pi){
 
      this->_pi = pi;
      this->_port = 14500;
+     this->_max_speed = 1.5;
+     this->_max_omega = this->_max_speed / 0.381;
 
      string path = "/home/hunter/devel/robo-dev/config/sensors";
      string file = "mpu9250";
      string datalog_file = "datalog";
 
      current_system_time = previous_system_time = start_system_time = system_clock::now();
-     open_datalog(datalog_file);
+     // open_datalog(datalog_file);
 
      rc_in = new UDP(_port,NULL);
-     claws = new DualClaw(pi);
-     imu = new IMU(path, file);
+     // claws = new DualClaw(pi);
+     // imu = new IMU(path, file);
+     //
+     // claws->set_turn_direction(-1);
+     // claws->reset_encoders();
 
-     claws->set_turn_direction(-1);
-     claws->reset_encoders();
-
+     this->flag_verbose = false;
 }
 
 SwansonV2::~SwansonV2(){
@@ -55,23 +63,127 @@ void SwansonV2::drive(float v, float w){
      claws->drive(cmds);
 }
 
-void SwansonV2::read_udp_header(){
-	UDP* udp_line = rc_in;
-     Udp_Msg_Header* data = &udp_header;
+void SwansonV2::readHeader(char* msgBuffer){
+     Sim_Msg_Data_Header* data = &_header;
+     memcpy(data, &msgBuffer[0],sizeof(Sim_Msg_Data_Header));
+     this->_header_count++;
+}
 
-	char* dat = udp_line->read(sizeof(Udp_Msg_Header));
-	memcpy(data, &dat[0],sizeof(Udp_Msg_Header));
-     print_udp_header(data);
+void SwansonV2::readRC(char* msgBuffer){
+     Sim_Msg_MotionCommands* data = &controls;
+	memcpy(data, &msgBuffer[16],sizeof(*data));
+	this->_rc_msg_count++;
+}
+
+void SwansonV2::readGimbalAngles(char* msgBuffer){
+     /** Original code for RC_ROS_Bridge */
+     // Sim_CameraGimbalsCommand* data = &angles;
+	// memcpy(data, &msgBuffer[8],sizeof(*data));
+
+     /** Experimental code working w/ Android app */
+     int ang1 = (int)msgBuffer[8]; // R
+     int ang2 = (int)msgBuffer[9]; // L
+     int ang3 = (int)msgBuffer[10]; // B
+     int ang4 = (int)msgBuffer[11]; // F
+     this->angles.right_angle = ang1 - 90.0;
+     this->angles.left_angle = ang2 - 90.0;
+     this->angles.back_angle = ang3 - 90.0;
+     this->angles.front_angle = ang4 - 90.0;
+
+	this->_gimbal_msg_count++;
+}
+
+void SwansonV2::receiveUdpMessage(){
+     char* msgBuf = nullptr;
+     char* p = nullptr;
+     int mtot = 0;
+     int msize = 0;
+
+     // rc_in->flush();
+     msgBuf = this->rc_in->read(4096);
+     int nBytes = this->rc_in->bytesRead;
+     // printf("Received %d bytes over UDP\r\n",nBytes);
+     do{
+          p = &msgBuf[mtot];
+
+          this->readHeader(p);
+          // this->print_udp_header(this->_header);
+          int msg_type = this->_header.msg_type;
+
+          if((msg_type == SIMULATOR_MESSAGE_DATA_CAMERA_GIMBALS)){
+               printf("[INFO] SwansonV2::receiveUdpMessage() ---- Received Camera Gimbals Message!\r\n");
+               this->readGimbalAngles(p);
+               float a1 = (float) this->angles.front_angle / 1000000;
+               float a2 = (float) this->angles.right_angle / 1000000;
+               float a3 = (float) this->angles.left_angle / 1000000;
+               a1 = a1 - 90.0; a2 = a2 - 90.0; a3 = a3 - 90.0;
+               msize = sizeof(Sim_Msg_CameraGimbalsCommand) + sizeof(Sim_Msg_Data_Header);
+               printf("Received Angle Targets:     %.5f   |    %.5f   |    %.5f \r\n", a1, a2, a3);
+          }
+          else if(msg_type == SIMULATOR_MESSAGE_DATA_RCCOMMANDS){
+               this->readRC(p);
+               float normV = (float) this->controls.normalized_speed / 1000000;
+               float normOmega = (float) this->controls.normalized_yaw_rate / 1000000;
+
+               float v = normV * _max_speed;
+               float omega = normOmega * _max_omega;
+
+               msize = sizeof(Sim_Msg_MotionCommands) + sizeof(Sim_Msg_Data_Header);
+               printf("Linear, Angular:     %.5f   |    %.5f \r\n",v, omega);
+          }
+          else if(msg_type == SIMULATOR_MESSAGE_DATA_MOTION_CONTROL){
+               // printf("[INFO] SwansonV2::receiveUdpMessage() ---- Received RC Commands Message!\r\n");
+               this->readRC(p);
+               float normV = (float) this->controls.normalized_speed / 1000000;
+               float normOmega = (float) this->controls.normalized_yaw_rate / 1000000;
+
+               float v = normV * _max_speed;
+               float omega = normOmega * _max_omega;
+               msize = sizeof(Sim_Msg_MotionCommands) + sizeof(Sim_Msg_Data_Header)-4;
+               
+               this->readGimbalAngles(p);
+               printf("Linear, Angular:     %.5f   |    %.5f |  %d, %d, %d, %d \r\n",v, omega,this->angles.left_angle,this->angles.right_angle,this->angles.front_angle,this->angles.back_angle);
+          }
+          else if(nBytes < 0){ printf("Negative Bytes Read\r\n"); }
+
+          mtot += msize;
+          // printf("[INFO] nBytes = %d, mtot = %d, msize = %d, msg_type = %d\r\n",nBytes,mtot,msize,msg_type);
+          // std::cout<<"nBytes, mtot, msg_type: " << nBytes << "    |     " << mtot << "    |     " <<  msg_type << endl;
+
+     } while(mtot < nBytes - 50);
+
+     // printUdpHeader(&_header);
+     // this->rc_in->flush();
+     _count++;
+}
+
+void SwansonV2::read_udp_header(){
+	// UDP* udp_line = rc_in;
+     // Udp_Msg_Header* data = &udp_header;
+     //
+	// char* dat = udp_line->read(sizeof(Udp_Msg_Header));
+	// memcpy(data, &dat[0],sizeof(Udp_Msg_Header));
+     // print_udp_header(data);
 }
 
 void SwansonV2::read_udp_commands(){
-
      UDP* udp_line = rc_in;
-     RC_COMMAND_MSG* data = &controls;
+     Udp_Msg_Header* head = &udp_header;
+     RC_COMMAND_MSG* data = &_controls;
 
-     char* dat = udp_line->read(sizeof(data)+24);
-     memcpy(data, &dat[16],sizeof(data)+8);
+     // printf("Size of RC Msg Data = %d,%d ----- Size of UDP Header = %d",sizeof(data),sizeof(*data),sizeof((*Udp_Msg_Header)));
 
+     char* dat = udp_line->read(sizeof(*data)+20);
+     memcpy(head, &dat[0],sizeof(*head)-4);
+     memcpy(data, &dat[16],sizeof(*data)+4);
+
+     if(this->flag_verbose == 1){
+          cout << "Received UDP Bytes: ";
+          for(int i = 0; i < sizeof(*data)+20; i++){
+               cout << (int)dat[i] << ", ";
+          }
+          cout << endl;
+     }
 
      // CommunicationHeaderByte* tmpHead;
      //      char* dat;
@@ -98,7 +210,6 @@ void SwansonV2::read_udp_commands(){
      //      // printImu(*data);
 
 }
-
 
 void SwansonV2::update_sensors(){
      imu->update();
@@ -150,15 +261,31 @@ void SwansonV2::add_datalog_entry(vector<float> data){
      datalog << endl;
 }
 
-void SwansonV2::print_udp_header(Udp_Msg_Header* header){
+void SwansonV2::print_udp_header(Sim_Msg_Data_Header header){
+// void SwansonV2::print_udp_header(Udp_Msg_Header* header){
 
      int32_t header_byte, msg_type, data_type, measurement_type, measurement_length;
 
-     header_byte = (int32_t) header->id / 1000000;
-     msg_type = (int32_t) header->msg_type / 1000000;
-     data_type = (int32_t) header->data_type / 1000000;
-     measurement_type = (int32_t) header->measurement_type / 1000000;
-     measurement_length = (int32_t) header->measurement_length / 1000000;
+     // header_byte = (int32_t) header->id / 1000000;
+     // msg_type = (int32_t) header->msg_type / 1000000;
+     // data_type = (int32_t) header->data_type / 1000000;
+     // measurement_type = (int32_t) header->measurement_type / 1000000;
+     // measurement_length = (int32_t) header->measurement_length / 1000000;
+     //
+	// printf("=========== UDP Packet Info     =================\r\n");
+     // printf("UDP Packet Header:\r\n");
+     // printf("  Header Byte: %d\r\n", header_byte);
+     // printf("  Message Type: %d\r\n", msg_type);
+     // printf("  Data Type: %d\r\n", data_type);
+     // printf("  Measurement Type: %d\r\n", measurement_type);
+     // printf("  Measurement Length: %d\r\n", measurement_length);
+
+
+     header_byte = (int32_t) header.component_id / 1000000;
+     msg_type = (int32_t) header.msg_type / 1000000;
+     data_type = (int32_t) header.data_type / 1000000;
+     measurement_type = (int32_t) header.measurement_type / 1000000;
+     measurement_length = (int32_t) header.measurement_length / 1000000;
 
 	printf("=========== UDP Packet Info     =================\r\n");
      printf("UDP Packet Header:\r\n");
