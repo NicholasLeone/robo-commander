@@ -21,89 +21,38 @@ typedef struct UDP_PARAMS{
      struct timeval tv;
 }UDP_PARAMS;
 
-typedef struct Udp_Msg_Header{
-     union{
-          int32_t component_id;
-          int32_t header;
-     };
-     int32_t msg_type;
-     int32_t data_type;
-     int32_t measurement_type;
-     int32_t measurement_length;
-}Udp_Msg_Header;
-
-// Backup
-// typedef struct Udp_Msg_Header{
-//      int32_t id;
-//      int32_t msg_type;
-//      int32_t data_type;
-//      int32_t measurement_type;
-//      int32_t measurement_length;
-// }Udp_Msg_Header;
-
-// typedef struct Sim_Msg_Data_Header{
-//      union{
-//           int32_t component_id;
-//           int32_t header;
-//      };
-//      int32_t msg_type;
-//      int32_t data_type;
-//      int32_t measurement_type;
-//      int32_t measurement_length;
-// }Sim_Msg_Data_Header;
-
-typedef struct CommunicationHeaderByte{
-     int32_t header;
-     int32_t msg_type;
-     int32_t data_type;
-     int32_t measurement_type;
-     int32_t measurement_length;
-}CommunicationHeaderByte;
-
-typedef struct RC_COMMAND_MSG{
-     int32_t yaw;
-     int32_t limit;
-     int32_t speed;
-}RC_COMMAND_MSG;
-
-// typedef struct Sim_Msg_MotionCommands{
-//      int32_t normalized_yaw_rate;
-// 	int32_t padding;
-//      int32_t normalized_speed;
-// }Sim_Msg_MotionCommands;
-
 class UDP{
-
 private:
+
      int port;
      char sink_ip[100];
      int nFail;
 
      time_t timeout_begin;
-     int timeout_wait;
 
      int flag_wait;
      int flag_verbose;
-
+     int timeoutCnt;
 public:
      char buf[4096];
      int bytesRead;
+     int timeout_wait;
 
      UDP_PARAMS* config;
      UDP(int port, char* address = NULL);
      ~UDP();
-
-     void set_verbose(int flag);
 
      int _open(UDP_PARAMS* _config, int port, char* address);
      int _close();
      int _write(UDP_PARAMS* _config, char* _buf, int num_bytes, int port, char* address);
      int _read(UDP_PARAMS* _config, char* _buf, int num_bytes);
 
-     char* read(int num_bytes);
-     char* readtimeout(int num_bytes);
+     // char* read(int num_bytes, int maxFails = 15);
+     char* read(int num_bytes, bool withTimeout = true, int maxFails = 15);
+     char* timeoutRead(int num_bytes, int maxFails = 15);
      int write(char* buf, int num_bytes, char* address, int port);
      void flush();
+     void set_verbose(int flag);
 };
 
 

@@ -6,6 +6,14 @@
 
 using namespace std;
 
+typedef struct CommunicationHeaderByte{
+     int32_t header;
+     int32_t msg_type;
+     int32_t data_type;
+     int32_t measurement_type;
+     int32_t measurement_length;
+}CommunicationHeaderByte;
+
 int main(int argc, char *argv[]){
      int err, c;
      int port = 35000;

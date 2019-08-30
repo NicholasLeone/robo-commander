@@ -18,7 +18,7 @@ DualClaw::DualClaw(int pi){
      * LOAD CONFIG FILE
      **************************************************************************/
      std::map<std::string, std::string> variables;
-     LoadStringVariables("/home/hunter/devel/robo-dev/config/profiles/dualclaw.config", variables);
+     LoadStringVariables("/home/pi/devel/robo-commander/config/profiles/dualclaw.config", variables);
 
      string _ser_path = variables["dev"];
      char* ser_path = (char*) _ser_path.c_str();

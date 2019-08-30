@@ -1,15 +1,14 @@
 #include <arpa/inet.h>        // for sockaddr_in and inet_addr()
 #include <string.h>           // for memset()
 #include <unistd.h>           // for close(), usleep
-#include <fcntl.h>
 #include <iostream>           // for cout, endl
+#include <fcntl.h>
 
 #include "communication/udp.h"
 
 using namespace std;
 
 UDP::UDP(int port, char* address){
-
      config = new UDP_PARAMS;
 
      _open(config, port,address);
@@ -18,18 +17,17 @@ UDP::UDP(int port, char* address){
      memset(sink_ip,0,sizeof(sink_ip));
 
      // Added for timeout read
-     nFail = 0;
-     timeout_begin = time(0);
-     timeout_wait = 0;
+     this->nFail = 0;
+     this->timeoutCnt = 0;
+     this->timeout_begin = time(0);
+     this->timeout_wait = 0;
 
-     flag_wait = 0;
-     flag_verbose = 0;
+     this->flag_wait = 0;
+     this->flag_verbose = 0;
 }
 
 
-UDP::~UDP(){
-     _close();
-}
+UDP::~UDP(){ _close(); }
 
 int UDP::_open(UDP_PARAMS* _config, int port, char* address){
      int err, flags;
@@ -84,7 +82,6 @@ int UDP::_close(){
      return 0;
 }
 
-
 int UDP::_write(UDP_PARAMS* _config, char* _buf, int num_bytes, int port, char* address){
 
      if(_config == NULL)
@@ -114,10 +111,7 @@ int UDP::_write(UDP_PARAMS* _config, char* _buf, int num_bytes, int port, char* 
      return n;
 }
 
-
-
 int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
-
      int n, receive;
      socklen_t len;
 
@@ -149,9 +143,6 @@ int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
           }
           cout << endl;
      }
-     // else{
-     //      for(int i = 0; i < num_bytes; i++){}
-     // }
 
      if(n < -1){
           perror("recvfrom");
@@ -161,96 +152,52 @@ int UDP::_read(UDP_PARAMS* _config, char* _buf, int num_bytes){
      return n;
 }
 
-char* UDP::read(int num_bytes){
-     int nBytes;
-     char* tmp;
-     char dummy[32] = {111, 0, 0, 0, -48, -24, -64, 118, 8, 112, -69, 118, -48, -49, -78, 0, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-     nBytes = _read(config, buf, num_bytes);
-     // cout << "Bytes Read, Failed: " << nBytes << ", " << nFail << endl;
-     this->bytesRead = nBytes;
-
-     time_t now = time(0);
-     int dt = now - timeout_begin;
-
-     if(timeout_wait == 0){
-          if(nBytes < 0){
-               nFail++;
-          }
-          if(dt >= 1){
-               if(nFail >= 9){
-                    timeout_wait = 1;
-               }
-               timeout_begin = time(0);
-               nFail = 0;
-          }
-          tmp = &buf[0];
-     }else{
-          cout << "Waiting" << endl;
-          if(nBytes > 0){
-               timeout_wait = 0;
-          }
-          tmp = dummy;
-     }
-
-     // while(_read(config, buf, num_bytes) > 0){}
-     // char* tmp = &buf[0];
-
-     return tmp;
-}
-
-// Backup
-// char* UDP::read(int num_bytes){
-//      while(_read(config, buf, num_bytes) > 0){}
-//      char* tmp = &buf[0];
-//      return tmp;
-// }
-
 int UDP::write(char* buf, int num_bytes, char* address, int port){
-     int num = _write(config,buf,num_bytes,port,address);
+     int num = this->_write(this->config,buf,num_bytes,port,address);
      return num;
 }
 
-char* UDP::readtimeout(int num_bytes){
+char* UDP::read(int num_bytes, bool withTimeout, int maxFails){
+     char* recvBuf;
+     /** Determine whether to do a blind UDP read or one with a timeout */
+     if(!withTimeout){
+          this->flush();
+          recvBuf = &buf[0];
+     } else{ recvBuf = this->timeoutRead(num_bytes,maxFails); }
+     return recvBuf;
+}
+
+char* UDP::timeoutRead(int num_bytes, int maxFails){
      int nBytes;
-     char* tmp;
-     char* dummy;
+     char* recvBuf;
+     char dummy[32] = {111, 0, 0, 0, -48, -24, -64, 118, 8, 112, -69, 118,\
+          -48, -49, -78, 0, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-     while(_read(config, buf, num_bytes) > 0){}
-
-     usleep(100 * 1000);
-     nBytes = _read(config, buf, num_bytes);
+     nBytes = this->_read(this->config, buf, num_bytes);
+     this->bytesRead = nBytes;
 
      time_t now = time(0);
-     int dt = now - timeout_begin;
+     int dt = now - this->timeout_begin;
 
-     if(flag_wait == 0){
+     if(this->timeout_wait == 0){
           if(nBytes < 0){
-               nFail++;
+               this->nFail++;
           }
           if(dt >= 1){
-               if(nFail >= 9){
-                    flag_wait = 1;
+               if(this->nFail >= maxFails){
+                    this->timeout_wait = 1;
                }
-               timeout_begin = time(0);
-               nFail = 0;
+               this->timeout_begin = time(0);
+               this->nFail = 0;
           }
-          tmp = &buf[0];
+          recvBuf = &buf[0];
      }else{
-          cout << "Waiting" << endl;
-          if(nBytes > 0){
-               flag_wait = 0;
-          }
-          tmp = dummy;
+          if(nBytes > 0){ this->timeout_wait = 0; }
+          recvBuf = dummy;
      }
-
-     return tmp;
+     return recvBuf;
 }
 
-void UDP::flush(){
-     while(_read(config, buf, 4096) > 0){}
-}
+void UDP::flush(){ while(_read(this->config, buf, 4096) > 0){} }
 
-void UDP::set_verbose(int flag){
-     flag_verbose = flag;
-}
+void UDP::set_verbose(int flag){ this->flag_verbose = flag; }

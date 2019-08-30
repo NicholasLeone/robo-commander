@@ -1,14 +1,10 @@
-#ifndef ANDROID_ADD_INTERFACE_H_
-#define ANDROID_ADD_INTERFACE_H_
+#ifndef ANDROID_APP_INTERFACE_H_
+#define ANDROID_APP_INTERFACE_H_
 
 #include <chrono>
-#include <unistd.h>
-#include <fstream>
-
 #include "communication/udp.h"
 
 using namespace std;
-using namespace chrono;
 
 typedef struct Sim_Msg_Data_Header{
      union{
@@ -21,18 +17,11 @@ typedef struct Sim_Msg_Data_Header{
      int32_t measurement_length;
 }Sim_Msg_Data_Header;
 
-
 typedef struct Sim_Msg_MotionCommands{
      int32_t normalized_yaw_rate;
 	int32_t padding;
      int32_t normalized_speed;
 }Sim_Msg_MotionCommands;
-
-typedef struct Sim_Msg_CameraGimbalsCommand{
-	float front_angle;
-	float left_angle;
-	float right_angle;
-}Sim_Msg_CameraGimbalsCommand;
 
 typedef struct Sim_CameraGimbalsCommand{
 	int16_t front_angle;
@@ -40,14 +29,6 @@ typedef struct Sim_CameraGimbalsCommand{
 	int16_t right_angle;
 	int16_t back_angle;
 }Sim_CameraGimbalsCommand;
-
-typedef struct Sim_Msg_MotorSpeedCommand{
-	float angular_speed;
-}Sim_Msg_MotorSpeedCommand;
-
-typedef struct Sim_Msg_MotorPositionCommand{
-	float angular_position;
-}Sim_Msg_MotorPositionCommand;
 
 typedef enum SimulatorMessageType{
 	SIMULATOR_MESSAGE_SET_PORT = 0,
@@ -69,8 +50,16 @@ typedef enum SimulatorMessageType{
      SIMULATOR_MESSAGE_DATA_START_STOP_IGNORE_OBSTACLE = 15,
 }SimulatorMessageType;
 
-class AndroidAppInterface {
+typedef struct AndroidInterfaceData{
+	int16_t front_cam_angle;
+	int16_t left_cam_angle;
+	int16_t right_cam_angle;
+	int16_t back_cam_angle;
+     float normalized_speed;
+     float normalized_turn_rate;
+}AndroidInterfaceData;
 
+class AndroidAppInterface {
 private:
      int _port;
 
@@ -79,34 +68,40 @@ private:
      int _rc_msg_count;
 	int _gimbal_msg_count;
 
-     float _max_speed;
-     float _max_omega;
+     chrono::high_resolution_clock::time_point _prev_time;
+     chrono::high_resolution_clock::time_point _cur_time;
 
      bool flag_verbose;
+     bool debug_timing;
+
 public:
      UDP* mUdp;
 
+     AndroidInterfaceData mData;
      Sim_Msg_Data_Header header;
      Sim_Msg_MotionCommands controls;
 	Sim_CameraGimbalsCommand angles;
 
      /** Class Initialization */
-	AndroidAppInterface(int listenPort = 14500, bool verbose = false);
+     AndroidAppInterface();
+     AndroidAppInterface(int listenPort, bool verbose = false);
      ~AndroidAppInterface();
 
      /** Updated */
      void readHeader(char* msgBuffer);
      void readRC(char* msgBuffer);
      void readGimbalAngles(char* msgBuffer);
-     void receiveUdpMessage(bool verbose = false, bool debug = false);
+     int receiveUdpMessage(bool verbose = false, bool debug = false);
+
+     /** Getters and Setters */
+     AndroidInterfaceData getReceivedData();
+
+     /** Debugging */
+     void print_udp_header(Sim_Msg_Data_Header header);
 
      /** Deprecated */
      void read_udp_header();
      void read_udp_commands();
-
-     /** Debugging */
-     void print_udp_header(Sim_Msg_Data_Header header);
 };
 
-
-#endif // ANDROID_ADD_INTERFACE_H_
+#endif // ANDROID_APP_INTERFACE_H_
