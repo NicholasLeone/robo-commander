@@ -5,9 +5,16 @@ set(CMAKE_CXX_STANDARD 11)
 #     Set Build Options
 # ===========================
 
+
+# =========================================
+#          Build Common Libraries
+# =========================================
 add_library(utils SHARED utilities/utils.cpp)
 set(RoboCommander_LIBRARIES utils)
 
+# =========================================
+#      Build Communication Libraries
+# =========================================
 add_library(serial SHARED communication/serial.cpp)
 target_link_libraries(serial PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES serial)
@@ -27,6 +34,10 @@ add_library(uart SHARED communication/uart.cpp)
 target_link_libraries(uart PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES uart)
 
+# =========================================
+#         Build Actuator Libraries
+# =========================================
+
 # DC Motor
 add_library(dcmotor SHARED actuators/dc_motor.cpp)
 target_link_libraries(dcmotor PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
@@ -36,6 +47,10 @@ list(APPEND RoboCommander_LIBRARIES dcmotor)
 add_library(servo SHARED actuators/servo.cpp)
 target_link_libraries(servo PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES servo)
+
+# =========================================
+#         Build Sensor Libraries
+# =========================================
 
 # Encoder
 add_library(encoder SHARED sensors/encoder.cpp)
@@ -61,6 +76,10 @@ list(APPEND RoboCommander_LIBRARIES bno055)
 # add_library(camera SHARED camera.cpp)
 # target_link_libraries(camera ${LIBS})
 
+# =========================================
+#      Build Controller Libraries
+# =========================================
+
 # PID
 add_library(pid SHARED controllers/pid.cpp)
 target_link_libraries(pid PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
@@ -71,6 +90,10 @@ add_library(purepursuit SHARED controllers/waypoint_follower.cpp)
 target_link_libraries(purepursuit PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES} python2.7)
 list(APPEND RoboCommander_LIBRARIES purepursuit)
 
+# =========================================
+#      Build Algorithm Libraries
+# =========================================
+
 # EKF
 add_library(ekf SHARED algorithms/ekf.cpp)
 target_link_libraries(ekf PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
@@ -79,6 +102,10 @@ list(APPEND RoboCommander_LIBRARIES ekf)
 # # iSAM
 # add_library(isam SHARED algorithms/isam.cpp)
 # target_link_libraries(isam PUBLIC ${LIBS})
+
+# =========================================
+#      Build Device Libraries
+# =========================================
 
 # RoboClaw
 add_library(roboclaw SHARED devices/roboclaw.cpp)
@@ -95,31 +122,37 @@ add_library(camera_gimbal SHARED devices/camera_gimbal.cpp)
 target_link_libraries(camera_gimbal PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES camera_gimbal)
 
+# =========================================
+#      Build Interface Libraries
+# =========================================
+
+# Android app interface
+add_library(android_app_interface SHARED interfaces/android_app_interface.cpp)
+target_link_libraries(android_app_interface PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES android_app_interface)
+
+# =========================================
+#         Build Robot Profiles
+# =========================================
+
 # 4-wheel drive robot using two roboclaws
 add_library(dualclaw SHARED vehicle_profiles/dual_roboclaw.cpp)
 target_link_libraries(dualclaw PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES dualclaw)
 
-# 4-wheel drive robot using two roboclaws
+# Swanson V2
 add_library(swansonV2 SHARED robots/swansonV2.cpp)
 target_link_libraries(swansonV2 PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES swansonV2)
 
+# =========================================
+#  Combine everthing into single variable
+# =========================================
 set(RoboCommander_LIBRARIES ${RoboCommander_LIBRARIES} PARENT_SCOPE)
 
 # ===========================
 #          INSTALL
 # ===========================
-# message(STATUS "Headers to install ------")
-# foreach(dir ${RoboCommander_HEADERS})
-#      message(STATUS "         included='${dir}'")
-# endforeach()
-#
-# message(STATUS "Libraries to install ------")
-# foreach(dir ${RoboCommander_LIBRARIES})
-#      message(STATUS "         included='${dir}'")
-# endforeach()
-
 install(
      TARGETS ${RoboCommander_LIBRARIES}
      EXPORT RoboCommanderTargets
@@ -135,6 +168,16 @@ install(
 # ===========================
 #          DEBUG
 # ===========================
+# message(STATUS "Headers to install ------")
+# foreach(dir ${RoboCommander_HEADERS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+
+# message(STATUS "Libraries to install ------")
+# foreach(dir ${RoboCommander_LIBRARIES})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+
 # foreach(dir ${LIBS})
 #      message(STATUS "         included='${dir}'")
 # endforeach()

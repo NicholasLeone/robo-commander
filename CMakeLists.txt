@@ -50,7 +50,6 @@ foreach(p LIB BIN INCLUDE CMAKE)
      set(var INSTALL_${p}_DIR)
      if(NOT IS_ABSOLUTE "${${var}}")
           set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
-          message(STATUS "Changed FilePath INSTALL_${p}_DIR ------> ${${var}}")
      endif()
 endforeach()
 
