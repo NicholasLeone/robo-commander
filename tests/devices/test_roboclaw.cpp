@@ -16,7 +16,7 @@ void readSpeeds(){
      int32_t spd1, spd2, spd3, spd4;
 
      while(1){
-          usleep(0.1 * 1000000);
+          usleep(0.01 * 1000000);
           spd1 = claw1->ReadSpeedM1(&status1,&valid1);
           spd2 = claw1->ReadSpeedM2(&status2,&valid2);
           spd3 = claw2->ReadSpeedM1(&status3,&valid3);
@@ -24,6 +24,7 @@ void readSpeeds(){
           printf("V1, V2, V3, V4:     %d   |    %d |    %d  |    %d\r\n",spd1,spd2,spd3,spd4);
           // printf("Status1, Status2, Status3, Status4:     %d   |    %d |    %d    |    %d\r\n",status1,status2,status3,status4);
           // printf("Valid1, Valid2, Valid3, Valid4:     %d   |    %d |    %d   |    %d\r\n",valid1,valid2,valid3,valid4);
+          // printf(" =========================================== \r\n");
      }
 }
 
