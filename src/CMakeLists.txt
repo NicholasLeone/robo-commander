@@ -132,13 +132,17 @@ target_link_libraries(android_app_interface PUBLIC ${RoboCommander_LIBRARIES} ${
 list(APPEND RoboCommander_LIBRARIES android_app_interface)
 
 # =========================================
-#         Build Robot Profiles
+#         Build Drivetrain Profiles
 # =========================================
 
 # 4-wheel drive robot using two roboclaws
-add_library(dualclaw SHARED vehicle_profiles/dual_roboclaw.cpp)
+add_library(dualclaw SHARED drivetrains/dual_roboclaw.cpp)
 target_link_libraries(dualclaw PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES dualclaw)
+
+# =========================================
+#         Build Robot Profiles
+# =========================================
 
 # Swanson V2
 add_library(swansonV2 SHARED robots/swansonV2.cpp)

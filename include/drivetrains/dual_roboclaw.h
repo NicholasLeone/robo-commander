@@ -32,10 +32,6 @@ private:
      float _current_pose[3] = {0,0,0};
 
 public:
-
-     DualClaw(int pi);
-     ~DualClaw();
-
      RoboClaw* leftclaw;
      RoboClaw* rightclaw;
 
@@ -59,18 +55,38 @@ public:
      float dyaw;
      float dist_traveled;
 
-     // FUNCTIONS
+     DualClaw();
+     DualClaw(int pi);
+     // DualClaw(int pi, int serial_handle);
+     DualClaw(int pi, const char* config_file);
+     DualClaw(const char* config_file);
+     ~DualClaw();
 
+     // FUNCTIONS
+     int init(const char* config_file);
+     int init(const char* serial_device, int baud, int left_claw_addr = 128, int right_claw_addr = 129);
+
+     void drive(float v, float w);
      void drive(vector<int32_t> cmds);
      void update_status();
      void update_encoders();
 
-     vector<int32_t> set_speeds(float v, float w);
+     vector<int32_t> get_target_speeds(float v, float w);
+
      void set_turn_direction(int dir);
-     
+     void set_base_width(float width);
+     void set_max_speed(float speed);
+     void set_qpps_per_meter(int qpps);
+     void set_wheel_diameter(float diameter);
+
+     float get_base_width();
+     float get_max_speed();
+     int get_qpps_per_meter();
+     float get_wheel_diameter();
+
      vector<float> get_currents();
      vector<float> get_voltages();
-     vector<float> get_encoder_positions();
+     vector<uint32_t> get_encoder_positions();
      vector<float> get_encoder_speeds();
      vector<float> get_odom_deltas();
      vector<float> get_pose();

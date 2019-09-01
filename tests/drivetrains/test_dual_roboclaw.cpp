@@ -1,7 +1,7 @@
 #include <unistd.h>
 
 #include <pigpiod_if2.h>
-#include "vehicle_profiles/dual_roboclaw.h"
+#include "drivetrains/dual_roboclaw.h"
 
 using namespace std;
 
@@ -16,19 +16,20 @@ int main(int argc, char *argv[]){
      if (pi >= 0){
 
           DualClaw claws(pi);
+          claws.init("/home/pi/devel/robo-commander/config/profiles/dualclaw.config");
           claws.reset_encoders();
 
           // while(1){
           //      claws.update_status();
           //      claws.update_encoders();
-          //      // cmds = claws.set_speeds(-0.1, 0.0);
+          //      // cmds = claws.get_target_speeds(-0.1, 0.0);
           //      // claws.drive(cmds);
           //      usleep(0.1 * 1000000);
           // }
 
           claws.update_encoders();
-          cmds1 = claws.set_speeds(1.0, 0.0);
-          cmds2 = claws.set_speeds(0.0, 0.0);
+          cmds1 = claws.get_target_speeds(1.0, 0.0);
+          cmds2 = claws.get_target_speeds(0.0, 0.0);
 
           claws.drive(cmds1);
           usleep(1.0 * 1000000);

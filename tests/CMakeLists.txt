@@ -153,13 +153,17 @@ target_link_libraries(test_android_iface PUBLIC ${RoboCommander_LIBRARIES} ${Rob
 list(APPEND RoboCommander_TESTS test_android_iface)
 
 # =========================================
-#        Build Robot Profile Tests
+#        Build Drivetrain Tests
 # =========================================
 
 # DualClaw
-add_executable(test_dualclaw ${TEST_DIR}/vehicle_profiles/test_dual_roboclaw.cpp)
+add_executable(test_dualclaw ${TEST_DIR}/drivetrains/test_dual_roboclaw.cpp)
 target_link_libraries(test_dualclaw PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_dualclaw)
+
+# =========================================
+#        Build Robot Profile Tests
+# =========================================
 
 # Swanson V2
 add_executable(test_swansonV2 ${TEST_DIR}/robots/test_swansonV2.cpp)

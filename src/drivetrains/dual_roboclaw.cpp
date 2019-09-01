@@ -2,23 +2,107 @@
 #include <math.h>
 
 #include "utilities/utils.h"
-#include "vehicle_profiles/dual_roboclaw.h"
+#include "drivetrains/dual_roboclaw.h"
 
 using namespace std;
 
-DualClaw::DualClaw(int pi){
-
+DualClaw::DualClaw(){
+     int pi = pigpio_start(NULL, NULL);
+     if(pi < 0){
+          printf("[ERROR] DualClaw() --- Could not initialize pigpiod \r\n");
+		exit(0);
+     }
      this->_pi = pi;
 
      flag_turn_dir = 1;
      flag_left_sign = 1;
      flag_right_sign = 1;
 
+     _base_width = 0.219;
+     _max_speed = 2.0;
+
+     _qpps_per_meter = 9596;
+     _wheel_diameter = 0.1905;
+}
+
+DualClaw::DualClaw(int pi){
+     this->_pi = pi;
+
+     flag_turn_dir = 1;
+     flag_left_sign = 1;
+     flag_right_sign = 1;
+
+     _base_width = 0.219;
+     _max_speed = 2.0;
+
+     _qpps_per_meter = 9596;
+     _wheel_diameter = 0.1905;
+}
+
+// DualClaw::DualClaw(int pi, int serial_handle){
+//      this->_pi = pi;
+//      this->_ser_handle = serial_handle;
+//      flag_turn_dir = 1;
+//      flag_left_sign = 1;
+//      flag_right_sign = 1;
+//
+//      _base_width = 0.219;
+//      _max_speed = 2.0;
+//
+//      _qpps_per_meter = 9596;
+//      _wheel_diameter = 0.1905;
+// }
+
+DualClaw::DualClaw(int pi, const char* config_file){
+     this->_pi = pi;
+
+     flag_turn_dir = 1;
+     flag_left_sign = 1;
+     flag_right_sign = 1;
+
+     int err = this->init(config_file);
+     if(err < 0){
+          printf("[ERROR] DualClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
+          exit(0);
+     }
+}
+
+DualClaw::DualClaw(const char* config_file){
+     int pi = pigpio_start(NULL, NULL);
+     if(pi < 0){
+          printf("[ERROR] DualClaw() --- Could not initialize pigpiod \r\n");
+		exit(0);
+     }
+     this->_pi = pi;
+
+     flag_turn_dir = 1;
+     flag_left_sign = 1;
+     flag_right_sign = 1;
+
+     int err = this->init(config_file);
+     if(err < 0){
+          printf("[ERROR] DualClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
+		exit(0);
+     }
+}
+
+DualClaw::~DualClaw(){
+     vector<int32_t> cmds{0,0};
+     drive(cmds);
+
+     delete leftclaw;
+     delete rightclaw;
+
+     int err = serial_close(_pi, _ser_handle);
+     usleep(1 * 10000000);
+}
+
+int DualClaw::init(const char* config_file){
      /**************************************************************************
      * LOAD CONFIG FILE
      **************************************************************************/
      std::map<std::string, std::string> variables;
-     LoadStringVariables("/home/pi/devel/robo-commander/config/profiles/dualclaw.config", variables);
+     LoadStringVariables(config_file, variables);
 
      string _ser_path = variables["dev"];
      char* ser_path = (char*) _ser_path.c_str();
@@ -44,10 +128,15 @@ DualClaw::DualClaw(int pi){
      * END LOAD CONFIG FILE
      **************************************************************************/
 
-     _ser_handle = serial_open(pi, ser_path, baud, 0);
+     int h = serial_open(this->_pi, ser_path, baud, 0);
+     if(h < 0){
+          printf("[ERROR] Could not initialize pigpiod serial device %s using baud of %d\r\n",ser_path,baud);
+          return -1;
+     }
+     this->_ser_handle = h;
 
-     leftclaw = new RoboClaw(pi, _ser_handle, 128);
-     rightclaw = new RoboClaw(pi, _ser_handle, 129);
+     leftclaw = new RoboClaw(this->_pi, h, 128);
+     rightclaw = new RoboClaw(this->_pi, h, 129);
 
      leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
      leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
@@ -61,34 +150,53 @@ DualClaw::DualClaw(int pi){
      printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
      printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
      printf("\r\n");
-
-     sleep(1);
+     this->reset_encoders();
+     return 0;
 }
 
+int DualClaw::init(const char* serial_device, int baud,int left_claw_addr,int right_claw_addr){
+     int h = serial_open(this->_pi, const_cast <char*>(serial_device), baud, 0);
+     if(h < 0){
+          printf("[ERROR] Could not initialize pigpiod serial device %s using baud of %d\r\n",serial_device,baud);
+          return -1;
+     }
+     this->_ser_handle = h;
 
-DualClaw::~DualClaw(){
+     leftclaw = new RoboClaw(this->_pi, h, left_claw_addr);
+     rightclaw = new RoboClaw(this->_pi, h, right_claw_addr);
 
-     vector<int32_t> cmds{0,0};
-     drive(cmds);
+     leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+     leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+     rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+     rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);
 
-     delete leftclaw;
-     delete rightclaw;
+     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
 
-     int err = serial_close(_pi, _ser_handle);
-     usleep(1 * 10000000);
+     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+     printf("\r\n");
+     this->reset_encoders();
+     return 0;
 }
 
 void DualClaw::drive(vector<int32_t> cmds){
-
      int n = cmds.size();
 
      leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
      rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
-
 }
 
-vector<int32_t> DualClaw::set_speeds(float v, float w){
+void DualClaw::drive(float v, float w){
+     vector<int32_t> cmds = this->get_target_speeds(v,w);
+     int n = cmds.size();
 
+     leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
+     rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
+}
+
+vector<int32_t> DualClaw::get_target_speeds(float v, float w){
      vector<int32_t> cmds(2);
 
      /**   Differential Drive Drive Equations     */
@@ -105,12 +213,19 @@ vector<int32_t> DualClaw::set_speeds(float v, float w){
      cmds[1] = (int32_t)(right_spd);
 
      return cmds;
-
 }
 
-void DualClaw::set_turn_direction(int dir){
-     this->flag_turn_dir = dir;
-}
+void DualClaw::set_turn_direction(int dir){ this->flag_turn_dir = dir; }
+
+void DualClaw::set_base_width(float width){ this->_base_width = width; }
+void DualClaw::set_max_speed(float speed){ this->_max_speed = speed; }
+void DualClaw::set_qpps_per_meter(int qpps){ this->_qpps_per_meter = qpps; }
+void DualClaw::set_wheel_diameter(float diameter){ this->_wheel_diameter = diameter; }
+
+float DualClaw::get_base_width(){ return this->_base_width; }
+float DualClaw::get_max_speed(){ return this->_max_speed; }
+int DualClaw::get_qpps_per_meter(){ return this->_qpps_per_meter; }
+float DualClaw::get_wheel_diameter(){ return this->_wheel_diameter; }
 
 vector<float> DualClaw::get_currents(){
      vector<float> tmp {currents[0],currents[1],currents[2],currents[3]};
@@ -122,8 +237,8 @@ vector<float> DualClaw::get_voltages(){
      return tmp;
 }
 
-vector<float> DualClaw::get_encoder_positions(){
-     vector<float> tmp {positions[0],positions[1],positions[2],positions[3]};
+vector<uint32_t> DualClaw::get_encoder_positions(){
+     vector<uint32_t> tmp {_positions[0],_positions[1],_positions[2],_positions[3]};
      return tmp;
 }
 
@@ -227,10 +342,7 @@ void DualClaw::update_encoders(){
 }
 
 void DualClaw::reset_encoders(){
-
-     for(int i = 0; i <= 3;i++){
-          _last_positions[i] = 0;
-     }
+     for(int i = 0; i <= 3;i++){ _last_positions[i] = 0; }
 
      leftclaw->ResetEncoders();
      rightclaw->ResetEncoders();
@@ -239,5 +351,4 @@ void DualClaw::reset_encoders(){
      rightclaw->ReadEncoders(_positions[2],_positions[3]);
 
      printf("Encoders Reset (qpps): %d | %d | %d | %d\r\n",_positions[0],_positions[1],_positions[2],_positions[3]);
-
 }

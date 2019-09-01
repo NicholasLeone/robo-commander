@@ -42,7 +42,7 @@ SwansonV2::SwansonV2(int pi){
 
 	this->mRelay = new AndroidAppInterface(this->_port);
 	this->mRelay->mUdp->set_verbose(0);
-     claws = new DualClaw(pi);
+     claws = new DualClaw(pi,"/home/pi/devel/robo-commander/config/profiles/dualclaw.config");
      imu = new IMU(path, file);
 
      claws->set_turn_direction(-1);
@@ -60,7 +60,7 @@ SwansonV2::~SwansonV2(){
 }
 
 void SwansonV2::drive(float v, float w){
-     vector<int32_t> cmds = claws->set_speeds(v, w);
+     vector<int32_t> cmds = claws->get_target_speeds(v, w);
      claws->drive(cmds);
 }
 

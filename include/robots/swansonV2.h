@@ -6,7 +6,7 @@
 
 #include "communication/udp.h"
 #include "interfaces/android_app_interface.h"
-#include "vehicle_profiles/dual_roboclaw.h"
+#include "drivetrains/dual_roboclaw.h"
 #include "sensors/imu.h"
 
 using namespace std;
