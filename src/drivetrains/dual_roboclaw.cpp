@@ -300,7 +300,7 @@ void DualClaw::update_encoders(){
      _speeds[3] = rightclaw->ReadSpeedM2(&status4,&valid4);
 
      for(int i = 0; i <= 3;i++){
-          speeds[i] = (float) ((int32_t) _speeds[i]) / _qpps_per_meter;
+          speeds[i] = (float) ((int32_t) _speeds[i]) / (float) _qpps_per_meter;
      }
 
      leftclaw->ReadEncoders(_positions[0],_positions[1]);
@@ -313,7 +313,7 @@ void DualClaw::update_encoders(){
 
      for(int i = 0; i <= 3;i++){
           int32_t dPos = (int32_t) tmpPos[i] - (int32_t) _last_positions[i];
-          tmpDist[i] = (float) dPos / _qpps_per_meter;
+          tmpDist[i] = ((float) dPos) / (float) _qpps_per_meter;
           _last_positions[i] = tmpPos[i];
      }
 
