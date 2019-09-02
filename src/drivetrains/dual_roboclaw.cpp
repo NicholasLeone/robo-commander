@@ -293,7 +293,6 @@ void DualClaw::update_encoders(){
 
      uint32_t tmpPos[4] = {0,0,0,0};
      float tmpDist[4] = {0,0,0,0};
-     float avg_dist[2] = {0,0};
 
      _speeds[0] = leftclaw->ReadSpeedM1(&status1,&valid1);
      _speeds[1] = leftclaw->ReadSpeedM2(&status2,&valid2);
@@ -318,11 +317,11 @@ void DualClaw::update_encoders(){
           _last_positions[i] = tmpPos[i];
      }
 
-     avg_dist[0] = (tmpDist[0] + tmpDist[1]) / 2.0;
-     avg_dist[1] = (tmpDist[2] + tmpDist[3]) / 2.0;
+     float avg_dist_l = (tmpDist[0] + tmpDist[1]) / 2.0;
+     float avg_dist_r = (tmpDist[2] + tmpDist[3]) / 2.0;
 
-     dist_traveled = (avg_dist[0] + avg_dist[1]) / 2.0;
-     dyaw = (avg_dist[1] - avg_dist[0]) / _base_width;
+     dist_traveled = (avg_dist_l + avg_dist_r) / 2.0;
+     dyaw = (avg_dist_r - avg_dist_l) / _base_width;
 
      // Update current yaw first for back-solving changes in the X and Y points
      _current_pose[2] = _current_pose[2] + dyaw;
