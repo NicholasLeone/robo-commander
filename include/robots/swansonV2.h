@@ -7,7 +7,7 @@
 #include "communication/udp.h"
 #include "interfaces/android_app_interface.h"
 #include "drivetrains/dual_roboclaw.h"
-#include "sensors/imu.h"
+#include "sensors/generic_rtimu.h"
 
 using namespace std;
 using namespace chrono;
@@ -45,7 +45,7 @@ public:
      AndroidAppInterface* mRelay;
 
      DualClaw* claws;
-     IMU* imu;
+     GenericRTIMU* imu;
 
      // FUNCTIONS
 	SwansonV2(int pi);

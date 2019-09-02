@@ -1,7 +1,7 @@
 #include <iostream>
 #include "base/definitions.h"
 
-#include "sensors/imu.h"
+#include "sensors/generic_rtimu.h"
 
 using namespace std;
 
@@ -13,7 +13,7 @@ int main(int argc, char *argv[]){
 	string path = "/home/hunter/devel/robo-dev/config/sensors";
 	string file = "mpu9250";
 
-     IMU imu(path, file);
+     GenericRTIMU imu(path, file);
 
 	while(1){
 		imu.update();

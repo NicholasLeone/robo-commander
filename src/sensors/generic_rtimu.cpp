@@ -3,17 +3,19 @@
 #include <unistd.h>
 
 #include "base/definitions.h"
-#include "sensors/imu.h"
+#include "sensors/generic_rtimu.h"
 
 static const float G_TO_MPSS = 9.80665;
 static const int uT_TO_T = 1000000;
 
 using namespace std;
 
-IMU::IMU(){}
+GenericRTIMU::GenericRTIMU(){
+     num_updates = 0;
+     declination_offset = -0.6;
+}
 
-IMU::IMU(string path, string file){
-
+GenericRTIMU::GenericRTIMU(string path, string file){
      num_updates = 0;
      declination_offset = -0.6;
 
@@ -21,17 +23,14 @@ IMU::IMU(string path, string file){
      if(err < 0){
           exit(1);
      }
-
 }
 
-IMU::~IMU(){
-
+GenericRTIMU::~GenericRTIMU(){
      delete _imu;
      delete _settings;
-
 }
 
-int IMU::init(string path, string file){
+int GenericRTIMU::init(string path, string file){
 
      calib_path = path;
      calib_file = file;
@@ -40,18 +39,18 @@ int IMU::init(string path, string file){
      RTIMU* tmpImu = RTIMU::createIMU(tmpSettings);
 
      if( (tmpImu == NULL) || (tmpImu->IMUType() == RTIMU_TYPE_NULL)){
-          printf("ERROR: No Imu found, or could not be opened!\r\n");
+          printf("ERROR: No GenericRTIMU found, or could not be opened!\r\n");
           delete tmpSettings;
           delete tmpImu;
           return -1;
      }else{
           _settings = tmpSettings;
           _imu = tmpImu;
-          printf("SUCCESS: Imu opened, attempting to initialize...\r\n");
+          printf("SUCCESS: GenericRTIMU opened, attempting to initialize...\r\n");
      }
 
      if(!_imu->IMUInit()){
-          printf("ERROR: Imu could not be initialized!\r\n");
+          printf("ERROR: GenericRTIMU could not be initialized!\r\n");
           delete _settings;
           delete _imu;
           return -2;
@@ -67,15 +66,15 @@ int IMU::init(string path, string file){
      // Get current system time for later
      time_start = RTMath::currentUSecsSinceEpoch();
 
-     printf("SUCCESS: Imu initialized!\r\n");
+     printf("SUCCESS: GenericRTIMU initialized!\r\n");
      return 1;
 }
 
-int IMU::get_update_period(){
+int GenericRTIMU::get_update_period(){
      return _imu->IMUGetPollInterval() * 1000;
 }
 
-void IMU::update(){
+void GenericRTIMU::update(){
 
 	while(_imu->IMURead()){
           // TODO: Potentially need to update timestamp for this section
@@ -116,7 +115,7 @@ void IMU::update(){
 
 }
 
-vector<float> IMU::get_raw_data(){
+vector<float> GenericRTIMU::get_raw_data(){
      vector<float> out;
      out.reserve(9);
 
@@ -133,7 +132,7 @@ vector<float> IMU::get_raw_data(){
      return out;
 }
 
-vector<float> IMU::get_all_data(){
+vector<float> GenericRTIMU::get_all_data(){
      vector<float> out;
      out.reserve(16);
 
@@ -163,25 +162,25 @@ vector<float> IMU::get_all_data(){
      return out;
 }
 
-void IMU::print_settings(){
+void GenericRTIMU::print_settings(){
      // Print out all configured parameters for debugging
-     printf("IMU CONFIGURATION SETTINGS: \r\n");
+     printf("GenericRTIMU CONFIGURATION SETTINGS: \r\n");
      // printf("       Device Address: %s\r\n", _add);
      // printf("       Baud Rate: %d\r\n", _baud);
-     // printf("       Imu Type: %.4f\r\n", _type);
+     // printf("       GenericRTIMU Type: %.4f\r\n", _type);
      printf("\r\n");
 }
 
-void IMU::print_data(){
+void GenericRTIMU::print_data(){
      fflush(stdout);
-     printf("IMU DATA: \r\n");
+     printf("GenericRTIMU DATA: \r\n");
      printf("       Accelerations (m/s^2): %.4f        %.4f      %.4f\r\n", accel[0], accel[1], accel[2]);
      printf("       Angular Velocities (rad/sec): %.4f        %.4f      %.4f\r\n", gyro[0], gyro[1], gyro[2]);
      printf("       Magnetometer (μT): %.4f        %.4f      %.4f\r\n", mag[0], mag[1], mag[2]);
      printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n\r\n", euler[0]*M_RAD2DEG, euler[1]*M_RAD2DEG, euler[2]*M_RAD2DEG);
 }
 
-void IMU::print_angles(){
+void GenericRTIMU::print_angles(){
      float tmpAng[3];
 
      for(int i = 0; i<3;i++){

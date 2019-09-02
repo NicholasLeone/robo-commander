@@ -3,7 +3,7 @@
 
 #include <pigpiod_if2.h>
 #include "actuators/dc_motor.h"
-#include "sensors/imu.h"
+#include "sensors/generic_rtimu.h"
 #include "utilities/utils.h"
 #include "controllers/pid.h"
 
@@ -92,7 +92,7 @@ int main(){
 	string path = "/home/hunter/devel/robo-dev/config/sensors";
 	string file = "pid_imu";
 
-     IMU imu(path, file);
+     GenericRTIMU imu(path, file);
 
 	pidM1params.dt = 0.01;
 	pidM1params.max_cmd = 0.3;

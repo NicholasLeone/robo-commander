@@ -67,9 +67,9 @@ target_link_libraries(test_encoder PUBLIC ${RoboCommander_LIBRARIES} ${RoboComma
 list(APPEND RoboCommander_TESTS test_encoder)
 
 # IMU
-add_executable(test_imu ${TEST_DIR}/sensors/test_imu.cpp)
-target_link_libraries(test_imu PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
-list(APPEND RoboCommander_TESTS test_imu)
+add_executable(test_rtimu ${TEST_DIR}/sensors/test_rtimu.cpp)
+target_link_libraries(test_rtimu PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_TESTS test_rtimu)
 
 # MPU-9250
 add_executable(test_mpu9250 ${TEST_DIR}/sensors/test_mpu9250.cpp)

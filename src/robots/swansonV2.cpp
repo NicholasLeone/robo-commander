@@ -43,7 +43,7 @@ SwansonV2::SwansonV2(int pi){
 	this->mRelay = new AndroidAppInterface(this->_port);
 	this->mRelay->mUdp->set_verbose(0);
      claws = new DualClaw(pi,"/home/pi/devel/robo-commander/config/profiles/dualclaw.config");
-     imu = new IMU(path, file);
+     imu = new GenericRTIMU(path, file);
 
      claws->set_turn_direction(-1);
      claws->reset_encoders();

@@ -1,12 +1,12 @@
-#ifndef IMU_H_
-#define IMU_H_
+#ifndef GENERIC_RTIMU_H_
+#define GENERIC_RTIMU_H_
 
 #include <vector>
 #include <RTIMULib.h>
 
 using namespace std;
 
-class IMU{
+class GenericRTIMU{
 
 private:
      // TODO: Figure out how to account for initial pose offsets to start everything off by 0
@@ -22,9 +22,9 @@ private:
      RTIMUSettings* _settings;
 
 public:
-	IMU();
-	IMU(string path, string file);
-     ~IMU();
+	GenericRTIMU();
+	GenericRTIMU(string path, string file);
+     ~GenericRTIMU();
 
      float accel[3];
      float gyro[3];
@@ -54,4 +54,4 @@ public:
 
 };
 
-#endif /* IMU_H_*/
+#endif /* GENERIC_RTIMU_H_ */

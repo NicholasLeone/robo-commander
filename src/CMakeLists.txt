@@ -58,9 +58,9 @@ target_link_libraries(encoder PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_
 list(APPEND RoboCommander_LIBRARIES encoder)
 
 # IMU
-add_library(imu SHARED sensors/imu.cpp)
-target_link_libraries(imu PUBLIC RTIMULib ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
-list(APPEND RoboCommander_LIBRARIES imu)
+add_library(rtimu SHARED sensors/generic_rtimu.cpp)
+target_link_libraries(rtimu PUBLIC RTIMULib ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES rtimu)
 
 # MPU-9250
 add_library(mpu9250 SHARED sensors/mpu9250.cpp)
