@@ -6,14 +6,14 @@
 
 PCA9685::PCA9685(int dev, int bus, int address) : I2C(dev,bus,address){
      I2C::_device = dev;
-     I2C::_han = attachPeripheral(I2C_p, bus, address);
+     I2C::_handle = attachPeripheral(I2C_PI, bus, address);
 
-     I2C::_write_byte(MODE2, PCA9685_OUTDRV);
-     I2C::_write_byte(MODE1, PCA9685_ALLCALL);
+     I2C::write_byte(MODE2, PCA9685_OUTDRV);
+     I2C::write_byte(MODE1, PCA9685_ALLCALL);
      usleep(0.005 * 1000000);                // Wait for oscillator
-     uint8_t mode1 = I2C::_read(MODE1);
+     uint8_t mode1 = I2C::read_raw_byte(MODE1);
      mode1 = mode1 & ~PCA9685_SLEEP;         // Wake-up (reset sleep)
-     I2C::_write_byte(MODE1, mode1);
+     I2C::write_byte(MODE1, mode1);
      usleep(0.005 * 1000000);                // Wait for oscillator
 }
 
@@ -36,14 +36,14 @@ int PCA9685::setFrequency(int freq){
 
      printf("Prescale Value: %d\n\r", prescale);
 
-     uint8_t oldmode = I2C::_read(MODE1);
+     uint8_t oldmode = I2C::read_raw_byte(MODE1);
      uint8_t newmode = (oldmode & ~PCA9685_SLEEP) | PCA9685_SLEEP;
 
-     err = I2C::_write_byte(MODE1,newmode);                    // Sleep
-     err = I2C::_write_byte(PRE_SCALE,prescale);               // PWM Frequency Multiplyer
-     err = I2C::_write_byte(MODE1, oldmode);
+     err = I2C::write_byte(MODE1,newmode);                    // Sleep
+     err = I2C::write_byte(PRE_SCALE,prescale);               // PWM Frequency Multiplyer
+     err = I2C::write_byte(MODE1, oldmode);
      usleep(0.0005 * 1000000);
-     err = I2C::_write_byte(MODE1, oldmode | PCA9685_RESTART); // Restart
+     err = I2C::write_byte(MODE1, oldmode | PCA9685_RESTART); // Restart
 
      _frequency = (25000000.0 / 4096.0) / (prescale + 1);
      _period_pulsewidth = (1000000.0 / _frequency);
@@ -51,7 +51,6 @@ int PCA9685::setFrequency(int freq){
 
      return err;
 }
-
 
 int PCA9685::setStep(int channel, int on_val, int off_val){return 0;}
 
@@ -97,7 +96,7 @@ int PCA9685::setDutyCycle(int channel, float duty){
      }
 
      for(int i = 0; i < 4; i++){
-          err = I2C::_write_byte(tmpAdd[i],buf[i]);
+          err = I2C::write_byte(tmpAdd[i],buf[i]);
           if(err < 0){
                printf("ERROR: Could not set duty cycle due to error code %d", err);
                return err;

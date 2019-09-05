@@ -19,14 +19,14 @@ typedef struct PIN_CONFIG{
 } PIN_CONFIG;
 
 enum PERIPHERAL_PROTOCOL {
-	I2C_p,
-	UART_p,
-	GPIO_p,
-	PWM_p,
-	SPI_p,
-	BLUETOOTH_p,
-	WIFI_p,
-	BLUETOOTH_LE_p,
+	I2C_PI,
+	UART_PI,
+	GPIO_PI,
+	PWM_PI,
+	SPI_PI,
+	BLUETOOTH_PI,
+	WIFI_PI,
+	BLUETOOTH_LE_PI,
 };
 
 typedef struct SERIAL_PARAMS{
@@ -102,7 +102,8 @@ protected:
 	PERIPHERAL_PROTOCOL communication_protocol;
 
 protected:
-     int _device;
+     int _device; // Device Platform Handle (i.e. Rpi3, Arduino, etc.)
+     int _handle; // Communication Interface Handle
      int _address;
      int _bus;
      uint8_t _buf[BUF_SIZE];

@@ -143,6 +143,11 @@ add_executable(test_camera_gimbal_assembly ${TEST_DIR}/devices/test_camera_gimba
 target_link_libraries(test_camera_gimbal_assembly PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_camera_gimbal_assembly)
 
+# I2C Multiplexer - TCA9548a
+add_executable(test_tca9548a ${TEST_DIR}/devices/test_tca9548a.cpp)
+target_link_libraries(test_tca9548a PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_TESTS test_tca9548a)
+
 # =========================================
 #         Build Interface Tests
 # =========================================

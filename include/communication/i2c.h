@@ -5,29 +5,35 @@
 
 class I2C : public Communication{
 private:
+     // int _dev; // Device Platform Handle (i.e. Rpi3, Arduino, etc.)
+     // int _han; // Communication Interface Handle
 
 public:
-     int _dev;
-     int _han; // Communication Handle
      virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id);
 
      I2C(int dev, int bus, int add);
      ~I2C();
 
-     /* Configurable Parameter Read/Write Functions */
-     void set_device(int device);
-     void set_bus(int bus);
-     void set_address(int add);
      int close();
 
-     /* Parent Functions */
-     int _write(uint8_t byte);
-     uint8_t _read(uint8_t add);
+     /* Configurable Parameter Read/Write Functions */
+     void set_platform_handle(int device);
+     void set_address(int add);
+     void set_bus(int bus);
 
-     /** Derived Functions */
-     int _write_byte(uint8_t add, uint8_t byte);
-     int write(uint8_t add, char* buf);
-     int read(uint8_t add, char* data);
+     int get_platform_handle();
+     int get_communication_handle();
+     int get_address();
+     int get_bus();
+
+     /* Parent Functions */
+     int write_raw_byte(uint8_t byte);
+     uint8_t read_raw_byte(uint8_t reg);
+
+     int write_byte(uint8_t reg, uint8_t byte);
+
+     int write_bytes(uint8_t reg, char* buf);
+     int read_bytes(uint8_t reg, char* data);
 };
 
 /* Placeholder functions just to allow deprecated code to build */

@@ -17,10 +17,10 @@ using namespace std;
 
 int Servo::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id){
 
-     if(protocol == PWM_p){
+     if(protocol == PWM_PI){
           this->params.channel = channel;
      }
-     else if(protocol == GPIO_p){}
+     else if(protocol == GPIO_PI){}
 
      return 0;
 }
@@ -133,7 +133,7 @@ int _initServos(int numServos, Motor** servos){
           this_servo = ((Servo*) servos[i]);
 
           // Attach Peripheral Addresses to New Servo
-          servos[i]->attachPeripheral(PWM_p,pwmChannels[i], NULL);
+          servos[i]->attachPeripheral(PWM_PI,pwmChannels[i], NULL);
 
           err = this_servo->setMaxAng(default_max_ang);
           err = this_servo->setMinAng(default_min_ang);

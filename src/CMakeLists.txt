@@ -122,6 +122,11 @@ add_library(camera_gimbal SHARED devices/camera_gimbal.cpp)
 target_link_libraries(camera_gimbal PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES camera_gimbal)
 
+# Camera Gimbal
+add_library(tca9548a SHARED devices/tca9548a.cpp)
+target_link_libraries(tca9548a PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES tca9548a)
+
 # =========================================
 #      Build Interface Libraries
 # =========================================

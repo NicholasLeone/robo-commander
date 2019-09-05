@@ -2,32 +2,30 @@
 #include "communication/i2c.h"
 
 I2C::I2C(int dev, int bus, int add){
-     this->_dev = dev;
-     this->_han = attachPeripheral(I2C_p, bus, add);
+     this->_device = dev;
+     this->_bus = bus;
+     this->_address = add;
+     this->_handle = attachPeripheral(I2C_PI, bus, add);
 }
 
 I2C::~I2C(){
-     int err = i2c_close(_dev, _han);
-     if(err < 0)
-          printf("ERROR: Couldnt't close i2c line\n\r");
+     int err = i2c_close(_device, _handle);
+     if(err < 0) printf("ERROR: Couldnt't close i2c line\n\r");
 }
 
 int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
      int comm_handle;
 
-     if(peripheral == I2C_p){
-          comm_handle = i2c_open(_dev, channel, id, 0);
+     if(peripheral == I2C_PI){
+          comm_handle = i2c_open(_device, channel, id, 0);
      }else{
           printf("ERROR: Communication interface incorrectly set!\r\n");
      }
      return comm_handle;
 }
 
-void I2C::set_device(int device){this->_dev = device;}
-void I2C::set_bus(int bus){this->_bus = bus;}
-void I2C::set_address(int add){this->_address = add;}
 int I2C::close(){
-     int err = i2c_close(_dev, _han);
+     int err = i2c_close(_device, _handle);
      if(err < 0){
           printf("ERROR: Couldnt't close i2c line\n\r");
           return err;
@@ -35,29 +33,34 @@ int I2C::close(){
      return 0;
 }
 
+void I2C::set_platform_handle(int device){this->_device = device;}
+void I2C::set_address(int add){this->_address = add;}
+void I2C::set_bus(int bus){this->_bus = bus;}
+
+int I2C::get_platform_handle(){ return this->_device;}
+int I2C::get_communication_handle(){ return this->_handle;}
+int I2C::get_address(){ return this->_address;}
+int I2C::get_bus(){ return this->_bus;}
+
+
 /**  Parent Functions:
 *    TODO: Make these easily handle different platforms (Pi, Arduino, etc.)
 */
-int I2C::_write(uint8_t byte){
-     int err = i2c_write_byte(_dev,_han, byte);
-
+int I2C::write_raw_byte(uint8_t byte){
+     int err = i2c_write_byte(_device,_handle, byte);
      if(err < 0){
           printf("ERROR: i2c couldnt't write byte\n\r");
-          return -1;
+          return err;
      }
-
-     return err;
+     return 0;
 }
 
-uint8_t I2C::_read(uint8_t add){
-
-     uint8_t data = i2c_read_byte_data(_dev,_han, add);
-
+uint8_t I2C::read_raw_byte(uint8_t reg){
+     uint8_t data = i2c_read_byte_data(_device,_handle, reg);
      if(data < 0){
-          printf("ERROR: i2c couldnt't access register at %d to read\n\r", add);
+          printf("ERROR: i2c couldnt't access register at %d to read\n\r", reg);
           return -2;
      }
-
      return data;
 }
 
@@ -65,35 +68,32 @@ uint8_t I2C::_read(uint8_t add){
 *         These functions are derived from the parent functions and just provide
 *    more compacted functions for ease-of-devel purposes.
 */
-int I2C::_write_byte(uint8_t add, uint8_t byte){
-
-     int err = i2c_write_byte_data(_dev,_han, add, byte);
+int I2C::write_byte(uint8_t reg, uint8_t byte){
+     int err = i2c_write_byte_data(_device,_handle, reg, byte);
      if(err < 0){
-          printf("ERROR: i2c couldnt't write to register at address %d\n\r",int(add));
-          return -1;
+          printf("ERROR: i2c couldnt't write to register at address %d\n\r",int(reg));
+          return err;
      }
      return 0;
 }
 
-int I2C::write(uint8_t add, char* buf){
+int I2C::write_bytes(uint8_t reg, char* buf){
      int numBytes = (sizeof(buf)/sizeof(*buf));
      // cout << "Length of input buffer = " << numBytes << endl;
 
-     // int err = i2c_write_block_data(_dev,_han, add, buf, numBytes);
-     int err = i2c_write_i2c_block_data(_dev,_han, add, buf, numBytes);
-
+     // int err = i2c_write_block_data(_device,_handle, add, buf, numBytes);
+     int err = i2c_write_i2c_block_data(_device,_handle, reg, buf, numBytes);
      return err;
 }
 
-int I2C::read(uint8_t add, char* data){
-     int err = i2c_read_block_data(_dev,_han, add, data);
+int I2C::read_bytes(uint8_t reg, char* data){
+     int err = i2c_read_block_data(_device,_handle, reg, data);
 
      if(err < 0){
-          printf("ERROR: Could not read in bytes from register at address '%d'!!!\r\n",add);
+          printf("ERROR: Could not read in bytes from register at address '%d'!!!\r\n",reg);
      }else{
-          printf("I2C Read Success: %d Bytes read from register %d",err,add);
+          printf("I2C Read Success: %d Bytes read from register %d",err,reg);
      }
-
      return err;
 }
 
