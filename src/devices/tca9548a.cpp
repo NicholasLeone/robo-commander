@@ -18,6 +18,7 @@ int TCA9548A::close(){
 }
 
 int TCA9548A::select_channel(int channel){
+     if(channel > 7) return -1;
      uint8_t value = (0x01 << channel);
      int err = this->write_raw_byte(value);
      if(err < 0) return -1;

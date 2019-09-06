@@ -27,13 +27,13 @@ public:
      int get_bus();
 
      /* Parent Functions */
-     int write_raw_byte(uint8_t byte);
-     uint8_t read_raw_byte(uint8_t reg);
+     int write_raw_byte(uint8_t byte, bool verbose = false);
+     uint8_t read_raw_byte(uint8_t reg, bool verbose = false);
 
-     int write_byte(uint8_t reg, uint8_t byte);
+     int write_byte(uint8_t reg, uint8_t byte, bool verbose = false);
 
-     int write_bytes(uint8_t reg, char* buf);
-     int read_bytes(uint8_t reg, char* data);
+     int write_bytes(uint8_t reg, char* buf, bool verbose = false);
+     int read_bytes(uint8_t reg, char* data, bool verbose = false);
 };
 
 /* Placeholder functions just to allow deprecated code to build */
