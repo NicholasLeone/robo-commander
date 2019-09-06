@@ -16,8 +16,8 @@ public:
      int start();
      int close();
 
-     int select_channel(int channel);
-     void scan_bus(int target, bool verbose = false);
+     int select_channel(uint8_t channel);
+     void scan_bus(I2C* targetDev, bool verbose = false);
 };
 
 

@@ -24,7 +24,7 @@ int I2C::attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id){
      return comm_handle;
 }
 
-int I2C::close(){
+int I2C::_close(){
      int err = i2c_close(_device, _handle);
      if(err < 0){
           printf("ERROR: Couldnt't close i2c line\n\r");
@@ -46,20 +46,20 @@ int I2C::get_bus(){ return this->_bus;}
 /**  Parent Functions:
 *    TODO: Make these easily handle different platforms (Pi, Arduino, etc.)
 */
-int I2C::write_raw_byte(uint8_t byte, bool verbose){
+int I2C::write_raw_byte(uint8_t byte, bool verbose, bool debug){
      int err = i2c_write_byte(_device,_handle, byte);
      if(err < 0){
-          printf("ERROR: i2c couldnt't write byte\n\r");
+          if(debug) printf("ERROR: i2c couldnt't write byte\n\r");
           return err;
      }
      if(verbose) printf("Wrote Value 0x%02X to address 0x%02X\r\n",byte,this->_address);
      return 0;
 }
 
-uint8_t I2C::read_raw_byte(uint8_t reg, bool verbose){
+uint8_t I2C::read_raw_byte(uint8_t reg, bool verbose, bool debug){
      uint8_t data = i2c_read_byte_data(_device,_handle, reg);
      if(data < 0){
-          printf("ERROR: i2c couldnt't access register at %d to read\n\r", reg);
+          if(debug) printf("ERROR: i2c couldnt't access register at %d to read\n\r", reg);
           return -2;
      }
      if(verbose) printf("Read Value 0x%02X to address 0x%02X\r\n",data,reg);
@@ -70,17 +70,17 @@ uint8_t I2C::read_raw_byte(uint8_t reg, bool verbose){
 *         These functions are derived from the parent functions and just provide
 *    more compacted functions for ease-of-devel purposes.
 */
-int I2C::write_byte(uint8_t reg, uint8_t byte, bool verbose){
+int I2C::write_byte(uint8_t reg, uint8_t byte, bool verbose, bool debug){
      int err = i2c_write_byte_data(_device,_handle, reg, byte);
      if(err < 0){
-          printf("ERROR: i2c couldnt't write to register at address %d\n\r",int(reg));
+          if(debug) printf("ERROR: i2c couldnt't write to register at address %d\n\r",int(reg));
           return err;
      }
      if(verbose) printf("Wrote Value 0x%02X to register 0x%02X on address 0x%02X\r\n",byte,reg,this->_address);
      return 0;
 }
 
-int I2C::write_bytes(uint8_t reg, char* buf, bool verbose){
+int I2C::write_bytes(uint8_t reg, char* buf, bool verbose, bool debug){
      int numBytes = (sizeof(buf)/sizeof(*buf));
      // cout << "Length of input buffer = " << numBytes << endl;
 
@@ -90,13 +90,13 @@ int I2C::write_bytes(uint8_t reg, char* buf, bool verbose){
      return err;
 }
 
-int I2C::read_bytes(uint8_t reg, char* data, bool verbose){
+int I2C::read_bytes(uint8_t reg, char* data, bool verbose, bool debug){
      int err = i2c_read_block_data(_device,_handle, reg, data);
 
      if(err < 0){
-          printf("ERROR: Could not read in bytes from register at address '%d'!!!\r\n",reg);
+          if(debug) printf("ERROR: Could not read in bytes from register at address '%d'!!!\r\n",reg);
      }else{
-          printf("I2C Read Success: %d Bytes read from register %d",err,reg);
+          if(verbose) printf("I2C Read Success: %d Bytes read from register %d",err,reg);
      }
      if(verbose) printf("Read Bytes from register 0x%02X on address 0x%02X\r\n",reg,this->_address);
      return err;

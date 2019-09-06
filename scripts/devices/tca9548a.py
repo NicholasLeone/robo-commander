@@ -48,5 +48,6 @@ class TCA9548A(object):
 
 if __name__ == "__main__" :
     mux = TCA9548A(address=0x70, busnum=1, i2c_interface=None)
+    mux.i2c.set_verbose(True)
     mux.scan_bus(0x28,verbose=True)
     print("---------------")

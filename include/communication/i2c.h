@@ -14,7 +14,7 @@ public:
      I2C(int dev, int bus, int add);
      ~I2C();
 
-     int close();
+     int _close();
 
      /* Configurable Parameter Read/Write Functions */
      void set_platform_handle(int device);
@@ -27,13 +27,13 @@ public:
      int get_bus();
 
      /* Parent Functions */
-     int write_raw_byte(uint8_t byte, bool verbose = false);
-     uint8_t read_raw_byte(uint8_t reg, bool verbose = false);
+     int write_raw_byte(uint8_t byte, bool verbose = false, bool debug = false);
+     uint8_t read_raw_byte(uint8_t reg, bool verbose = false, bool debug = false);
 
-     int write_byte(uint8_t reg, uint8_t byte, bool verbose = false);
+     int write_byte(uint8_t reg, uint8_t byte, bool verbose = false, bool debug = false);
 
-     int write_bytes(uint8_t reg, char* buf, bool verbose = false);
-     int read_bytes(uint8_t reg, char* data, bool verbose = false);
+     int write_bytes(uint8_t reg, char* buf, bool verbose = false, bool debug = false);
+     int read_bytes(uint8_t reg, char* data, bool verbose = false, bool debug = false);
 };
 
 /* Placeholder functions just to allow deprecated code to build */
