@@ -82,7 +82,7 @@ int I2C::write_byte(uint8_t reg, uint8_t byte, bool verbose, bool debug){
 
 int I2C::write_bytes(uint8_t reg, char* buf, bool verbose, bool debug){
      int numBytes = (sizeof(buf)/sizeof(*buf));
-     // cout << "Length of input buffer = " << numBytes << endl;
+     if(verbose) printf("[INFO] I2C::write_bytes() --- Length of input buffer = %d\r\n",numBytes);
 
      // int err = i2c_write_block_data(_device,_handle, add, buf, numBytes);
      int err = i2c_write_i2c_block_data(_device,_handle, reg, buf, numBytes);
@@ -90,8 +90,9 @@ int I2C::write_bytes(uint8_t reg, char* buf, bool verbose, bool debug){
      return err;
 }
 
-int I2C::read_bytes(uint8_t reg, char* data, bool verbose, bool debug){
-     int err = i2c_read_block_data(_device,_handle, reg, data);
+int I2C::read_bytes(uint8_t reg, char* data, uint8_t count, bool verbose, bool debug){
+     // int err = i2c_read_block_data(_device,_handle, reg, data);
+     int err = i2c_read_i2c_block_data(_device,_handle, reg, data, count);
 
      if(err < 0){
           if(debug) printf("ERROR: Could not read in bytes from register at address '%d'!!!\r\n",reg);

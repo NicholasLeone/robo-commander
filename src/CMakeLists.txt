@@ -67,10 +67,14 @@ add_library(mpu9250 SHARED sensors/mpu9250.cpp)
 target_link_libraries(mpu9250 PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES mpu9250)
 
-# BNO-055
-add_library(bno055 SHARED sensors/bno055.cpp)
-target_link_libraries(bno055 PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
-list(APPEND RoboCommander_LIBRARIES bno055)
+# BNO-055 - Serial (UART)
+add_library(bno055_uart SHARED sensors/bno055.cpp)
+target_link_libraries(bno055_uart PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES bno055_uart)
+# BNO-055 - I2C
+add_library(bno055_i2c SHARED sensors/bno055_i2c.cpp)
+target_link_libraries(bno055_i2c PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES bno055_i2c)
 
 # # Camera
 # add_library(camera SHARED camera.cpp)

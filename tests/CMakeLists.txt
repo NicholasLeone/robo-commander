@@ -81,10 +81,15 @@ list(APPEND RoboCommander_TESTS test_mpu9250)
 # target_link_libraries(test_camera camera utils)
 # list(APPEND RoboCommander_TESTS test_camera)
 
-# BNO-055
-add_executable(test_bno055 ${TEST_DIR}/sensors/test_bno055.cpp)
-target_link_libraries(test_bno055 PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
-list(APPEND RoboCommander_TESTS test_bno055)
+# BNO-055 - Serial (UART)
+add_executable(test_bno055_uart ${TEST_DIR}/sensors/test_bno055.cpp)
+target_link_libraries(test_bno055_uart PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_TESTS test_bno055_uart)
+
+# BNO-055 - I2C
+add_executable(test_bno055_i2c ${TEST_DIR}/sensors/test_bno055_i2c.cpp)
+target_link_libraries(test_bno055_i2c PUBLIC ${RoboCommander_LIBRARIES} ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_TESTS test_bno055_i2c)
 
 # =========================================
 #         Build Controller Tests

@@ -33,7 +33,8 @@ public:
      int write_byte(uint8_t reg, uint8_t byte, bool verbose = false, bool debug = false);
 
      int write_bytes(uint8_t reg, char* buf, bool verbose = false, bool debug = false);
-     int read_bytes(uint8_t reg, char* data, bool verbose = false, bool debug = false);
+     // int read_bytes(uint8_t reg, char* data, bool verbose = false, bool debug = false);
+     int read_bytes(uint8_t reg, char* data, uint8_t count, bool verbose = false, bool debug = false);
 };
 
 /* Placeholder functions just to allow deprecated code to build */
