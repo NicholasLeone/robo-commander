@@ -4,6 +4,7 @@
 #include "base/params.h"
 #include "base/peripherals.h"
 #include "communication/i2c.h"
+#include "devices/tca9548a.h"
 
 // Power Modes
 typedef enum{
@@ -223,48 +224,65 @@ typedef struct{
 	uint8_t calibration_status;
 }ImuData;
 
-
 using namespace std;
 
 class BNO055_I2C : public I2C {
 private:
-	int _pi;
-	uint8_t _mode;
-
-     bool _initialized = false;
+	/** Constants */
+	bool _has_mux = false;
 	bool _verbose = false;
-
-	float accel_conversion_factor = 1000.0;
+	bool _initialized = false;
+	float accel_conversion_factor = 100.0;
 	float mag_conversion_factor = 16.0;
 	float gyro_conversion_factor = 900.0;
+	uint8_t _mode;
+	uint8_t _mux_channel;
 
-	// int _read(int num_bytes, char* data, bool verbose = false);
-	// int _send(char* cmds, int length, char* data, bool ack = true, int max_trys = 5, bool verbose = false);
-	//
-	// int _write_bytes(uint8_t _address, uint8_t* bytes, int length, bool ack = true);
-	// int _write_byte(uint8_t _address, uint8_t byte, bool ack = true);
-	//
-	// int _read_bytes(uint8_t _address, int length, uint8_t* recv_data);
-	// int _read_byte(uint8_t _address, uint8_t* recv_data);
-	// int8_t _read_signed_byte(uint8_t _address);
+	/** External Object Pointers */
+	TCA9548A* _mux;
 
+	/** Private Functions */
 	void _config_mode();
 	void _operation_mode();
-
 	int read_vector(uint8_t _address, int16_t* data, int count = 3);
 
 public:
 
-	// FUNCTIONS
-	BNO055_I2C(int dev, int bus, int address);
+	/** Constructors / Deconstructors */
+	// BNO055_I2C(int dev, int bus, int address = 0x28);
+	// BNO055_I2C(int dev, int bus, int address = 0x28, int channel = 0);
+	BNO055_I2C(int dev, int bus, int address = 0x28, int channel = 0, TCA9548A* mux = nullptr);
 	~BNO055_I2C();
 
-	// virtual void init(std::string dev, int baud);
-	int begin(uint8_t mode = OPERATION_MODE_NDOF);
+	/** Class Getters */
+	float get_accel_conversion_factor();
+	float get_mag_conversion_factor();
+	float get_gyro_conversion_factor();
+	/** Class Setters */
+	void set_accel_conversion_factor(float factor);
+	void set_mag_conversion_factor(float factor);
+	void set_gyro_conversion_factor(float factor);
+
+	/** User-Friendly Macro Functions */
+	int begin(uint8_t mode = OPERATION_MODE_NDOF, bool debug = false);
+	int startup(bool verbose = false);
 	void update(bool verbose = false);
 
+	/** Functions for attached i2c multiplexer */
+	uint8_t get_my_channel();
+	void set_my_channel(uint8_t channel);
+
+	int get_mux_channel();
+	void set_mux_channel(uint8_t channel);
+
+	void attach_i2c_mux(TCA9548A* mux);
+	void detach_i2c_mux();
+
+	bool isMuxPresent(bool verbose = false);
+	bool isMuxChannelSelected(bool verbose = false, bool debug = false);
+
 	/** ==================================================================
-	*						    SETTERS
+	*					IMU-Specific SETTERS
 	* ==================================================================== */
 	int set_mode(uint8_t mode);
 	void set_external_crystal(bool use_external_crystal);
@@ -290,7 +308,7 @@ public:
 
 
 	/** ==================================================================
-	*						    Getters
+	*					IMU-Specific Getters
 	* ==================================================================== */
 	/**
 	* @desc: Returns the following revision information about the BNO055 chip.
@@ -362,7 +380,8 @@ public:
 	*	@output data[9]:	Radius of the Accelerometer
 	*	@output data[10]:	Radius of the Magnetometer
 	*/
-	void get_calibration(float* data);
+	// void get_calibration(float* data);
+	void get_calibration(int* data);
 
 	/**
 	*	@desc: Return 6 axis remap register values
@@ -432,7 +451,7 @@ public:
 	/**
 	*	@desc: Return the current temperature in Celsius.
 	*/
-	float get_tempurature(bool verbose = false);
+	float get_temperature(bool verbose = false);
 
 };
 

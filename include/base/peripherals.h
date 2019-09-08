@@ -65,7 +65,9 @@ typedef struct I2C_CONFIGURATION{
      int bus;
      int address;
      int handle;
-     char* location;
+     int mux_channel;
+     uint8_t mux_master_addr;
+     char* fd;
 }I2C_CONFIGURATION;
 
 typedef struct COMMUNICATION_CONFIGURATION{
@@ -86,7 +88,7 @@ class Hardware{
 protected:
      PERIPHERAL_PROTOCOL communication_protocol;
 public:
-	virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id) = 0;
+	virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id, bool verbose = false) = 0;
 };
 
 
@@ -107,12 +109,8 @@ protected:
      int _address;
      int _bus;
      uint8_t _buf[BUF_SIZE];
-
 };
 
-class CommunicationInterface{
-
-
-};
+class CommunicationInterface{};
 
 #endif /** PERIPHERALS_H_ */

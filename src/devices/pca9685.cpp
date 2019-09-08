@@ -6,7 +6,6 @@
 
 PCA9685::PCA9685(int dev, int bus, int address) : I2C(dev,bus,address){
      I2C::_device = dev;
-     I2C::_handle = attachPeripheral(I2C_PI, bus, address);
 
      I2C::write_byte(MODE2, PCA9685_OUTDRV);
      I2C::write_byte(MODE1, PCA9685_ALLCALL);

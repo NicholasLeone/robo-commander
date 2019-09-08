@@ -223,7 +223,6 @@ typedef struct{
 	uint8_t calibration_status;
 }ImuData;
 
-
 using namespace std;
 
 class BNO055 {
@@ -441,7 +440,7 @@ public:
 	/**
 	*	@desc: Return the current temperature in Celsius.
 	*/
-	float get_tempurature(bool verbose = false);
+	float get_temperature(bool verbose = false);
 
 };
 

@@ -61,21 +61,16 @@ float PID::calculate(float current_state){
      float dt = time_span.count();
 
      if(dt >= this->_params.dt){
-
           // Calculate error
           error = this->_target - current_state;
-
           // Proportional term
           float Pout = this->_params.Kp * error;
-
           // Integral term
           integral += (this->_params.Ki * error * dt);
 
           // Limit integral error within a specified bounds
-          if(integral > this->_params.max_error)
-               integral = this->_params.max_error;
-          else if(integral < this->_params.min_error)
-               integral = this->_params.min_error;
+          if(integral > this->_params.max_error) integral = this->_params.max_error;
+          else if(integral < this->_params.min_error) integral = this->_params.min_error;
 
           // Derivative term
           float dInput = (current_state - this->_prev_state) / dt;
@@ -83,13 +78,9 @@ float PID::calculate(float current_state){
 
           // Calculate total output
           control_output = Pout + integral - Dout;
-
           // Restrict to max/min
-          if(control_output > this->_params.max_cmd)
-               control_output = this->_params.max_cmd;
-          else if(control_output < this->_params.min_cmd)
-               control_output = this->_params.min_cmd;
-
+          if(control_output > this->_params.max_cmd) control_output = this->_params.max_cmd;
+          else if(control_output < this->_params.min_cmd) control_output = this->_params.min_cmd;
      }else{
           error = this->_target - current_state;
           control_output = this->_prev_output;

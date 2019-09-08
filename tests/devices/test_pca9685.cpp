@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 	cout << "[START] Testing PCA-9685 Demo." << endl;
      int err;
      int bus = 1;
-     int add = 0x70;
+     int add = 0x41;
      int width, channel, freq, flag_test;
      float duty;
      char c;
@@ -57,18 +57,14 @@ int main(int argc, char *argv[]){
 
      cout << "Please enter what frequency you'd like to try (24Hz - 1000Hz)." << endl;
      cin >> freq;
-
      pwm.setFrequency(freq);
 
      cout << "What function would you like to test? 'p' for pulsewidth, or 'd' for dutycycle. Otherwise 'default' demo function will run." << endl;
      cin >> c;
 
-     if(c == 'p')
-          flag_test = 1;
-     else if(c == 'd')
-          flag_test = 0;
-     else
-          flag_test = 2;
+     if(c == 'p') flag_test = 1;
+     else if(c == 'd') flag_test = 0;
+     else flag_test = 2;
 
      cout << "Which channel would you like to test" << endl;
      cin >> channel;

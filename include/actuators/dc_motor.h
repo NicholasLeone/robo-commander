@@ -22,7 +22,7 @@ private:
 public:
      MOTOR_PARAMS params;
 
-     virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id);
+     virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id, bool verbose = false);
 
      DcMotor(int pi, int pwm_gpio, int dir_gpio);
 

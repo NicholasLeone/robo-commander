@@ -2,35 +2,23 @@
 
 TCA9548A::TCA9548A(int dev, int bus, int address) : I2C(dev,bus,address){
      this->current_channel = 0;
-     I2C::_handle = attachPeripheral(I2C_PI, bus, address);
-     // this->_handle = attachPeripheral(I2C_PI, bus, address);
 }
 
-TCA9548A::~TCA9548A(){
-     this->close();
-}
+TCA9548A::~TCA9548A(){}
 
-int TCA9548A::start(){
-     return 0;
-}
+int TCA9548A::get_selected_channel(){ return this->current_channel; }
 
-int TCA9548A::close(){
-     // return I2C::close();
-     return this->_close();
-}
-
-int TCA9548A::select_channel(uint8_t channel){
+int TCA9548A::select_channel(uint8_t channel, bool verbose, bool debug){
      if(channel > 7) return -1;
      uint8_t value = (0x01 << channel);
-     printf("Writing Value 0x%02X to i2c mux\r\n",value);
-     int err = this->write_raw_byte(value);
+     if(verbose) printf("[INFO] TCA9548A::select_channel() ---- Writing Value 0x%02X to i2c mux\r\n",value);
+     int err = this->write_raw_byte(value,debug);
      if(err < 0) return -1;
      else{
           this->current_channel = channel;
           return 0;
      }
 }
-
 
 void TCA9548A::scan_bus(I2C* targetDev, bool verbose){
      int err;

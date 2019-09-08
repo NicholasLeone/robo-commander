@@ -7,42 +7,37 @@ CameraGimbal::~CameraGimbal(){
      delete this->gimbal;
 }
 
-int CameraGimbal::_init_sensor(COMMUNICATION_CONFIGURATION comms){
-     this->sensor.init(comms.serial.address, comms.serial.baud);
-     int err = this->sensor.begin();
+int CameraGimbal::init_sensor(COMMUNICATION_CONFIGURATION comms, TCA9548A* mux){
+     this->sensor = new BNO055_I2C(comms.platform,comms.i2c.bus, \
+                                   comms.i2c.address, \
+                                   comms.i2c.mux_channel, mux);
+     int err = this->sensor->startup();
      if(err < 0){
-          printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
+          printf("[ERROR] CameraGimbal::init_sensor() ---- %d.\r\n", err);
           return -1;
      }else{
-          printf("[SUCCESS] BNO-055 Initialized \r\n\r\n");
+          printf("[INFO] CameraGimbal::init_sensor() ---- Successfully initialized sensor.\r\n");
           return 1;
      }
-     return 0;
 }
 
-int CameraGimbal::_init_actuator(COMMUNICATION_CONFIGURATION comms, int channel){
+/** Deprecated */
+// int CameraGimbal::init_sensor(COMMUNICATION_CONFIGURATION comms){
+//      this->sensor.init(comms.serial.address, comms.serial.baud);
+//      int err = this->sensor.begin();
+//      if(err < 0){
+//           printf("[ERROR] BNO055::begin] ---- %d.\r\n", err);
+//           return -1;
+//      }else{
+//           printf("[SUCCESS] BNO-055 Initialized \r\n\r\n");
+//           return 1;
+//      }
+//      return 0;
+// }
+
+int CameraGimbal::init_actuator(COMMUNICATION_CONFIGURATION comms, int channel){
      this->gimbal = new PCA9685(comms.platform, comms.i2c.bus, comms.i2c.address);
      this->actuator_channel = channel;
-     return 0;
-}
-
-int CameraGimbal::init(COMMUNICATION_CONFIGURATION comms, int channel){
-     if(this->_init_actuator(comms, channel) >= 0){
-          printf("[SUCCESS] Camera Gimbal Actuator Initialized!\r\n");
-     }else{
-          printf("[ERROR] Camera Gimbal Actuator Failed to initialized!\r\n");
-          return -1;
-     }
-
-     if(this->_init_sensor(comms) >= 0){
-          printf("[SUCCESS] Camera Gimbal Sensor Initialized!\r\n");
-     }else{
-          printf("[ERROR] Camera Gimbal Sensor Failed to initialized!\r\n");
-          return -2;
-     }
-     /** Store communnication configuration for posible usage later */
-     this->_comms = comms;
-
      /** PID Initial Configuration */
      this->_params.dt = 0.01;
      this->_params.max_cmd = 1.0;
@@ -53,7 +48,25 @@ int CameraGimbal::init(COMMUNICATION_CONFIGURATION comms, int channel){
      this->_params.Kp = 1.0;
      this->_params.Ki = 1.0;
      this->_params.Kd = 1.0;
+     return 0;
+}
 
+int CameraGimbal::init(COMMUNICATION_CONFIGURATION comms, int channel){
+     if(this->init_actuator(comms, channel) >= 0){
+          printf("[SUCCESS] Camera Gimbal Actuator Initialized!\r\n");
+     }else{
+          printf("[ERROR] Camera Gimbal Actuator Failed to initialized!\r\n");
+          return -1;
+     }
+
+     if(this->init_sensor(comms) >= 0){
+          printf("[SUCCESS] Camera Gimbal Sensor Initialized!\r\n");
+     }else{
+          printf("[ERROR] Camera Gimbal Sensor Failed to initialized!\r\n");
+          return -2;
+     }
+     /** Store communnication configuration for posible usage later */
+     this->_comms = comms;
      return 0;
 }
 
@@ -65,7 +78,7 @@ void CameraGimbal::updateOnce(){
      float angles[3];
      this->loopCount++;
      /** Update sensor feedback */
-     this->sensor.get_euler(&angles[0]);
+     this->sensor->get_euler(&angles[0]);
      float angle = angles[1];
      float normalized = angle / this->max_state;
 

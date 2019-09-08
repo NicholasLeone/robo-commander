@@ -21,7 +21,7 @@ static const int MOTOR_DIRECTION_BACKWARD = 2;
 #define MIN_PWM_US 1000
 #define MID_PWM_US 1500
 
-int DcMotor::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id){
+int DcMotor::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id, bool verbose){
 
      if(protocol == PWM_PI){
           this->params.pwm_channel = channel;

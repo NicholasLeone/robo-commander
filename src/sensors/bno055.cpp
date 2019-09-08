@@ -525,7 +525,7 @@ void BNO055::get_quaternions(float* data, bool verbose){
      memcpy(data,tmp, sizeof(tmp));
 }
 
-float BNO055::get_tempurature(bool verbose){
+float BNO055::get_temperature(bool verbose){
      int8_t data = this->_read_signed_byte(BNO055_TEMP_ADDR);
      if(verbose) printf("Temperature [Celsius]: %f\r\n", (float)data);
      return (float)data;
@@ -542,5 +542,5 @@ void BNO055::update(bool verbose){
      this->get_linear_acceleration(&lin_accel[0], verbose);
      this->get_gravity(&grav[0], verbose);
      this->get_quaternions(&quats[0], verbose);
-     float temp = this->get_tempurature(verbose);
+     float temp = this->get_temperature(verbose);
 }

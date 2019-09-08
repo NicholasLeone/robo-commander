@@ -647,6 +647,18 @@ class BNO055(object):
         print('Magnetometer ID:    0x{0:02X}'.format(mag))
         print('Gyroscope ID:       0x{0:02X}\n'.format(gyro))
 
+        cal_data = self.get_calibration()
+        xm, ym, zm, x_sign, y_sign, z_sign = self.get_axis_remap()
+        print("Stored Calibration Data: %s" % (str(cal_data)))
+        print("Axis Mappings:")
+        print("\t X-Axis      - %s" % str(xm))
+        print("\t X-Axis Sign - %s" % str(x_sign))
+        print("\t Y-Axis      - %s" % str(ym))
+        print("\t Y-Axis Sign - %s" % str(y_sign))
+        print("\t Z-Axis      - %s" % str(zm))
+        print("\t Z-Axis Sign - %s" % str(z_sign))
+
+
 
     def get_data(self, getAccel = True, getGyro = True, getMag = True,
                     getAngles = True, getQuats = True, getTemperature = True):
@@ -693,8 +705,8 @@ class BNO055(object):
         return data_dict
 
 if __name__ == "__main__" :
-    import argparse
-
+    import argparse, pprint
+    pp = pprint.PrettyPrinter(indent=5)
     # Setup commandline argument(s) structures
     ap = argparse.ArgumentParser(description='I2C multiplixer scanner')
     ap.add_argument("--bus", "-b", type=int, default=1, metavar='BUS', help="Id of the i2c bus you want to scan")
@@ -718,8 +730,14 @@ if __name__ == "__main__" :
     else: imu = BNO055(i2c_interface=None, busnum=bus)
 
     imu.startup()
-
+    print(" ------------ ")
+    idata = imu.get_data()
+    print("Imu Data:")
+    print(" ------------ ")
+    pp.pprint(idata)
+    print(" ------------ ")
     print('Reading BNO055 data, press Ctrl-C to quit...')
+    raw_input("Please press [Enter] to begin...")
     while True:
         # Read the Euler angles for heading, roll, pitch (all in degrees).
         heading, roll, pitch = imu.read_euler()

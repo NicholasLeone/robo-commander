@@ -3,7 +3,6 @@
 #include <pigpiod_if2.h>
 
 #include "actuators/servo.h"
-#include "communication/i2c.h"
 
 using namespace std;
 
@@ -15,7 +14,7 @@ using namespace std;
 #define SERVO_CHANNEL_2 5
 
 
-int Servo::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id){
+int Servo::attachPeripheral(PERIPHERAL_PROTOCOL protocol, int channel, int id, bool verbose){
 
      if(protocol == PWM_PI){
           this->params.channel = channel;
@@ -101,6 +100,13 @@ int Servo::setAngle(float desired_angle){
      return 0;
 }
 
+/**
+*         TODO: Placeholder area for target-platform independent functions to
+* allow for same execution of functions across all platforms (i.e Pi vs Arduino)
+*
+*/
+int _initI2c(int i2cBus, int address){return 0;}
+int _outputPWM(int channel, int val){return 0;}
 
 int _initServos(int numServos, Motor** servos){
 

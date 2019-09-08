@@ -18,7 +18,7 @@ class Servo : public Motor{
 
 public:
 
-     virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id);
+     virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id, bool verbose = false);
      Servo();
      ~Servo();
 
@@ -36,5 +36,9 @@ public:
 };
 
 int _initServos(int numServos, Motor** _servos);
+
+/* Placeholder functions just to allow deprecated code to build */
+int _initI2c(int i2cBus, int address);
+int _outputPWM(int channel, int val);
 
 #endif

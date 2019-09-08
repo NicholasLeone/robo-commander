@@ -5,16 +5,15 @@
 
 class I2C : public Communication{
 private:
-     // int _dev; // Device Platform Handle (i.e. Rpi3, Arduino, etc.)
-     // int _han; // Communication Interface Handle
-
+     /** Constants */
 public:
-     virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id);
+     virtual int attachPeripheral(PERIPHERAL_PROTOCOL peripheral, int channel, int id, bool verbose = false);
 
      I2C(int dev, int bus, int add);
      ~I2C();
 
-     int _close();
+     int start();
+     int close();
 
      /* Configurable Parameter Read/Write Functions */
      void set_platform_handle(int device);

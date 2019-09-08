@@ -1,9 +1,13 @@
 #ifndef CAMERA_GIMBAL_H_
 #define CAMERA_GIMBAL_H_
 
+#include <unistd.h>		// For usleep
+
 #include "base/peripherals.h"
 #include "devices/pca9685.h"
-#include "sensors/bno055.h"
+#include "devices/tca9548a.h"
+#include "sensors/bno055_i2c.h"
+// #include "sensors/bno055.h"
 #include "controllers/pid.h"
 
 class CameraGimbal : public PID{
@@ -16,14 +20,14 @@ private:
      float neutral_state;
 public:
      PCA9685* gimbal;
-     BNO055 sensor;
+     BNO055_I2C* sensor;
 
      CameraGimbal();
 	virtual ~CameraGimbal();
 
      virtual int init(COMMUNICATION_CONFIGURATION comms, int channel);
-     virtual int _init_sensor(COMMUNICATION_CONFIGURATION comms);
-     virtual int _init_actuator(COMMUNICATION_CONFIGURATION comms, int channel);
+     virtual int init_sensor(COMMUNICATION_CONFIGURATION comms, TCA9548A* mux = nullptr);
+     virtual int init_actuator(COMMUNICATION_CONFIGURATION comms, int channel);
 
      virtual void goto_neutral_state();
      virtual void updateOnce();
