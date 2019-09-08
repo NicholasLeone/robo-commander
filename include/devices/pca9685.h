@@ -28,6 +28,8 @@
 #define PCA9685_INVRT 0x10
 #define PCA9685_OUTDRV 0x04
 
+#define CLOCK_FREQ 25000000.0 // 25MHz default clock frequency
+
 class PCA9685 : public I2C{
 private:
 

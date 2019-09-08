@@ -71,10 +71,10 @@ int main(int argc, char *argv[]){
 
      float curDuty = 50.0;
      int curPulse = 1500;
-
+     float delta = 5.0;
      while(1){
 
-          if(flag_test == 1){
+          if(flag_test == 0){
                cout << "Please enter the desired duty cycle (0 - 100%)" << endl;
                cin >> duty;
                pwm.setDutyCycle(channel,duty);
@@ -86,19 +86,22 @@ int main(int argc, char *argv[]){
                int z = getKey();
 
                if(z == 65){
-                    curDuty += 10.0;
-                    curPulse += 10.0;
+                    curDuty += delta;
+                    curPulse += delta;
                     cout << "Current Duty/Pulsewidth: " << curDuty << "/" << curPulse << endl;
                     pwm.setPulsewidth(channel,curPulse);
+                    // printf("Stopping...");
+                    // pwm.setDutyCycle(channel,0.0);
                }else if(z == 66){
-                    curDuty -= 10.0;
-                    curPulse -= 10.0;
+                    curDuty -= delta;
+                    curPulse -= delta;
                     cout << "Current Duty/Pulsewidth: " << curDuty << "/" << curPulse << endl;
                     pwm.setPulsewidth(channel,curPulse);
-               }else
-                    cout << "Recevied: " << z << endl;
-
+                    // printf("Stopping...");
+                    // pwm.setDutyCycle(channel,0.0);
+               }else cout << "Recevied: " << z << endl;
           }
+          // pwm.setDutyCycle(channel,0);
 
           // cout << "Would you like to exit? (y) or (n)" << endl;
           // cin >> c;

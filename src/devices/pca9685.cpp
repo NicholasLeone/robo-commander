@@ -21,17 +21,18 @@ PCA9685::~PCA9685(){}
 int PCA9685::setFrequency(int freq){
      int err;
 
-     float prescale_val = 25000000.0;             // 25 MHz Clock
-     prescale_val /= 4096.0;                      // 12-bit Resolution
-     prescale_val /= float(freq);                 // Desired Frequency
-     prescale_val -= 1.0;
+     uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq)  - 1;
+     // float prescale_val = 25000000.0;             // 25 MHz Clock
+     // prescale_val /= 4096.0;                      // 12-bit Resolution
+     // prescale_val /= float(freq);                 // Desired Frequency
+     // prescale_val -= 1.0;
      // int prescale = int(floor(prescale_val + 0.5));
-     int prescale = int(round(25000000.0 / (4096.0 * freq)) - 1);
+     int prescale = int(round(CLOCK_FREQ / (4096.0 * freq)) - 1);
+     if(prescale < 3) prescale = 3;
+     else if(prescale > 255) prescale = 255;
 
-     if(prescale < 3)
-          prescale = 3;
-     else if(prescale > 255)
-          prescale = 255;
+     // if(prescale_val < 3) prescale_val = 3;
+     // else if(prescale_val > 255) prescale_val = 255;
 
      printf("Prescale Value: %d\n\r", prescale);
 
@@ -39,12 +40,12 @@ int PCA9685::setFrequency(int freq){
      uint8_t newmode = (oldmode & ~PCA9685_SLEEP) | PCA9685_SLEEP;
 
      err = I2C::write_byte(MODE1,newmode);                    // Sleep
-     err = I2C::write_byte(PRE_SCALE,prescale);               // PWM Frequency Multiplyer
+     err = I2C::write_byte(PRE_SCALE,prescale);           // PWM Frequency Multiplyer
      err = I2C::write_byte(MODE1, oldmode);
      usleep(0.0005 * 1000000);
      err = I2C::write_byte(MODE1, oldmode | PCA9685_RESTART); // Restart
 
-     _frequency = (25000000.0 / 4096.0) / (prescale + 1);
+     _frequency = (CLOCK_FREQ / 4096.0) / (prescale + 1);
      _period_pulsewidth = (1000000.0 / _frequency);
      printf("Frequency, Pulsewidth: %.2f,    %.2f\r\n",_frequency, _period_pulsewidth);
 
@@ -62,7 +63,6 @@ int PCA9685::setDutyCycle(int channel, float duty){
      uint8_t addOut;
 
      steps = int(round(duty * (4096.0 / 100.0)));
-     printf("# of Steps: %d\n\r", steps);
 
      // Saturate outputs
      if(steps < 0){
@@ -75,6 +75,7 @@ int PCA9685::setDutyCycle(int channel, float duty){
           on_step = 0;
           off_step = steps;
      }
+     // printf("nSteps = %d | onSteps = %d | offSteps = %d\n\r", steps,on_step,off_step);
 
      buf[0] = on_step & 0xFF;
      buf[1] = on_step >> 8;
@@ -107,6 +108,7 @@ int PCA9685::setDutyCycle(int channel, float duty){
 
 int PCA9685::setPulsewidth(int channel, int width){
      float duty = (float(width) / this->_period_pulsewidth) * 100.0;
+     // printf("setting duty = %.2f\n\r", duty);
      setDutyCycle(channel, duty);
 }
 
