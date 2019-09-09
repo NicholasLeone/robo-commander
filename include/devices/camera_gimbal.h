@@ -35,5 +35,11 @@ public:
      void set_max_state(float value);
      void set_min_state(float value);
      void set_neutral_state(float value);
+     void set_actuator_channel(int channel);
+
+     float get_max_state();
+     float get_min_state();
+     float get_neutral_state();
+     int get_actuator_channel();
 };
 #endif /** CAMERA_GIMBAL_H_ */

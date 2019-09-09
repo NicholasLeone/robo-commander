@@ -266,7 +266,9 @@ public:
 	/** User-Friendly Macro Functions */
 	int begin(uint8_t mode = OPERATION_MODE_NDOF, bool debug = false);
 	int startup(bool verbose = false);
-	void update(bool verbose = false);
+	void update(bool getAccel = true, bool getGyro = true, bool getMag = true, \
+			  bool getAngles = true, bool getQuats = true, bool getTemp = true, \
+			  bool getLinAccel = false, bool getGravity = false, bool verbose = false);
 
 	/** Functions for attached i2c multiplexer */
 	uint8_t get_my_channel();

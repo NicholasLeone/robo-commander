@@ -13,8 +13,8 @@ int main(int argc, char *argv[]){
 	cout << "[START] Multiplexer..." << endl;
 	TCA9548A mux(pi, 1);
 	cout << "[START] BNO-055..." << endl;
-     BNO055_I2C imu1(pi, 1, 0x28, 4, &mux);
-	BNO055_I2C imu2(pi, 1, 0x28, 5, &mux);
+     BNO055_I2C imu1(pi, 1, 0x28, 0, &mux);
+	BNO055_I2C imu2(pi, 1, 0x28, 1, &mux);
 
 	// printf(" -------- Initializing IMU #1 ------ \r\n");
 	imu1.startup();

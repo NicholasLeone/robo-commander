@@ -96,3 +96,9 @@ void CameraGimbal::updateOnce(){
 void CameraGimbal::set_max_state(float value){ this->max_state = value; }
 void CameraGimbal::set_min_state(float value){ this->min_state = value; }
 void CameraGimbal::set_neutral_state(float value){ this->neutral_state = value; }
+void CameraGimbal::set_actuator_channel(int channel){ this->actuator_channel = channel; }
+
+float CameraGimbal::get_max_state(){ return this->max_state; }
+float CameraGimbal::get_min_state(){ return this->min_state; }
+float CameraGimbal::get_neutral_state(){ return this->neutral_state; }
+int CameraGimbal::get_actuator_channel(){ return this->actuator_channel; }

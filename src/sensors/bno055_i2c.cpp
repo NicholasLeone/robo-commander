@@ -59,18 +59,26 @@ int BNO055_I2C::begin(uint8_t mode, bool debug){
      return 1;
 }
 
-void BNO055_I2C::update(bool verbose){
-     float angs[3]; float accel[3]; float gyros[3]; float mags[3];
-     float lin_accel[3]; float grav[3]; float quats[4];
+void BNO055_I2C::update(bool getAccel, bool getGyro, bool getMag, bool getAngles, \
+                        bool getQuats, bool getTemp, bool getLinAccel, \
+                        bool getGravity, bool verbose){
+     float angs[3] = {0.0, 0.0, 0.0};
+     float accel[3] = {0.0, 0.0, 0.0};
+     float gyros[3] = {0.0, 0.0, 0.0};
+     float mags[3] = {0.0, 0.0, 0.0};
+     float lin_accel[3] = {0.0, 0.0, 0.0};
+     float grav[3] = {0.0, 0.0, 0.0};
+     float quats[4] = {0.0, 0.0, 0.0, 0.0};
+     float temp = 0;
      if(verbose) printf("==========================\r\n");
-     this->get_euler(&angs[0], verbose);
-     this->get_magnetometer(&mags[0], verbose);
-     this->get_gyroscope(&gyros[0], verbose);
-     this->get_accelerometer(&accel[0], verbose);
-     this->get_linear_acceleration(&lin_accel[0], verbose);
-     this->get_gravity(&grav[0], verbose);
-     this->get_quaternions(&quats[0], verbose);
-     float temp = this->get_temperature(verbose);
+     if(getAngles) this->get_euler(&angs[0], verbose);
+     if(getMag) this->get_magnetometer(&mags[0], verbose);
+     if(getGyro) this->get_gyroscope(&gyros[0], verbose);
+     if(getAccel) this->get_accelerometer(&accel[0], verbose);
+     if(getLinAccel) this->get_linear_acceleration(&lin_accel[0], verbose);
+     if(getGravity) this->get_gravity(&grav[0], verbose);
+     if(getQuats) this->get_quaternions(&quats[0], verbose);
+     if(getTemp) temp = this->get_temperature(verbose);
 }
 
 int BNO055_I2C::startup(bool verbose){
