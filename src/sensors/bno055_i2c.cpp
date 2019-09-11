@@ -26,6 +26,12 @@ BNO055_I2C::~BNO055_I2C(){}
 ██      ██ ██   ██  ██████ ██   ██  ██████  ███████
 */
 
+void BNO055_I2C::reset(bool verbose){
+     if(verbose) printf("[INFO] BNO055_I2C::reset ---- Resetting\r\n");
+     this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x20);
+     usleep(0.65 * 1000000);
+}
+
 int BNO055_I2C::begin(uint8_t mode, bool debug){
      bool isReady = this->isMuxChannelSelected();
      if(debug) printf(" ============ BNO055_I2C::begin ============r\n");
@@ -410,6 +416,16 @@ void BNO055_I2C::get_euler(float* data, bool verbose){
      tmp[2] = (float) _data[0] / 16.0;
      tmp[0] = (float) _data[1] / 16.0;
      tmp[1] = (float) _data[2] / 16.0;
+
+     if(tmp[0] < -360.0) tmp[0] = -360.0;
+	else if(tmp[0] > 360.0) tmp[0] = 360.0;
+
+     if(tmp[1] < -360.0) tmp[1] = -360.0;
+	else if(tmp[1] > 360.0) tmp[1] = 360.0;
+
+     if(tmp[2] < -360.0) tmp[2] = -360.0;
+	else if(tmp[2] > 360.0) tmp[2] = 360.0;
+
      if(verbose) printf("Euler Angles: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
      memcpy(data,tmp, sizeof(tmp));
 }

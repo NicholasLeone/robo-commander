@@ -264,6 +264,7 @@ public:
 	void set_gyro_conversion_factor(float factor);
 
 	/** User-Friendly Macro Functions */
+	void reset(bool verbose = false);
 	int begin(uint8_t mode = OPERATION_MODE_NDOF, bool debug = false);
 	int startup(bool verbose = false);
 	void update(bool getAccel = true, bool getGyro = true, bool getMag = true, \
