@@ -417,13 +417,16 @@ void BNO055_I2C::get_euler(float* data, bool verbose){
      tmp[0] = (float) _data[1] / 16.0;
      tmp[1] = (float) _data[2] / 16.0;
 
-     if(tmp[0] < -360.0) tmp[0] = -360.0;
+     // if(tmp[0] < -360.0) tmp[0] = -360.0;
+     if(tmp[0] < -360.0) tmp[0] = 0.0;
 	else if(tmp[0] > 360.0) tmp[0] = 360.0;
 
-     if(tmp[1] < -360.0) tmp[1] = -360.0;
+     // if(tmp[1] < -360.0) tmp[1] = -360.0;
+     if(tmp[1] < -360.0) tmp[1] = 0.0;
 	else if(tmp[1] > 360.0) tmp[1] = 360.0;
 
-     if(tmp[2] < -360.0) tmp[2] = -360.0;
+     // if(tmp[2] < -360.0) tmp[2] = -360.0;
+     if(tmp[2] < -360.0) tmp[2] = 0.0;
 	else if(tmp[2] > 360.0) tmp[2] = 360.0;
 
      if(verbose) printf("Euler Angles: %f, %f, %f\r\n", tmp[0], tmp[1] , tmp[2]);
