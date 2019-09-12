@@ -76,9 +76,10 @@ add_library(bno055_i2c SHARED sensors/bno055_i2c.cpp)
 target_link_libraries(bno055_i2c PUBLIC i2c tca9548a ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES bno055_i2c)
 
-# # Camera
-# add_library(camera SHARED camera.cpp)
-# target_link_libraries(camera ${LIBS})
+# Camera - D415
+add_library(camera_d415 SHARED sensors/camera_d415.cpp)
+target_link_libraries(camera_d415 ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES camera_d415)
 
 # =========================================
 #      Build Controller Libraries

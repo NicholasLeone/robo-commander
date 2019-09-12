@@ -76,11 +76,6 @@ add_executable(test_mpu9250 ${TEST_DIR}/sensors/test_mpu9250.cpp)
 target_link_libraries(test_mpu9250 PUBLIC serial mpu9250 ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_mpu9250)
 
-# # Camera
-# add_executable(test_camera ${TEST_DIR}/sensors/test_camera.cpp)
-# target_link_libraries(test_camera camera utils)
-# list(APPEND RoboCommander_TESTS test_camera)
-
 # BNO-055 - Serial (UART)
 add_executable(test_bno055_uart ${TEST_DIR}/sensors/test_bno055.cpp)
 target_link_libraries(test_bno055_uart PUBLIC bno055_uart ${RoboCommander_EXTERNAL_LIBRARIES})
@@ -95,6 +90,11 @@ list(APPEND RoboCommander_TESTS test_bno055_i2c)
 add_executable(test_bno055_mux ${TEST_DIR}/sensors/test_bno055_muxed.cpp)
 target_link_libraries(test_bno055_mux PUBLIC bno055_i2c ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_bno055_mux)
+
+# Camera - D415
+add_executable(test_camera_d415 ${TEST_DIR}/sensors/test_camera_d415.cpp)
+target_link_libraries(test_camera_d415 camera_d415)
+list(APPEND RoboCommander_TESTS test_camera_d415)
 
 # =========================================
 #         Build Controller Tests

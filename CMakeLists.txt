@@ -8,13 +8,14 @@ set(RoboCommander_VERSION ${RoboCommander_VERSION_MAJOR}.${RoboCommander_VERSION
 # ===========================
 #       Set Build Options
 # ===========================
-set(VERBOSE         OFF CACHE INTERNAL "CMake execution debugging")
-set(BUILD_TESTS     ON CACHE INTERNAL "Build all test executables for each class")
+set(VERBOSE              OFF CACHE INTERNAL "CMake execution debugging")
+set(BUILD_TESTS          ON CACHE INTERNAL "Build all test executables for each class")
 
-set(WITH_GTSAM      OFF CACHE INTERNAL "Include the GTSAM library")
-set(WITH_OPENCV     OFF CACHE INTERNAL "Include the OpenCV library")
+set(WITH_GTSAM           OFF CACHE INTERNAL "Include the GTSAM library")
+set(WITH_OPENCV          ON CACHE INTERNAL "Include the OpenCV library")
+set(WITH_LIBREALSENSE    ON CACHE INTERNAL "Include the librealsense2 library")
 
-set(COMPILE_ARM     OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
+set(COMPILE_ARM          OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
 
 # ===========================
 #        Set Compiler
@@ -90,6 +91,15 @@ if(WITH_OPENCV)
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${OpenCV_LIBS}")
 endif(WITH_OPENCV)
 
+if(WITH_LIBREALSENSE)
+     find_package(realsense2 REQUIRED)
+     if(NOT realsense2_FOUND)
+          message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
+     endif()
+     list(APPEND EXTERNAL_PACKAGE_INCLUDES "${realsense2_INCLUDE_DIR}")
+     list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${realsense2_LIBRARY}")
+endif(WITH_LIBREALSENSE)
+
 # For PurePursuit Controller
 find_package(PythonLibs 2.7)
 
@@ -107,6 +117,7 @@ set( RoboCommander_EXTERNAL_LIBRARIES
      ${Boost_LIBRARIES}
      ${pigpiod_if2_LIBRARY}
      ${CMAKE_THREAD_LIBS_INIT}
+     ${EXTERNAL_PACKAGE_LIBRARIES}
 )
 
 set( RoboCommander_INCLUDE_DIRS
