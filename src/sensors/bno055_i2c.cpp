@@ -27,9 +27,20 @@ BNO055_I2C::~BNO055_I2C(){}
 */
 
 void BNO055_I2C::reset(bool verbose){
+     bool isReady = this->isMuxChannelSelected();
      if(verbose) printf("[INFO] BNO055_I2C::reset ---- Resetting\r\n");
      this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x20);
      usleep(0.65 * 1000000);
+
+     // Set to normal power mode.
+     if(verbose) printf("[INFO] BNO055_I2C::reset ---- Normal PWR Mode\r\n");
+     this->write_byte(BNO055_PWR_MODE_ADDR, POWER_MODE_NORMAL);
+     // Default to internal oscillator.
+     if(verbose) printf("[INFO] BNO055_I2C::reset ---- Defaulting to Internal Oscillator\r\n");
+     this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x0);
+     // Enter normal operation mode.
+     if(verbose) printf("[INFO] BNO055_I2C::reset ---- Normal Operation Mode\r\n");
+     this->_operation_mode();
 }
 
 int BNO055_I2C::begin(uint8_t mode, bool debug){
@@ -49,19 +60,20 @@ int BNO055_I2C::begin(uint8_t mode, bool debug){
      if(bnoId != BNO055_ID) return -1;
 
      // Reset Device
-     if(debug) printf("[INFO] BNO055_I2C::begin ---- Resetting\r\n");
-     this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x20);
-     usleep(0.65 * 1000000);
-
-     // Set to normal power mode.
-     if(debug) printf("[INFO] BNO055_I2C::begin ---- Normal PWR Mode\r\n");
-     this->write_byte(BNO055_PWR_MODE_ADDR, POWER_MODE_NORMAL);
-     // Default to internal oscillator.
-     if(debug) printf("[INFO] BNO055_I2C::begin ---- Defaulting to Internal Oscillator\r\n");
-     this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x0);
-     // Enter normal operation mode.
-     if(debug) printf("[INFO] BNO055_I2C::begin ---- Normal Operation Mode\r\n");
-     this->_operation_mode();
+     this->reset(debug);
+     // if(debug) printf("[INFO] BNO055_I2C::begin ---- Resetting\r\n");
+     // this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x20);
+     // usleep(0.65 * 1000000);
+     //
+     // // Set to normal power mode.
+     // if(debug) printf("[INFO] BNO055_I2C::begin ---- Normal PWR Mode\r\n");
+     // this->write_byte(BNO055_PWR_MODE_ADDR, POWER_MODE_NORMAL);
+     // // Default to internal oscillator.
+     // if(debug) printf("[INFO] BNO055_I2C::begin ---- Defaulting to Internal Oscillator\r\n");
+     // this->write_byte(BNO055_SYS_TRIGGER_ADDR, 0x0);
+     // // Enter normal operation mode.
+     // if(debug) printf("[INFO] BNO055_I2C::begin ---- Normal Operation Mode\r\n");
+     // this->_operation_mode();
      return 1;
 }
 
