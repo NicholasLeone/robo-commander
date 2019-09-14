@@ -140,16 +140,20 @@ cv::Mat CameraD415::get_depth_image(){
 vector<cv::Mat> CameraD415::update_frames(){
      // rs2::frameset frames;
      vector<cv::Mat> imgs;
-     // if(this->_pipe.poll_for_frames(&frames)){
+     rs2::disparity_transform depth_to_disparity(true);
+
      if(1){
-          printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
+          // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
           rs2::frameset frames = this->_pipe.wait_for_frames();
           this->_df = frames.first(RS2_STREAM_DEPTH);
           this->_rgbf = frames.first(RS2_STREAM_COLOR);
-          cv::Mat depth(cv::Size(_width, _height), CV_16UC1, (void*)this->_df.get_data(), cv::Mat::AUTO_STEP);
+          // rs2::frame disp = this->_df.apply_filter(depth_to_disparity);
           cv::Mat rgb(cv::Size(_width, _height), CV_8UC3, (void*)this->_rgbf.get_data(), cv::Mat::AUTO_STEP);
-          imgs.push_back(depth);
+          cv::Mat depth(cv::Size(_width, _height), CV_16UC1, (void*)this->_df.get_data(), cv::Mat::AUTO_STEP);
+          // cv::Mat disparity(cv::Size(_width, _height), CV_8UC1, (void*)disp.get_data(), cv::Mat::AUTO_STEP);
           imgs.push_back(rgb);
+          imgs.push_back(depth);
+          // imgs.push_back(disparity);
      }
      return imgs;
 }
