@@ -30,6 +30,14 @@ private:
 
      int _width = 640;
      int _height = 480;
+     int _fps = 30;
+
+     float _fx;
+     float _fy;
+     float _ppx;
+     float _ppy;
+     float _baseline;
+     float _depth_scale;
 
      uint64_t _counter = 0;
      uint64_t _img_counter = 0;
@@ -37,14 +45,14 @@ public:
      cv::Mat intrinsic_calib;
      cv::Mat distortion_calib;
      rs2::colorizer color_map;
-     float focal;
 
 	CameraD415();
+	CameraD415(int height, int width, int fps);
      ~CameraD415();
 
-     bool start();
+     bool start(int height, int width, int fps);
      bool stop();
-     bool reset(bool with_startup = true);
+     bool reset(int height, int width, int fps, bool with_startup = true);
 
      void get_intrinsics(bool verbose = false);
      void get_extrinsics(bool verbose = false);
@@ -53,7 +61,8 @@ public:
 
      cv::Mat get_rgb_image();
      cv::Mat get_depth_image();
-     vector<cv::Mat> update_frames();
+     cv::Mat convert_to_disparity(const cv::Mat depth, double& conversion_gain);
+     vector<cv::Mat> read();
 
      void update();
      vector<rs2::device> get_available_devices(bool verbose = false);

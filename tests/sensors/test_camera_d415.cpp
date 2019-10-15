@@ -46,64 +46,76 @@ void get_uv_map(const cv::Mat img, cv::Mat* _umap, cv::Mat* _vmap){
 }
 
 int main(int argc, char *argv[]){
-	CameraD415* cam = new CameraD415();
+	CameraD415* cam = new CameraD415(480,640,30);
 	cam->get_depth_scale(true);
 	cam->get_intrinsics(true);
 	cam->get_baseline(true);
 	// namedWindow( "Trajectory", WINDOW_AUTOSIZE );// Create a window for display.
 
 	printf("Press Ctrl+C to Stop...\r\n");
-	// while(1){}
-	vector<cv::Mat> imgs = cam->update_frames();
 
-	cv::namedWindow("Trajectory", cv::WINDOW_AUTOSIZE );
+	vector<cv::Mat> imgs = cam->read();
+
+	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
 	cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE );
 
 	cv::Mat display, depth, rgb, disparity, disparity8, depth8, disp2;
 	cv::Mat umap, vmap;
 	int count = 0;
+	double cvtGain;
+	double minVal, maxVal;
 	while(1){
-		imgs = cam->update_frames();
+		imgs = cam->read();
 		rgb = imgs.at(0);
 		depth = imgs.at(1);
+		cv::Mat disparity = cam->convert_to_disparity(depth,cvtGain);
 		// disparity = imgs.at(2);
 		depth.convertTo(depth8,CV_8U,0.00390625);
-		depth.convertTo(disparity,CV_8U,0.00390625);
+
+		// disparity.convertTo(disparity8,CV_8U,cvtGain);
+		// disparity.convertTo(disparity8,CV_8U);
+		// depth.convertTo(disparity,CV_8U,0.00390625);
 		// disparity.convertTo(disparity8,CV_8U,0.00390625);
-		for (int r = 0; r < disparity.rows; r++){
-			// Loop over all columns
-			for ( int c = 0; c < disparity.cols; c++){
-				// Obtain pixel at (r, c)
-				float val = disparity.at<uint8_t>(r, c) * 0.001;
-				// Pixel pixel = disparity.at<Pixel>(r, c);
-				// Apply complicatedTreshold
-				// complicatedThreshold(pixel);
-				// Put result back
-				uint8_t val8 = (uint8_t) (0.014579 * 386 / (float) val);
-				// printf(" %d", val8);
-				disparity.at<uint8_t>(r, c) = val8;
-			}
-			// printf("\r\n");
-		}
+		// for (int r = 0; r < disparity.rows; r++){
+		// 	// Loop over all columns
+		// 	for ( int c = 0; c < disparity.cols; c++){
+		// 		// Obtain pixel at (r, c)
+		// 		float val = disparity.at<uint8_t>(r, c) * 0.001;
+		// 		// Pixel pixel = disparity.at<Pixel>(r, c);
+		// 		// Apply complicatedTreshold
+		// 		// complicatedThreshold(pixel);
+		// 		// Put result back
+		// 		uint8_t val8 = (uint8_t) (0.014579 * 386 / (float) val);
+		// 		// printf(" %d", val8);
+		// 		disparity.at<uint8_t>(r, c) = val8;
+		// 	}
+		// 	// printf("\r\n");
+		// }
 		// printf(" ------- \r\n");
+		printf(" %.3f -- %.3f \r\n",minVal,maxVal);
 
 
-		if(count == 0){
-			cv::equalizeHist(disparity, disparity8);
-			get_uv_map(disparity8,&umap,&vmap);
-		}
+		get_uv_map(disparity,&umap,&vmap);
+		// if(count == 0){
+		// 	// cv::equalizeHist(disparity, disparity8);
+		// 	get_uv_map(disparity8,&umap,&vmap);
+		// }
+		printf(" ------- \r\n");
 		// cv::Mat disparity = (0.014579 * 386) / depth8;
 		// get_uv_map(disparity,&umap,&vmap);
 		// get_uv_map(disparity,nullptr, nullptr);
 
 		cv::equalizeHist(depth8, display);
 		cv::applyColorMap(display, display, cv::COLORMAP_JET);
-		cv::applyColorMap(depth8, disp2, cv::COLORMAP_JET);
+		// cv::applyColorMap(depth8, disp2, cv::COLORMAP_JET);
+		// cv::applyColorMap(disparity8, disp2, cv::COLORMAP_JET);
 
-		cv::imshow("Trajectory", rgb);
-		cv::imshow("Depth", disparity);
+		cv::imshow("RGB", rgb);
+		// cv::imshow("Disparity", disparity);
+		cv::imshow("Disparity8", disparity);
+
 		cv::imshow("Depth8", depth8);
-		cv::imshow("disp2", disp2);
+		// cv::imshow("disp2", disp2);
 		if(cv::waitKey(10) == 27){
 			std::cout << "Esc key is pressed by user. Stoppig the video" << std::endl;
 			break;
