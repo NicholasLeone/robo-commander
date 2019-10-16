@@ -54,7 +54,7 @@ public:
      bool stop();
      bool reset(int height, int width, int fps, bool with_startup = true);
 
-     void get_intrinsics(bool verbose = false);
+     cv::Mat get_intrinsics(bool verbose = false);
      void get_extrinsics(bool verbose = false);
      float get_baseline(bool verbose = false);
      float get_depth_scale(bool verbose = false);
@@ -63,6 +63,7 @@ public:
      cv::Mat get_depth_image();
      cv::Mat convert_to_disparity(const cv::Mat depth, double& conversion_gain);
      vector<cv::Mat> read();
+     int read(cv::Mat& rgb, cv::Mat& depth);
 
      void update();
      vector<rs2::device> get_available_devices(bool verbose = false);

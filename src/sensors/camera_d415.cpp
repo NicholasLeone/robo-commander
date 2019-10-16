@@ -95,10 +95,8 @@ bool CameraD415::reset(int height, int width, int fps, bool with_startup){
      else return true;
 }
 
-void CameraD415::get_intrinsics(bool verbose){
-     float pp[2] = {0.0, 0.0};
-     float ff[2] = {0.0, 0.0};
-     float ss[2] = {0.0, 0.0};
+cv::Mat CameraD415::get_intrinsics(bool verbose){
+     cv::Mat K = cv::Mat::zeros(3, 3, CV_64F);
 
      if(this->_profile){
           rs2::video_stream_profile depth_stream = this->_profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
@@ -108,17 +106,21 @@ void CameraD415::get_intrinsics(bool verbose){
           this->_fy = intr.fy;
           this->_ppx = intr.ppx;
           this->_ppy = intr.ppy;
+          K.at<double>(0,0) = intr.fx;
+          K.at<double>(0,2) = intr.ppx;
+          K.at<double>(1,1) = intr.fy;
+          K.at<double>(1,2) = intr.ppy;
+          K.at<double>(2,2) = 1.0;
 
-          ff[0] = intr.fx; ff[1] = intr.fy;
-          pp[0] = intr.ppx; pp[1] = intr.ppy;
-          ss[0] = depth_stream.width(); ss[1] = depth_stream.height();
           if(verbose){
                printf("[INFO] CameraD415::get_intrinsics() --- Intrinsic Properties:\r\n");
-               printf("\tSize ---------- [w, h]: %.0f, %.0f\r\n",ss[0],ss[1]);
-               printf("\tFocal Length -- [X, Y]: %.2f, %.2f\r\n",ff[0],ff[1]);
-               printf("\tPrinciple Point [X, Y]: %.2f, %.2f\r\n",pp[0],pp[1]);
+               printf("\tSize ---------- [w, h]: %d, %d\r\n",depth_stream.width(),depth_stream.height());
+               printf("\tFocal Length -- [X, Y]: %.2f, %.2f\r\n",intr.fx,intr.fy);
+               printf("\tPrinciple Point [X, Y]: %.2f, %.2f\r\n",intr.ppx,intr.ppy);
+               std::cout << "K = "<< std::endl << " "  << K << std::endl << std::endl;
           }
      } else{}
+     return K;
 }
 
 void CameraD415::get_extrinsics(bool verbose){
@@ -191,18 +193,27 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double& conversion
 
 vector<cv::Mat> CameraD415::read(){
      vector<cv::Mat> imgs;
-
-     if(1){
-          // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
-          rs2::frameset frames = this->_pipe.wait_for_frames();
-          this->_df = frames.first(RS2_STREAM_DEPTH);
-          this->_rgbf = frames.first(RS2_STREAM_COLOR);
-          cv::Mat rgb(cv::Size(_width, _height), CV_8UC3, (void*)this->_rgbf.get_data(), cv::Mat::AUTO_STEP);
-          cv::Mat depth(cv::Size(_width, _height), CV_16UC1, (void*)this->_df.get_data(), cv::Mat::AUTO_STEP);
-          imgs.push_back(rgb);
-          imgs.push_back(depth);
-     }
+     // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
+     rs2::frameset frames = this->_pipe.wait_for_frames();
+     this->_df = frames.first(RS2_STREAM_DEPTH);
+     this->_rgbf = frames.first(RS2_STREAM_COLOR);
+     cv::Mat rgb(cv::Size(_width, _height), CV_8UC3, (void*)this->_rgbf.get_data(), cv::Mat::AUTO_STEP);
+     cv::Mat depth(cv::Size(_width, _height), CV_16UC1, (void*)this->_df.get_data(), cv::Mat::AUTO_STEP);
+     imgs.push_back(rgb);
+     imgs.push_back(depth);
      return imgs;
+}
+
+int CameraD415::read(cv::Mat& rgb, cv::Mat& depth){
+     // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
+     rs2::frameset frames = this->_pipe.wait_for_frames();
+     this->_df = frames.first(RS2_STREAM_DEPTH);
+     this->_rgbf = frames.first(RS2_STREAM_COLOR);
+     cv::Mat _rgb(cv::Size(_width, _height), CV_8UC3, (void*)this->_rgbf.get_data(), cv::Mat::AUTO_STEP);
+     cv::Mat _depth(cv::Size(_width, _height), CV_16UC1, (void*)this->_df.get_data(), cv::Mat::AUTO_STEP);
+     rgb = _rgb;
+     depth = _depth;
+     return 1;
 }
 
 void CameraD415::update(){}
