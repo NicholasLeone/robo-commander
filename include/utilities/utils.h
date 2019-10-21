@@ -5,6 +5,7 @@
 #include <map>
 #include <armadillo>
 #include "base/definitions.h"
+#include "yaml-cpp/yaml.h"
 
 using namespace std;
 using namespace arma;

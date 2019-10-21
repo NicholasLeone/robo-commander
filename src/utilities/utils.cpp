@@ -10,38 +10,28 @@
 
 // #define GTSAM_LIBRARY_INCLUDED
 
-
-
 using namespace std;
 using namespace arma;
 
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral){
-
      float dPulse = (max - min)/2;
      float pulse = (float) dPulse * spd_ratio + (float) neutral;
-
      // cout << "Converted Pulse: " << pulse << endl;
      return (int) pulse;
 }
 
 void LoadInitialVariables(const string &fileName, map<string, float> &variables){
     variables.clear();
-
     char name[256];
     float value;
-    int numLines;
+    int numLines = 0;
     string line,tmpline;
+    ifstream myfile(fileName.c_str());
 
-	ifstream myfile(fileName.c_str());
-
-	numLines = 0;
-
-	while(getline(myfile, tmpline)){
-		if (sscanf(tmpline.c_str(), "%s = %f", name, &value) == 2){
-            variables[name] = value;
-		}
-		++numLines;
-	}
+    while(getline(myfile, tmpline)){
+         if (sscanf(tmpline.c_str(), "%s = %f", name, &value) == 2){ variables[name] = value; }
+         ++numLines;
+    }
 }
 
 void LoadStringVariables(const string &fileName, map<string, string> &variables){
@@ -49,36 +39,24 @@ void LoadStringVariables(const string &fileName, map<string, string> &variables)
 
     char name[256];
     char value[1028];
-    int numLines;
+    int numLines = 0;
     string line,tmpline;
 
-	ifstream myfile(fileName.c_str());
-
-	numLines = 0;
-
-	while(getline(myfile, tmpline)){
-		if (sscanf(tmpline.c_str(), "%s = %s", name, &value) == 2){
-            variables[name] = value;
-		}
-		++numLines;
-	}
+    ifstream myfile(fileName.c_str());
+    while(getline(myfile, tmpline)){
+         if (sscanf(tmpline.c_str(), "%s = %s", name, &value) == 2){ variables[name] = value; }
+         ++numLines;
+    }
 }
 
-
-
-
 int extract_bit(int inputByte, int bitLocation){
-
      int tmpBit = (inputByte >> bitLocation) & ~(~0 << 1);
      return tmpBit;
-
 }
 
 int extract_bits(int inputByte, int msb, int lsb){
-
      int numBits = msb - lsb + 1;
      int tmpBits = (inputByte >> lsb) & ~(~0 << numBits);
-
      return tmpBits;
 }
 
@@ -111,9 +89,7 @@ int countLines(const string &file){
     int numLines = 0;
     string tmpline;
     ifstream  _file(file);
-	while(getline(_file, tmpline)){
-		++numLines;
-	}
+	while(getline(_file, tmpline)){ ++numLines;}
 
 	return numLines;
 }
@@ -143,7 +119,6 @@ vector<float> parseFloat(string s, string delimiter){
 }
 
 vector<int> get_csv_size(const string &file){
-
      ifstream  csv(file);
      string line, field;
      vector<int> dimen;
@@ -159,7 +134,6 @@ vector<int> get_csv_size(const string &file){
 
 
 vector<vector<float>> csv_to_array(const string &file){
-
      ifstream  csv(file);
      string line, field;
      vector<int> _sz = get_csv_size(file);
@@ -173,9 +147,7 @@ vector<vector<float>> csv_to_array(const string &file){
           row.clear();
           stringstream ss(line);
 
-          while (getline(ss,field,',')){
-               row.push_back(strtof(field.c_str(), NULL));
-          }
+          while (getline(ss,field,',')){ row.push_back(strtof(field.c_str(), NULL));}
           array.push_back(row);
      }
 
@@ -202,17 +174,13 @@ vector<vector<float>> csv_extract_columns(const string &file){
           tmpRow.clear();
           stringstream ss(line);
 
-          while (getline(ss,field,',')){
-               tmpRow.push_back(strtof(field.c_str(), NULL));
-          }
+          while (getline(ss,field,',')){ tmpRow.push_back(strtof(field.c_str(), NULL)); }
           array.push_back(tmpRow);
      }
 
      for(int i = 0;i<_cols;i++){
           tmpCol.clear();
-          for(int j = 0;j<_rows;j++){
-               tmpCol.push_back(array.at(j).at(i));
-          }
+          for(int j = 0;j<_rows;j++){ tmpCol.push_back(array.at(j).at(i)); }
           cols.push_back(tmpCol);
      }
 
@@ -236,7 +204,6 @@ fmat Ci2b(float angles[3]){
          << cos(t)*cos(y) << cos(p)*cos(y) + sin(t)*sin(p)*sin(y) << -sin(p)*cos(y) + sin(t)*sin(p)*sin(y) << endr
          << -sin(t) << cos(t)*sin(p) << cos(p)*cos(t) << endr;
 
-
      return out;
 }
 
@@ -245,9 +212,7 @@ fmat Ci2b(float angles[3]){
 template<typename T> void print_vector(string header, vector<T> vec){
      int n = vec.size();
      cout << header;
-     for(int i = 0;i<n;i++){
-          cout << vec.at(i) << ", ";
-     }
+     for(int i = 0;i<n;i++){ cout << vec.at(i) << ", ";}
      cout << endl;
 }
 
@@ -257,9 +222,7 @@ template<typename T> void print_vectors(string header, vector< vector<T> > vecs)
      cout << header;
      for(int i = 0;i<n;i++){
           cout << "     ";
-          for(int j = 0;j<m;j++){
-               cout << vecs.at(i).at(j) << ", ";
-          }
+          for(int j = 0;j<m;j++){ cout << vecs.at(i).at(j) << ", "; }
           cout << endl;
      }
      cout << endl;
@@ -271,11 +234,9 @@ void attach_CtrlC(void_int_fun func2call){
      sigemptyset(&sigIntHandler.sa_mask);
      sigIntHandler.sa_flags = 0;
      sigaction(SIGINT, &sigIntHandler, NULL);
-
 }
 
 void attach_CtrlZ(void_int_fun func2call){
-
      struct sigaction sigUpHandler;
      sigUpHandler.sa_handler = func2call;
      sigemptyset(&sigUpHandler.sa_mask);

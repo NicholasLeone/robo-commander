@@ -83,15 +83,18 @@ void get_uv_map(const cv::Mat img, cv::Mat* _umap, cv::Mat* _vmap){
 }
 
 int main(int argc, char *argv[]){
-	CameraD415* cam = new CameraD415(480,640,30);
-	cam->get_depth_scale(true);
-	cam->get_intrinsics(true);
-	cam->get_baseline(true);
+	// CameraD415* cam = new CameraD415(480,640,30);
+	int fps = 60;
+	int rgb_resolution[2] = {640, 480};
+	int depth_resolution[2] = {640, 480};
+	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution);
 	// namedWindow( "Trajectory", WINDOW_AUTOSIZE );// Create a window for display.
 
 	printf("Press Ctrl+C to Stop...\r\n");
 
-	vector<cv::Mat> imgs = cam->read();
+	cv::Mat rgbRaw, depthRaw;
+	int err = cam->read(&rgbRaw, &depthRaw, true);
+	// vector<cv::Mat> imgs = cam->read(true);
 
 	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
 	// cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE );
@@ -118,8 +121,8 @@ int main(int argc, char *argv[]){
 		// printf(" read vector --- %.7f ---- \r\n",dt);
 
 		_prev_time = high_resolution_clock::now();
-		cam->read(rgb, depth);
-		cv::Mat disparity = cam->convert_to_disparity(depth,cvtGain);
+		int err = cam->read(&rgb, &depth, true);
+		cv::Mat disparity = cam->convert_to_disparity(depth,&cvtGain);
 		// now = high_resolution_clock::now();
 	     // time_span = duration_cast<duration<float>>(now - _prev_time);
 	     // dt = time_span.count();

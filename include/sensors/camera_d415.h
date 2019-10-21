@@ -15,58 +15,119 @@
 
 using namespace std;
 
+inline uint32_t get_user_selection(const std::string& prompt_message){
+     std::cout << "\n" << prompt_message;
+     uint32_t input;
+     std::cin >> input;
+     std::cout << std::endl;
+     return input;
+}
+
+typedef struct RS_STREAM_CFG{
+     rs2_stream stream_type;
+     int width;
+     int height;
+     rs2_format format;
+     int fps;
+} RS_STREAM_CFG;
+// struct RS_STREAM_CFG{
+//      RS_STREAM_CFG(rs2_stream _stream_type, int _fps, int _width, int _height, rs2_format _format) : stream_type(_stream_type), fps(_fps), width(_width), height(_height), format(_format){};
+//      RS_STREAM_CFG() : stream_type(RS2_STREAM_COLOR), fps(30), width(640), height(480), format(RS2_FORMAT_BGR8){};
+//      rs2_stream stream_type;
+//      int fps;
+//      int width;
+//      int height;
+//      rs2_format format;
+// };
+
+
 class CameraD415{
 private:
+     // Low-level
+     std::mutex _lock;
+     // Realsense Objects
      rs2::device _dev;
      rs2::context _ctx;
      rs2::pipeline _pipe;
      rs2::config _cfg;
      rs2::pipeline_profile _profile;
+     rs2::align* _align;  // RS2_STREAM_COLOR
+     rs2::frameset _frames;
+     rs2::frameset _aligned_frames;
+     rs2::frame _depth_frame;
+     rs2::frame _color_frame;
 
-     rs2::frame _df;
-     rs2::frame _rgbf;
+     // Depth Stream Settings
+     int _dwidth = 640;            // width
+     int _dheight = 480;           // height
+     int _dfps = 60;               // framerate
+     float _fxd, _fyd;             // focal lengths
+     float _ppxd, _ppyd;           // principle points
+     cv::Mat _Kdepth, _Pdepth;     // camera info matrices
 
-     std::mutex _lock;
+     // RGB Stream Settings
+     int _cwidth = 640;            // width
+     int _cheight = 480;           // height
+     int _cfps = 60;               // framerate
+     float _fxc, _fyc;             // focal lengths
+     float _ppxc, _ppyc;           // principle points
+     cv::Mat _Krgb, _Prgb;        // camera info matrices
 
-     int _width = 640;
-     int _height = 480;
-     int _fps = 30;
-
-     float _fx;
-     float _fy;
-     float _ppx;
-     float _ppy;
+     // Misc Cam Params
+     cv::Mat _Dmat;
+     float _dscale;
      float _baseline;
-     float _depth_scale;
+     std::string _device_name;
+     std::string _distortion_model = "plumb_bob";
 
+     // Transformation frame ids
+     std::string _camera_base_frame = "camera_link";
+     std::string _depth_base_frame = "camera_depth_frame";
+     std::string _color_base_frame = "camera_color_frame";
+     std::string _depth_optical_frame_id = "camera_depth_optical_frame";
+     std::string _color_optical_frame_id = "camera_color_optical_frame";
+     std::string _aligned_base_frame = "camera_aligned_depth_to_color_frame";
+
+     // Counters
      uint64_t _counter = 0;
      uint64_t _img_counter = 0;
 public:
-     cv::Mat intrinsic_calib;
-     cv::Mat distortion_calib;
      rs2::colorizer color_map;
 
-	CameraD415();
-	CameraD415(int height, int width, int fps);
+	CameraD415(bool show_features = false);
+	CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2], bool show_features = false);
      ~CameraD415();
 
-     bool start(int height, int width, int fps);
      bool stop();
-     bool reset(int height, int width, int fps, bool with_startup = true);
+     bool start(std::vector<RS_STREAM_CFG> stream_cfgs);
+     bool sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs);
+     bool hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs);
+     bool reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup = true);
 
-     cv::Mat get_intrinsics(bool verbose = false);
+     int get_intrinsics(rs2_stream stream_type, cv::Mat* K, cv::Mat* P, bool verbose = false);
      void get_extrinsics(bool verbose = false);
      float get_baseline(bool verbose = false);
      float get_depth_scale(bool verbose = false);
 
-     cv::Mat get_rgb_image();
-     cv::Mat get_depth_image();
-     cv::Mat convert_to_disparity(const cv::Mat depth, double& conversion_gain);
-     vector<cv::Mat> read();
-     int read(cv::Mat& rgb, cv::Mat& depth);
+     rs2::frame get_rgb_frame(bool flag_aligned = false);
+     int get_rgb_image(rs2::frame frame, cv::Mat* image);
+     int get_rgb_image(cv::Mat* image, bool flag_aligned = false);
+
+     rs2::frame get_depth_frame(bool flag_aligned = false);
+     int get_depth_image(rs2::frame frame, cv::Mat* image);
+     int get_depth_image(cv::Mat* image, bool flag_aligned = false);
+
+     vector<cv::Mat> read(bool flag_aligned = false);
+     int read(cv::Mat* rgb, cv::Mat* depth, bool flag_aligned = false);
+
+     cv::Mat convert_to_disparity(const cv::Mat depth, double* conversion_gain);
 
      void update();
-     vector<rs2::device> get_available_devices(bool verbose = false);
+     vector<rs2::device> get_available_devices(bool show_features = false, bool verbose = false);
+     void get_available_sensors(rs2::device dev);
+     void get_sensor_option(const rs2::sensor& sensor);
+     std::string get_sensor_name(const rs2::sensor& sensor);
+
 };
 
 #endif /* CAMERA_D415_H_*/
