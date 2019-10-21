@@ -300,6 +300,17 @@ int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned){
      }
 }
 
+int CameraD415::get_pointcloud(){
+     // rs2::pointcloud pc;
+     // // We want the points object to be persistent so we can display the last cloud when a frame drops
+     // rs2::points points;
+     // pc.map_to(color);
+     // auto depth = frames.get_depth_frame();
+     //
+     // // Generate the pointcloud and texture mappings
+     // points = pc.calculate(depth);
+     return 0;
+}
 
 vector<cv::Mat> CameraD415::read(bool flag_aligned){
      cv::Mat _rgb, _depth;
@@ -308,25 +319,32 @@ vector<cv::Mat> CameraD415::read(bool flag_aligned){
      this->_frames = this->_pipe.wait_for_frames();
      if(flag_aligned) this->_aligned_frames = this->_align->process(this->_frames);
 
-     int err1 = this->get_rgb_image(&_rgb, flag_aligned);
-     int err2 = this->get_depth_image(&_depth, flag_aligned);
-     if(err1+err2 < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
+     int errRgb = this->get_rgb_image(&_rgb, flag_aligned);
+     if(errRgb >= 0) this->_nRgbFrames++;
+     int errDepth = this->get_depth_image(&_depth, flag_aligned);
+     if(errDepth >= 0) this->_nDepthFrames++;
+
+     int err = errRgb + errDepth;
+     if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
      imgs.push_back(_rgb);
      imgs.push_back(_depth);
      return imgs;
 }
 
 int CameraD415::read(cv::Mat* rgb, cv::Mat* depth, bool flag_aligned){
-     int err = 0;
      cv::Mat _rgb, _depth;
      // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
      this->_frames = this->_pipe.wait_for_frames();
      if(flag_aligned) this->_aligned_frames = this->_align->process(this->_frames);
 
-     err += this->get_rgb_image(&_rgb, flag_aligned);
-     err += this->get_depth_image(&_depth, flag_aligned);
+     int errRgb = this->get_rgb_image(&_rgb, flag_aligned);
+     if(errRgb >= 0) this->_nRgbFrames++;
+     int errDepth = this->get_depth_image(&_depth, flag_aligned);
+     if(errDepth >= 0) this->_nDepthFrames++;
+
      *rgb = _rgb;
      *depth = _depth;
+     int err = errRgb + errDepth;
      if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
      return err;
 }

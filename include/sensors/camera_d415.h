@@ -30,16 +30,6 @@ typedef struct RS_STREAM_CFG{
      rs2_format format;
      int fps;
 } RS_STREAM_CFG;
-// struct RS_STREAM_CFG{
-//      RS_STREAM_CFG(rs2_stream _stream_type, int _fps, int _width, int _height, rs2_format _format) : stream_type(_stream_type), fps(_fps), width(_width), height(_height), format(_format){};
-//      RS_STREAM_CFG() : stream_type(RS2_STREAM_COLOR), fps(30), width(640), height(480), format(RS2_FORMAT_BGR8){};
-//      rs2_stream stream_type;
-//      int fps;
-//      int width;
-//      int height;
-//      rs2_format format;
-// };
-
 
 class CameraD415{
 private:
@@ -91,24 +81,28 @@ private:
      // Counters
      uint64_t _counter = 0;
      uint64_t _img_counter = 0;
+     uint64_t _nRgbFrames = 0;
+     uint64_t _nDepthFrames = 0;
 public:
-     rs2::colorizer color_map;
-
+     /** Constructors */
 	CameraD415(bool show_features = false);
 	CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2], bool show_features = false);
      ~CameraD415();
 
+     /** Startup - Shutdown - Initialization Functions */
      bool stop();
      bool start(std::vector<RS_STREAM_CFG> stream_cfgs);
      bool sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs);
      bool hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs);
      bool reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup = true);
 
+     /** Camera Info Getters */
      int get_intrinsics(rs2_stream stream_type, cv::Mat* K, cv::Mat* P, bool verbose = false);
      void get_extrinsics(bool verbose = false);
      float get_baseline(bool verbose = false);
      float get_depth_scale(bool verbose = false);
 
+     /** Base Image Functions */
      rs2::frame get_rgb_frame(bool flag_aligned = false);
      int get_rgb_image(rs2::frame frame, cv::Mat* image);
      int get_rgb_image(cv::Mat* image, bool flag_aligned = false);
@@ -120,14 +114,18 @@ public:
      vector<cv::Mat> read(bool flag_aligned = false);
      int read(cv::Mat* rgb, cv::Mat* depth, bool flag_aligned = false);
 
+     /** Additional Camera Functionality */
      cv::Mat convert_to_disparity(const cv::Mat depth, double* conversion_gain);
+     /**TODO*/int get_pointcloud();
 
+     /** Misc Functions */
      void update();
      vector<rs2::device> get_available_devices(bool show_features = false, bool verbose = false);
      void get_available_sensors(rs2::device dev);
      void get_sensor_option(const rs2::sensor& sensor);
      std::string get_sensor_name(const rs2::sensor& sensor);
 
+     // rs2::colorizer color_map;
 };
 
 #endif /* CAMERA_D415_H_*/
