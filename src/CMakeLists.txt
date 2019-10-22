@@ -12,6 +12,10 @@ set(CMAKE_CXX_STANDARD 11)
 add_library(utils SHARED utilities/utils.cpp)
 set(RoboCommander_LIBRARIES utils)
 
+add_library(img_utils SHARED algorithms/vboats/image_utils.cpp)
+target_link_libraries(img_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES img_utils)
+
 # =========================================
 #      Build Communication Libraries
 # =========================================

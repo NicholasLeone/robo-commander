@@ -2,15 +2,16 @@
 #define VBOATS_UV_FILTERING_H_
 
 #include <string>
-#include <chrono>
 #include <vector>
-#include <thread>
-#include <mutex>
 
 #include <opencv2/opencv.hpp>
 
 using namespace std;
 
+
+
+
+/** TODO */
 // def filter_first_umap_strip(self,umap_strip,max_value,thresholds,ratio_thresh=0.35)
 // def test_filter_first_umap_strip(self,umap_strip,max_value,nSubStrips,ratio_thresh=0.25,base_thresh=35)
 // def test_filter_first_umap_strip2(self,umap_strip,max_value,nSubStrips,cvtColor=False,verbose=False, timing=False)
