@@ -87,19 +87,21 @@ int main(int argc, char *argv[]){
 	int fps = 60;
 	int rgb_resolution[2] = {640, 480};
 	int depth_resolution[2] = {640, 480};
+	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
 	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution);
 	// namedWindow( "Trajectory", WINDOW_AUTOSIZE );// Create a window for display.
 
 	printf("Press Ctrl+C to Stop...\r\n");
 
-	cv::Mat rgbRaw, depthRaw;
-	int err = cam->read(&rgbRaw, &depthRaw, true);
+	cv::Mat rgbRaw, depthRaw, dummy;
+	// int err = cam->read(&rgbRaw, &depthRaw, cv::Mat(), true);
+	int err = cam->read(&rgbRaw, &depthRaw, &dummy, true);
 	// vector<cv::Mat> imgs = cam->read(true);
 
 	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
 	// cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE );
 
-	cv::Mat display, depth, rgb, disparity, disparity8, depth8, disp2;
+	cv::Mat display, depth, rgb, disparity, disparity8, processed, disp2;
 	cv::Mat depth2, rgb2;
 	cv::Mat umap, vmap;
 	int count = 0;
@@ -109,6 +111,7 @@ int main(int argc, char *argv[]){
 	high_resolution_clock::time_point _prev_time;
 	high_resolution_clock::time_point now;
 	duration<float> time_span;
+	bool do_processing = true;
 	while(1){
 		// _prev_time = high_resolution_clock::now();
 		// imgs = cam->read();
@@ -121,7 +124,7 @@ int main(int argc, char *argv[]){
 		// printf(" read vector --- %.7f ---- \r\n",dt);
 
 		_prev_time = high_resolution_clock::now();
-		int err = cam->read(&rgb, &depth, true);
+		int err = cam->read(&rgb, &depth, &processed, true, do_processing);
 		cv::Mat disparity = cam->convert_to_disparity(depth,&cvtGain);
 		// now = high_resolution_clock::now();
 	     // time_span = duration_cast<duration<float>>(now - _prev_time);
@@ -135,7 +138,7 @@ int main(int argc, char *argv[]){
 		now = high_resolution_clock::now();
 	     time_span = duration_cast<duration<float>>(now - _prev_time);
 	     dt = time_span.count();
-		printf(" --- %.7f ---- \r\n",dt);
+		printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
 		// cv::Mat disparity = (0.014579 * 386) / depth8;
 		// get_uv_map(disparity,&umap,&vmap);
 		// get_uv_map(disparity,nullptr, nullptr);
@@ -148,6 +151,7 @@ int main(int argc, char *argv[]){
 
 		cv::imshow("RGB", rgb);
 		// cv::imshow("Disparity", disparity);
+		if(do_processing) cv::imshow("Processed", processed);
 		cv::imshow("Disparity8", disparity);
 
 		// cv::imshow("Depth8", depth8);

@@ -5,9 +5,11 @@
 
 using namespace std;
 
-CameraD415::CameraD415(bool show_features){
+CameraD415::CameraD415(bool use_filters, bool show_features) : cam_thread(){
      int err;
      bool verbose = true;
+     this->_stopped = false;
+
      vector<rs2::device> devList = this->get_available_devices(show_features, true);
      this->_dev = devList[0];
      this->_device_name = this->_dev.get_info(RS2_CAMERA_INFO_NAME);
@@ -16,11 +18,9 @@ CameraD415::CameraD415(bool show_features){
      RS_STREAM_CFG depth_cfg = {RS2_STREAM_DEPTH, _dwidth, _dheight, RS2_FORMAT_Z16, _dfps};
      std::vector<RS_STREAM_CFG> cfgs = {rgb_cfg, depth_cfg};
 
-     if(this->start(cfgs)) printf("SUCCESS: CameraD415 initialized!\r\n");
+     if(this->start_streams(cfgs)) printf("SUCCESS: CameraD415 initialized!\r\n");
      else exit(0);
 
-     // rs2_stream align_to = RS2_STREAM_COLOR;
-     // rs2::align align(align_to);
      this->_align = new rs2::align(RS2_STREAM_COLOR);
      this->_Dmat = cv::Mat::zeros(5, 1, CV_64F);
 
@@ -38,11 +38,17 @@ CameraD415::CameraD415(bool show_features){
 
      float dscale = this->get_depth_scale(verbose);
      float baseline = this->get_baseline(verbose);
+
+     this->_use_filters = use_filters;
+     this->_filters = this->get_default_filters();
+     this->start_thread();
 }
 
-CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2], bool show_features){
+CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2], bool use_filters, bool show_features) : cam_thread(){
      int err;
      bool verbose = true;
+     this->_stopped = false;
+
      vector<rs2::device> devList = this->get_available_devices(show_features, true);
      this->_dev = devList[0];
      this->_device_name = this->_dev.get_info(RS2_CAMERA_INFO_NAME);
@@ -58,12 +64,9 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
      RS_STREAM_CFG depth_cfg = {RS2_STREAM_DEPTH, _dwidth, _dheight, RS2_FORMAT_Z16, _dfps};
      std::vector<RS_STREAM_CFG> cfgs = {rgb_cfg, depth_cfg};
 
-     if(this->start(cfgs)) printf("SUCCESS: CameraD415 initialized!\r\n");
+     if(this->start_streams(cfgs)) printf("SUCCESS: CameraD415 initialized!\r\n");
      else exit(0);
 
-     // rs2_stream align_to = RS2_STREAM_COLOR;
-     // rs2::align align(align_to);
-     // this->_align = align;
      this->_align = new rs2::align(RS2_STREAM_COLOR);
      this->_Dmat = cv::Mat::zeros(5, 1, CV_64F);
 
@@ -81,6 +84,10 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
 
      float dscale = this->get_depth_scale(verbose);
      float baseline = this->get_baseline(verbose);
+
+     this->_use_filters = use_filters;
+     this->_filters = this->get_default_filters();
+     this->start_thread();
 }
 
 CameraD415::~CameraD415(){
@@ -90,10 +97,16 @@ CameraD415::~CameraD415(){
 
 bool CameraD415::stop(){
      this->_pipe.stop();
+     this->_stopped = true;
+     if(this->cam_thread.joinable()) this->cam_thread.join();
      return true;
 }
 
-bool CameraD415::start(std::vector<RS_STREAM_CFG> stream_cfgs){
+void CameraD415::start_thread(){
+     cam_thread = std::thread(&CameraD415::processingThread,this);
+}
+
+bool CameraD415::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs){
      bool err = this->reset(stream_cfgs, false);
      usleep(5.0 * 1000000);
      // Try initializing camera hardware
@@ -118,7 +131,7 @@ bool CameraD415::sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
           }
           this->_cfg = cfg;
      } catch(const rs2::error & e){
-          std::cerr << "[ERROR] CameraD415::start() --- Could not initialize rs2::config. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+          std::cerr << "[ERROR] CameraD415::sensors_startup() --- Could not initialize rs2::config. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
           return false;
      }
      return true;
@@ -132,7 +145,7 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
           rs2::pipeline pipe;
           this->_pipe = pipe;
      } catch(const rs2::error & e){
-          std::cerr << "[ERROR] CameraD415::start() --- Could not initialize rs2::pipeline. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+          std::cerr << "[ERROR] CameraD415::hardware_startup() --- Could not initialize rs2::pipeline. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
           return false;
      }
 
@@ -140,7 +153,7 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
           rs2::pipeline_profile profile = this->_pipe.start(this->_cfg);
           this->_profile = profile;
      } catch(const rs2::error & e){
-          std::cerr << "[ERROR] CameraD415::start() --- Could not initialize rs2::pipeline_profile. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+          std::cerr << "[ERROR] CameraD415::hardware_startup() --- Could not initialize rs2::pipeline_profile. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
           return false;
      }
      return true;
@@ -152,7 +165,7 @@ bool CameraD415::reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup
           printf("[ERROR] CameraD415::reset() --- No device to reset.\r\n");
           return false;
      }
-     if(with_startup) return this->start(stream_cfgs);
+     if(with_startup) return this->start_streams(stream_cfgs);
      else return true;
 }
 
@@ -264,18 +277,43 @@ int CameraD415::get_rgb_image(cv::Mat* image, bool flag_aligned){
      }
 }
 
-rs2::frame CameraD415::get_depth_frame(bool flag_aligned){
+rs2::frame CameraD415::get_depth_frame(bool flag_aligned, bool flag_processed){
      rs2::frame output;
      if((flag_aligned) && (this->_aligned_frames)) output = this->_aligned_frames.first(RS2_STREAM_DEPTH);
      else if(this->_frames) output = this->_frames.first(RS2_STREAM_DEPTH);
      return output;
 }
 
-int CameraD415::get_depth_image(rs2::frame frame, cv::Mat* image){
+int CameraD415::process_depth_frame(rs2::frame frame, rs2::frame* processed, bool visualize){
+     int i = 0;
+     rs2::frame filtered = frame;
+     if(this->_filters.size() == 0) return 0;
+     for(std::vector<filter_options>&& filter : this->_filters){
+          if(visualize){
+               cv::Mat tmp(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)filtered.get_data(), cv::Mat::AUTO_STEP);
+               char tmpStr[5] = {(char) i};
+               cv::imshow(tmpStr, tmp);
+               cv::waitKey(0);
+               i++;
+          }
+          filtered = filter.process(filtered);
+     }
+     *processed = filtered;
+     return 0;
+}
+
+int CameraD415::get_depth_image(rs2::frame frame, cv::Mat* image, bool flag_processed){
      if(frame){
           this->_depth_frame = frame;
-          cv::Mat tmp(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)frame.get_data(), cv::Mat::AUTO_STEP);
-          *image = tmp;
+          if(flag_processed){
+               rs2::frame tmpFrame;
+               this->process_depth_frame(frame, &tmpFrame);
+               cv::Mat tmp(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)tmpFrame.get_data(), cv::Mat::AUTO_STEP);
+               *image = tmp;
+          } else{
+               cv::Mat tmp(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)frame.get_data(), cv::Mat::AUTO_STEP);
+               *image = tmp;
+          }
           return 0;
      } else{
           printf("[WARN] CameraD415::get_depth_image() ---- Retrieved frame is empty.\r\n");
@@ -285,10 +323,24 @@ int CameraD415::get_depth_image(rs2::frame frame, cv::Mat* image){
      }
 }
 
-int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned){
-     rs2::frame tmpFrame = this->get_depth_frame(flag_aligned);
+int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned, bool flag_processed){
+     rs2::frame filtered_frame, tmpFrame;
+     rs2::frame alignedFrame = this->get_depth_frame(flag_aligned);
+     if(alignedFrame) this->_depth_frame = alignedFrame;
+     else{
+          printf("[WARN] CameraD415::get_depth_image() ---- Retrieved frame is empty.\r\n");
+          cv::Mat tmp = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
+          *image = tmp;
+          return -1;
+     }
+
+     if(flag_processed){
+          this->process_depth_frame(alignedFrame, &filtered_frame, true);
+          tmpFrame = filtered_frame;
+     } else{ tmpFrame = alignedFrame; }
+
+
      if(tmpFrame){
-          this->_depth_frame = tmpFrame;
           cv::Mat tmp(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)tmpFrame.get_data(), cv::Mat::AUTO_STEP);
           *image = tmp;
           return 0;
@@ -300,20 +352,9 @@ int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned){
      }
 }
 
-int CameraD415::get_pointcloud(){
-     // rs2::pointcloud pc;
-     // // We want the points object to be persistent so we can display the last cloud when a frame drops
-     // rs2::points points;
-     // pc.map_to(color);
-     // auto depth = frames.get_depth_frame();
-     //
-     // // Generate the pointcloud and texture mappings
-     // points = pc.calculate(depth);
-     return 0;
-}
-
-vector<cv::Mat> CameraD415::read(bool flag_aligned){
-     cv::Mat _rgb, _depth;
+vector<cv::Mat> CameraD415::read(bool flag_aligned, bool flag_processed){
+     int errProc = -1;
+     cv::Mat _rgb, _depth, _processed;
      vector<cv::Mat> imgs;
      // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
      this->_frames = this->_pipe.wait_for_frames();
@@ -323,16 +364,20 @@ vector<cv::Mat> CameraD415::read(bool flag_aligned){
      if(errRgb >= 0) this->_nRgbFrames++;
      int errDepth = this->get_depth_image(&_depth, flag_aligned);
      if(errDepth >= 0) this->_nDepthFrames++;
+     if(flag_processed) errProc = this->get_depth_image(&_processed, flag_aligned, true);
+     if(errProc >= 0) this->_nProcFrames++;
 
      int err = errRgb + errDepth;
      if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
      imgs.push_back(_rgb);
      imgs.push_back(_depth);
+     imgs.push_back(_processed);
      return imgs;
 }
 
-int CameraD415::read(cv::Mat* rgb, cv::Mat* depth, bool flag_aligned){
-     cv::Mat _rgb, _depth;
+int CameraD415::read(cv::Mat* rgb, cv::Mat* depth, cv::Mat* processed, bool flag_aligned, bool flag_processed){
+     int errProc = -1;
+     cv::Mat _rgb, _depth, _processed;
      // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
      this->_frames = this->_pipe.wait_for_frames();
      if(flag_aligned) this->_aligned_frames = this->_align->process(this->_frames);
@@ -341,11 +386,36 @@ int CameraD415::read(cv::Mat* rgb, cv::Mat* depth, bool flag_aligned){
      if(errRgb >= 0) this->_nRgbFrames++;
      int errDepth = this->get_depth_image(&_depth, flag_aligned);
      if(errDepth >= 0) this->_nDepthFrames++;
+     if(flag_processed) errProc = this->get_depth_image(&_processed, flag_aligned, true);
+     if(errProc >= 0) this->_nProcFrames++;
 
      *rgb = _rgb;
      *depth = _depth;
+     *processed = _processed;
      int err = errRgb + errDepth;
      if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
+     printf("[INFO] CameraD415::read() ---- nRGB = %d, nDepth = %d, nProcessed = %d.\r\n", this->_nRgbFrames, this->_nDepthFrames, this->_nProcFrames);
+     return err;
+}
+
+int CameraD415::read(rs2::frame_queue& queue, cv::Mat* image, bool is_depth, bool flag_aligned, bool flag_processed){
+     int errProc = -1;
+     int errRgb, errProc, errDepth;
+     cv::Mat _img, _depth, _processed;
+     rs2::frame f;
+     if(queue.poll_for_frame(&f)){
+          if(is_depth){
+               if(flag_processed) errProc = this->get_depth_image(&_img, flag_aligned, true);
+               else errDepth = this->get_depth_image(&_img, flag_aligned);
+          } else{
+               errRgb = this->get_rgb_image(&_img, flag_aligned);
+          }
+     }
+
+     *image = _img;
+     int err = errRgb + errDepth;
+     if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
+     // printf("[INFO] CameraD415::read() ---- nRGB = %d, nDepth = %d, nProcessed = %d.\r\n", this->_nRgbFrames, this->_nDepthFrames, this->_nProcFrames);
      return err;
 }
 
@@ -370,9 +440,16 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      return disparity8;
 }
 
-
-void CameraD415::update(){
-     // if (!aligned_depth_frame || !other_frame){ continue;}
+int CameraD415::get_pointcloud(){
+     // rs2::pointcloud pc;
+     // // We want the points object to be persistent so we can display the last cloud when a frame drops
+     // rs2::points points;
+     // pc.map_to(color);
+     // auto depth = frames.get_depth_frame();
+     //
+     // // Generate the pointcloud and texture mappings
+     // points = pc.calculate(depth);
+     return 0;
 }
 
 vector<rs2::device> CameraD415::get_available_devices(bool show_features, bool verbose){
@@ -457,6 +534,160 @@ void CameraD415::get_sensor_option(const rs2::sensor& sensor){
      }
      // return static_cast<rs2_option>(selected_sensor_option);
 }
+
+std::vector<filter_options> CameraD415::get_default_filters(bool use_decimation, bool use_threshold,
+     bool depth_to_disparity, bool use_spatial, bool use_temporal, bool use_hole_filling)
+{
+
+     std::vector<filter_options> filters;
+
+     /** Decimation - reduces depth frame density */
+     if(use_decimation){
+          rs2::decimation_filter decimate_filter(2.0f);
+          filters.emplace_back(decimate_filter);
+          // filters.push_back(decimate_filter);
+     }
+     /** Threshold  - removes values outside recommended range */
+     if(use_threshold){
+          rs2::threshold_filter thresh_filter(0.1f, 10.0f);
+          filters.emplace_back(thresh_filter);
+          // filters.push_back(thresh_filter);
+     }
+
+     if(depth_to_disparity){
+          rs2::disparity_transform depth_to_disparity(true);
+          filters.emplace_back(this->disparity_filter_name, depth_to_disparity);
+          // filters.push_back(depth_to_disparity);
+     }
+     /** Spatial    - edge-preserving spatial smoothing */
+     if(use_spatial){
+          rs2::spatial_filter spatial_filter(0.5, 20.0, 2.0, 0.0);
+          filters.emplace_back(spatial_filter);
+          // filters.push_back(spatial_filter);
+     }
+     /** Temporal   - reduces temporal noise */
+     if(use_temporal){
+          rs2::temporal_filter temporal_filter(0.4, 40.0, 0);
+          filters.emplace_back(temporal_filter);
+          // filters.push_back(temporal_filter);
+     }
+
+     if(use_hole_filling){
+          rs2::hole_filling_filter hole_filler(1);
+          filters.emplace_back(hole_filler);
+          // filters.push_back(hole_filler);
+     }
+
+     if(depth_to_disparity){
+          rs2::disparity_transform disparity_to_depth(false);
+          filters.emplace_back(this->depth_filter_name, disparity_to_depth);
+          // filters.push_back(disparity_to_depth);
+     }
+     return filters;
+}
+
+void CameraD415::enable_filters(){ this->_use_filters = true; }
+void CameraD415::disable_filters(){ this->_use_filters = false; }
+
+// void CameraD415::update_depth_queue(const rs2::frame& frame, bool use_filters){
+//      int err;
+//      rs2::frame filtered_frame;
+//      if(use_filters){
+//           err = this->process_depth_frame(frame, &filtered_frame);
+//      }
+//
+//      this->_raw_data.enqueue(frame);
+//      if(use_filters) this->_filtered_data.enqueue(filtered_frame);
+// }
+
+void CameraD415::update_depth_queue(rs2::frame frame, bool use_filters){
+     int err;
+     rs2::frame filtered_frame;
+     if(use_filters){
+          err = this->process_depth_frame(frame, &filtered_frame);
+     }
+
+     this->_raw_data.enqueue(frame);
+     if(use_filters) this->_filtered_data.enqueue(filtered_frame);
+}
+
+int CameraD415::read_from_queue(rs2::frame* raw_frame, rs2::frame* filtered_frame, bool grab_filtered){
+     rs2::frame raw, processed;
+     if(this->_raw_data.poll_for_frame(&raw)){ *raw_frame = raw; }
+     if(grab_filtered){
+          if(this->_filtered_data.poll_for_frame(&processed)){ *filtered_frame = processed;}
+     }
+     return 0;
+}
+
+void CameraD415::processingThread(){
+     while(!this->_stopped){
+          rs2::frameset data = pipe.wait_for_frames();
+          rs2::frame depth_frame = data.get_depth_frame();
+          if (!depth_frame)
+               return;
+
+          rs2::frame filtered = depth_frame;
+
+          if(this->_use_filters)
+          for(auto&& filter : filters){
+               if(filter.is_enabled){
+                    filtered = filter.filter.process(filtered);
+                    if(filter.filter_name == disparity_filter_name){
+                         revert_disparity = true;
+                    }
+               }
+          }
+          if(revert_disparity){
+               filtered = disparity_to_depth.process(filtered);
+          }
+
+          this->_rgb_data.enqueue(filtered);
+          this->_raw_data.enqueue(depth_frame);
+          this->_filtered_data.enqueue(depth_frame);
+     }
+}
+
+
+filter_options::filter_options(const std::string name, rs2::filter& flt) :
+    filter_name(name),
+    filter(flt),
+    is_enabled(true)
+{
+    // const std::array<rs2_option, 5> possible_filter_options = {
+    //     RS2_OPTION_FILTER_MAGNITUDE,
+    //     RS2_OPTION_FILTER_SMOOTH_ALPHA,
+    //     RS2_OPTION_MIN_DISTANCE,
+    //     RS2_OPTION_MAX_DISTANCE,
+    //     RS2_OPTION_FILTER_SMOOTH_DELTA
+    // };
+    //
+    // //Go over each filter option and create a slider for it
+    // for (rs2_option opt : possible_filter_options)
+    // {
+    //     if (flt.supports(opt))
+    //     {
+    //         rs2::option_range range = flt.get_option_range(opt);
+    //         supported_options[opt].range = range;
+    //         supported_options[opt].value = range.def;
+    //         supported_options[opt].is_int = filter_slider_ui::is_all_integers(range);
+    //         supported_options[opt].description = flt.get_option_description(opt);
+    //         std::string opt_name = flt.get_option_name(opt);
+    //         supported_options[opt].name = name + "_" + opt_name;
+    //         std::string prefix = "Filter ";
+    //         supported_options[opt].label = opt_name;
+    //     }
+    // }
+}
+
+// filter_options::filter_options(filter_options&& other) :
+//     filter_name(std::move(other.filter_name)),
+//     filter(other.filter),
+//     supported_options(std::move(other.supported_options)),
+//     is_enabled(other.is_enabled.load())
+// {
+// }
+
 
 // ===================================================================================
 

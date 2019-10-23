@@ -14,7 +14,7 @@ using namespace std;
 class VBOATS{
 private:
      // Counters
-     int nObs = 0
+     int nObs = 0;
      // Operational Flags
      bool is_ground_present = true;
 
@@ -38,6 +38,9 @@ public:
      *    @param todo: newest image
      */
      void update();
+
+     float get_uv_map(const cv::Mat& image, cv::Mat* umap, cv::Mat* vmap,
+          bool visualize = false, bool verbose = false, bool timing = false);
 
      /** TODO: Convert these python functions to C++ */
      // def get_uv_map(self, img, verbose=False, timing=False)

@@ -116,6 +116,11 @@ list(APPEND RoboCommander_LIBRARIES ekf)
 # add_library(isam SHARED algorithms/isam.cpp)
 # target_link_libraries(isam PUBLIC ${LIBS})
 
+# VBOATS - RGBD Obstacle Avoidance
+add_library(vboats SHARED algorithms/vboats/vboats.cpp)
+target_link_libraries(vboats PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES vboats)
+
 # =========================================
 #      Build Device Libraries
 # =========================================
