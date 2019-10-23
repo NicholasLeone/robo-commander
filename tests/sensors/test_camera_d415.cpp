@@ -1,5 +1,6 @@
 #include "sensors/camera_d415.h"
 #include <iostream>
+#include <unistd.h>                // For usleep
 #include <chrono>
 
 using namespace chrono;
@@ -83,26 +84,32 @@ void get_uv_map(const cv::Mat img, cv::Mat* _umap, cv::Mat* _vmap){
 }
 
 int main(int argc, char *argv[]){
+	bool do_processing = true;
 	// CameraD415* cam = new CameraD415(480,640,30);
-	int fps = 60;
-	int rgb_resolution[2] = {640, 480};
-	int depth_resolution[2] = {640, 480};
+	int fps = 90;
+	int rgb_resolution[2] = {848, 480};
+	int depth_resolution[2] = {848, 480};
 	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution);
+	CameraD415* cam = new CameraD415(60, rgb_resolution, fps, depth_resolution);
+	cam->enable_alignment();
+	cam->enable_timing_debug();
+	if(do_processing) cam->enable_filters();
+
 	// namedWindow( "Trajectory", WINDOW_AUTOSIZE );// Create a window for display.
 
 	printf("Press Ctrl+C to Stop...\r\n");
 
-	cv::Mat rgbRaw, depthRaw, dummy;
-	// int err = cam->read(&rgbRaw, &depthRaw, cv::Mat(), true);
-	int err = cam->read(&rgbRaw, &depthRaw, &dummy, true);
+	// cv::Mat rgbRaw, depthRaw, dummy;
+	// // int err = cam->read(&rgbRaw, &depthRaw, cv::Mat(), true);
+	// int err = cam->read(&rgbRaw, &depthRaw, true);
 	// vector<cv::Mat> imgs = cam->read(true);
 
-	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
+	// cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
 	// cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE );
 
-	cv::Mat display, depth, rgb, disparity, disparity8, processed, disp2;
-	cv::Mat depth2, rgb2;
+	cv::Mat display, depth, rgb, disparity, disparity8, disparityAlt, disparityAlt8, depth8, depthNorm;
+	cv::Mat depthraw, rgbraw, disparityraw;
+	cv::Mat d1, d2, d3, processed;
 	cv::Mat umap, vmap;
 	int count = 0;
 	double cvtGain;
@@ -111,7 +118,9 @@ int main(int argc, char *argv[]){
 	high_resolution_clock::time_point _prev_time;
 	high_resolution_clock::time_point now;
 	duration<float> time_span;
-	bool do_processing = true;
+	bool threading = true;
+	if(threading) cam->start_thread();
+	int errThread = 0;
 	while(1){
 		// _prev_time = high_resolution_clock::now();
 		// imgs = cam->read();
@@ -122,44 +131,82 @@ int main(int argc, char *argv[]){
 	     // time_span = duration_cast<duration<float>>(now - _prev_time);
 	     // dt = time_span.count();
 		// printf(" read vector --- %.7f ---- \r\n",dt);
+		if(!threading){
+			_prev_time = high_resolution_clock::now();
+			int err = cam->read(&rgb, &depth, &processed, true, do_processing);
+			// printf("Image sizes: RGB (%d, %d, %d) type = %d -- Depth (%d, %d, %d) type = %d\r\n", rgb.cols,rgb.rows, rgb.channels(), rgb.type(), depth.cols,depth.rows, depth.channels(), depth.type());
 
-		_prev_time = high_resolution_clock::now();
-		int err = cam->read(&rgb, &depth, &processed, true, do_processing);
-		cv::Mat disparity = cam->convert_to_disparity(depth,&cvtGain);
-		// now = high_resolution_clock::now();
-	     // time_span = duration_cast<duration<float>>(now - _prev_time);
-	     // dt = time_span.count();
-		// printf(" read imgs --- %.7f ---- \r\n",dt);
+			disparity = cam->convert_to_disparity(depth,&cvtGain);
+			// now = high_resolution_clock::now();
+			// time_span = duration_cast<duration<float>>(now - _prev_time);
+			// dt = time_span.count();
+			// printf(" read imgs --- %.7f ---- \r\n",dt);
 
-		// printf(" %.3f -- %.3f \r\n",minVal,maxVal);
+			// printf(" %.3f -- %.3f \r\n",minVal,maxVal);
 
-		// _prev_time = high_resolution_clock::now();
-		get_uv_map(disparity,&umap,&vmap);
-		now = high_resolution_clock::now();
-	     time_span = duration_cast<duration<float>>(now - _prev_time);
-	     dt = time_span.count();
-		printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
-		// cv::Mat disparity = (0.014579 * 386) / depth8;
-		// get_uv_map(disparity,&umap,&vmap);
-		// get_uv_map(disparity,nullptr, nullptr);
+			// _prev_time = high_resolution_clock::now();
+			get_uv_map(disparity,&umap,&vmap);
+			now = high_resolution_clock::now();
+			time_span = duration_cast<duration<float>>(now - _prev_time);
+			dt = time_span.count();
+			printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
+			// cv::Mat disparity = (0.014579 * 386) / depth8;
+			// get_uv_map(disparity,&umap,&vmap);
+			// get_uv_map(disparity,nullptr, nullptr);
 
-		// depth.convertTo(depth8,CV_8U,0.00390625);
-		// cv::equalizeHist(depth8, display);
-		// cv::applyColorMap(display, display, cv::COLORMAP_JET);
-		// cv::applyColorMap(depth8, disp2, cv::COLORMAP_JET);
-		// cv::applyColorMap(disparity, disp2, cv::COLORMAP_JET);
+			// depth.convertTo(depth8,CV_8U,0.00390625);
+			// cv::equalizeHist(depth8, display);
+			// cv::applyColorMap(display, display, cv::COLORMAP_JET);
+			// cv::applyColorMap(depth8, disp2, cv::COLORMAP_JET);
+			// cv::applyColorMap(disparity, disp2, cv::COLORMAP_JET);
 
-		cv::imshow("RGB", rgb);
-		// cv::imshow("Disparity", disparity);
-		if(do_processing) cv::imshow("Processed", processed);
-		cv::imshow("Disparity8", disparity);
+			cv::imshow("RGB", rgb);
+			cv::imshow("Depth", depth);
+			cv::imshow("Disparity", disparity);
+			if(do_processing) cv::imshow("Processed", processed);
+			if(cv::waitKey(10) == 27){
+				std::cout << "Esc key is pressed by user. Stoppig the video" << std::endl;
+				break;
+			}
+		} else{
+			// cam->get_queued_images(&rgb, &depth, &processed);
+			// printf("Image sizes: RGB (%d, %d, %d) type = %d -- Depth (%d, %d, %d) type = %d\r\n", rgb.cols,rgb.rows, rgb.channels(), rgb.type(), depth.cols,depth.rows, depth.channels(), depth.type());
+			errThread = cam->get_processed_queued_images(&rgb, &depth);
+			if(errThread >= 0){
+				disparity = cam->convert_to_disparity(depth,&cvtGain);
+				// depth.convertTo(depth8,CV_8U,(1.0/256.0));
+				// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
+				cv::normalize(disparity, display, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+				cv::normalize(depth, depthNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+				cv::imshow("RGB", rgb);
+				// cv::applyColorMap(depth8, d1, cv::COLORMAP_JET);
+				// cv::applyColorMap(disparity, d2, cv::COLORMAP_JET);
+				cv::imshow("Depth", depthNorm);
+				cv::imshow("Disparity", disparity);
+				cv::imshow("Disparity Norm", display);
+			}
+
+			// errThread = cam->get_raw_queued_images(&rgbraw, &depthraw);
+			// if(errThread >= 0){
+			// 	disparityraw = cam->convert_to_disparity(depthraw,&cvtGain);
+			// 	// depth.convertTo(depth8,CV_8U,(1.0/256.0));
+			// 	// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
+			//
+			// 	cv::imshow("RGB Raw", rgbraw);
+			// 	// cv::applyColorMap(depth8, d1, cv::COLORMAP_JET);
+			// 	// cv::applyColorMap(disparity, d2, cv::COLORMAP_JET);
+			// 	cv::imshow("Depth Raw", depthraw);
+			// 	cv::imshow("Disparity Raw", disparityraw);
+			// 	// cv::imshow("DisparityAlt", disparity8);
+			// }
+			if(cv::waitKey(10) == 27){
+				std::cout << "Esc key is pressed by user. Stoppig the video" << std::endl;
+				break;
+			}
+		}
 
 		// cv::imshow("Depth8", depth8);
 		// cv::imshow("disp2", disp2);
-		if(cv::waitKey(10) == 27){
-			std::cout << "Esc key is pressed by user. Stoppig the video" << std::endl;
-			break;
-		}
 		count++;
 	}
 

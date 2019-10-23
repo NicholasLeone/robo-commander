@@ -35,7 +35,7 @@ float VBOATS::get_uv_map(const cv::Mat& image, cv::Mat* umap, cv::Mat* vmap,
 
      int channels[] = {0};
      int histSize[] = {dmax};
-	float sranges[] = { 0, (float)dmax };
+	float sranges[] = { 0, float(dmax) };
 	const float* ranges[] = { sranges };
 	for(int i = 0; i < w; i++){
 		cv::MatND hist;

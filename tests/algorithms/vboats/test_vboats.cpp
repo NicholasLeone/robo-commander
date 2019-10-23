@@ -43,51 +43,47 @@ using namespace std;
 
 int main(int argc, char *argv[]){
 	int count = 0;
-
-	int fps = 60;
+	int err;
+	int fps = 90;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution);
+	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
+	CameraD415* cam = new CameraD415(60, rgb_resolution, fps, depth_resolution);
+	cam->enable_alignment();
+	// cam->enable_timing_debug();
+	cam->enable_filters();
 
 	VBOATS vb;
-
 	printf("Press Ctrl+C to Stop...\r\n");
 
 	cv::Mat depth, rgb, disparity, umap, vmap;
-	// int err = cam->read(&rgb, &depth, cv::Mat(), true);
-	int err = cam->read(&rgb, &depth, nullptr, true);
+	cv::Mat* dummy = nullptr;
 
 	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
 	cv::namedWindow("Disparity", cv::WINDOW_AUTOSIZE );
 
+	cam->start_thread();
+
 	float dt;
 	double cvtGain;
-	high_resolution_clock::time_point _prev_time;
+	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
 	high_resolution_clock::time_point now;
 	duration<float> time_span;
 	while(1){
+		err = cam->get_processed_queued_images(&rgb, &depth);
+		if(err >= 0){
+			now = high_resolution_clock::now();
+			time_span = duration_cast<duration<float>>(now - _prev_time);
+			dt = time_span.count();
+			printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
+			disparity = cam->convert_to_disparity(depth,&cvtGain);
+			vb.get_uv_map(disparity,&umap,&vmap, true, false);
 
-		_prev_time = high_resolution_clock::now();
-		int err = cam->read(&rgb, &depth, nullptr, true);
-		cv::Mat disparity = cam->convert_to_disparity(depth,&cvtGain);
 
-		vb.get_uv_map(disparity,&umap,&vmap, true, false);
-		now = high_resolution_clock::now();
-	     time_span = duration_cast<duration<float>>(now - _prev_time);
-	     dt = time_span.count();
-		printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
-		// cv::Mat disparity = (0.014579 * 386) / depth8;
-		// get_uv_map(disparity,&umap,&vmap);
-		// get_uv_map(disparity,nullptr, nullptr);
-
-		// depth.convertTo(depth8,CV_8U,0.00390625);
-		// cv::equalizeHist(depth8, display);
-		// cv::applyColorMap(display, display, cv::COLORMAP_JET);
-		// cv::applyColorMap(depth8, disp2, cv::COLORMAP_JET);
-		// cv::applyColorMap(disparity, disp2, cv::COLORMAP_JET);
-
-		cv::imshow("RGB", rgb);
-		cv::imshow("Disparity", disparity);
+			_prev_time = now;
+			cv::imshow("RGB", rgb);
+			cv::imshow("Disparity", disparity);
+		}
 
 		if(cv::waitKey(10) == 27){
 			std::cout << "Esc key is pressed by user. Stoppig the video" << std::endl;
