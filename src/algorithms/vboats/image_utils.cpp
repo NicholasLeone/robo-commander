@@ -4,6 +4,76 @@
 
 using namespace std;
 
+std::string cvtype2str(int type){
+     std::string r;
+     uchar depth = type & CV_MAT_DEPTH_MASK;
+     uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+     switch ( depth ) {
+          case CV_8U:  r = "8U"; break;
+          case CV_8S:  r = "8S"; break;
+          case CV_16U: r = "16U"; break;
+          case CV_16S: r = "16S"; break;
+          case CV_32S: r = "32S"; break;
+          case CV_32F: r = "32F"; break;
+          case CV_64F: r = "64F"; break;
+          default:     r = "User"; break;
+     }
+     r += "C";
+     r += (chans+'0');
+     return r;
+}
+std::string cvStrSize(const char* name, const cv::Mat& mat){
+     std::string str = format("cv::Size \'%s\' [%d, %d, %d, %s]", name, mat.cols, mat.rows, mat.channels(), cvtype2str(mat.type()).c_str());
+     return str;
+}
+
+void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, double* fx, double* fy, bool verbose){
+     cv::Mat _output;
+     double _fx = (double)(target_size.width/((double) input.cols));
+     double _fy = (double)(target_size.height/((double) input.rows));
+     cv::resize(input, _output, target_size, 0, 0, cv::INTER_LINEAR);
+     if(verbose)
+          printf("[INFO] spread_image() --- Input Img (%d, %d) w/ Target Size (%d, %d) --> New Img (%d, %d) using factors (%.2f, %.2f)\r\n",
+               input.cols, input.rows, target_size.width, target_size.height, _output.cols, _output.rows, _fx, _fy);
+     if(fx) *fx = _fx;
+     if(fy) *fy = _fy;
+     *output = _output;
+}
+void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy, cv::Size* new_size, bool verbose){
+     cv::Mat _output;
+     cv::resize(input, _output, cv::Size(), fx, fy, cv::INTER_LINEAR);
+     cv::Size _new_size = cv::Size(_output.cols, _output.rows);
+     if(verbose)
+          printf("[INFO] spread_image() --- Input Img (%d, %d) w/ factors (%.2f, %.2f) --> New Img (%d, %d) using cv::Size(%d, %d)\r\n",
+               input.cols, input.rows, fx, fy, _output.cols, _output.rows, _new_size.width, _new_size.height);
+     if(new_size) *new_size = _new_size;
+     *output = _output;
+}
+
+void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, float* fx, float* fy, bool verbose){
+     cv::Mat _output;
+     double _fx = (double)(target_size.width/((double) input.cols));
+     double _fy = (double)(target_size.height/((double) input.rows));
+     cv::resize(input, _output, target_size, 0, 0, cv::INTER_AREA);
+     if(verbose)
+          printf("[INFO] unspread_image() --- Input Img (%d, %d) w/ Target Size (%d, %d) --> New Img (%d, %d) using factors (%.2f, %.2f)\r\n",
+               input.cols, input.rows, target_size.width, target_size.height, _output.cols, _output.rows, _fx, _fy);
+     if(fx) *fx = _fx;
+     if(fy) *fy = _fy;
+     *output = _output;
+}
+void unspread_image(const cv::Mat& input, cv::Mat* output, float fx, float fy, cv::Size* new_size, bool verbose){
+     cv::Mat _output;
+     cv::resize(input, _output, cv::Size(), fx, fy, cv::INTER_AREA);
+     cv::Size _new_size = cv::Size(_output.cols, _output.rows);
+     if(verbose)
+          printf("[INFO] spread_image() --- Input Img (%d, %d) w/ factors (%.2f, %.2f) --> New Img (%d, %d) using cv::Size(%d, %d)\r\n",
+               input.cols, input.rows, fx, fy, _output.cols, _output.rows, _new_size.width, _new_size.height);
+     if(new_size) *new_size = _new_size;
+     *output = _output;
+}
+
 int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips, bool cut_horizontally, bool visualize, bool verbose){
      int i = 0;
      int ncols, nrows;
@@ -49,7 +119,6 @@ int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips, bool
      *strips = _strips;
      return 0;
 }
-
 int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged, bool merge_horizontally, bool visualize, bool verbose){
      cv::Mat _img;
      if(merge_horizontally) cv::hconcat(strips, _img);
@@ -63,79 +132,6 @@ int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged, bool merge_hori
      *merged = _img;
      return 0;
 }
-
-std::string cvtype2str(int type){
-     std::string r;
-     uchar depth = type & CV_MAT_DEPTH_MASK;
-     uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-     switch ( depth ) {
-          case CV_8U:  r = "8U"; break;
-          case CV_8S:  r = "8S"; break;
-          case CV_16U: r = "16U"; break;
-          case CV_16S: r = "16S"; break;
-          case CV_32S: r = "32S"; break;
-          case CV_32F: r = "32F"; break;
-          case CV_64F: r = "64F"; break;
-          default:     r = "User"; break;
-     }
-     r += "C";
-     r += (chans+'0');
-     return r;
-}
-
-std::string cvStrSize(const char* name, const cv::Mat& mat){
-     std::string str = format("cv::Size \'%s\' [%d, %d, %d, %s]", name, mat.cols, mat.rows, mat.channels(), cvtype2str(mat.type()).c_str());
-     return str;
-}
-
-void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, double* fx, double* fy, bool verbose){
-     cv::Mat _output;
-     double _fx = (double)(target_size.width/((double) input.cols));
-     double _fy = (double)(target_size.height/((double) input.rows));
-     cv::resize(input, _output, target_size, 0, 0, cv::INTER_LINEAR);
-     if(verbose)
-          printf("[INFO] spread_image() --- Input Img (%d, %d) w/ Target Size (%d, %d) --> New Img (%d, %d) using factors (%.2f, %.2f)\r\n",
-               input.cols, input.rows, target_size.width, target_size.height, _output.cols, _output.rows, _fx, _fy);
-     if(fx) *fx = _fx;
-     if(fy) *fy = _fy;
-     *output = _output;
-}
-
-void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy, cv::Size* new_size, bool verbose){
-     cv::Mat _output;
-     cv::resize(input, _output, cv::Size(), fx, fy, cv::INTER_LINEAR);
-     cv::Size _new_size = cv::Size(_output.cols, _output.rows);
-     if(verbose)
-          printf("[INFO] spread_image() --- Input Img (%d, %d) w/ factors (%.2f, %.2f) --> New Img (%d, %d) using cv::Size(%d, %d)\r\n",
-               input.cols, input.rows, fx, fy, _output.cols, _output.rows, _new_size.width, _new_size.height);
-     if(new_size) *new_size = _new_size;
-     *output = _output;
-}
-
-void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, float* fx, float* fy, bool verbose){
-     cv::Mat _output;
-     double _fx = (double)(target_size.width/((double) input.cols));
-     double _fy = (double)(target_size.height/((double) input.rows));
-     cv::resize(input, _output, target_size, 0, 0, cv::INTER_AREA);
-     if(verbose)
-          printf("[INFO] unspread_image() --- Input Img (%d, %d) w/ Target Size (%d, %d) --> New Img (%d, %d) using factors (%.2f, %.2f)\r\n",
-               input.cols, input.rows, target_size.width, target_size.height, _output.cols, _output.rows, _fx, _fy);
-     if(fx) *fx = _fx;
-     if(fy) *fy = _fy;
-     *output = _output;
-}
-void unspread_image(const cv::Mat& input, cv::Mat* output, float fx, float fy, cv::Size* new_size, bool verbose){
-     cv::Mat _output;
-     cv::resize(input, _output, cv::Size(), fx, fy, cv::INTER_AREA);
-     cv::Size _new_size = cv::Size(_output.cols, _output.rows);
-     if(verbose)
-          printf("[INFO] spread_image() --- Input Img (%d, %d) w/ factors (%.2f, %.2f) --> New Img (%d, %d) using cv::Size(%d, %d)\r\n",
-               input.cols, input.rows, fx, fy, _output.cols, _output.rows, _new_size.width, _new_size.height);
-     if(new_size) *new_size = _new_size;
-     *output = _output;
-}
-
 
 
 /** TODO */

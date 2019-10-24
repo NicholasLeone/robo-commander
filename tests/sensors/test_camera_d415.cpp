@@ -138,21 +138,17 @@ int main(int argc, char *argv[]){
 			// printf("Image sizes: RGB (%d, %d, %d) type = %d -- Depth (%d, %d, %d) type = %d\r\n", rgb.cols,rgb.rows, rgb.channels(), rgb.type(), depth.cols,depth.rows, depth.channels(), depth.type());
 			errThread = cam->get_processed_queued_images(&rgb, &depth);
 			if(errThread >= 0){
+				cv::minMaxLoc(depth, &minVal, &maxVal);
+				cv::imshow("RGB", rgb);
 				disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
-				depth.convertTo(depth8,CV_8U,(1.0/256.0));
-				disparity8 = cam->convert_to_disparity(depth8,&cvtGain, &cvtRatio);
-				// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
 				cv::normalize(disparity, display, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 				cv::normalize(depth, depthNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-				cv::imshow("RGB", rgb);
+				depth.convertTo(depth8,CV_8U,(255.0/maxVal));
 				cv::applyColorMap(depth8, d1, cv::COLORMAP_JET);
-				cv::applyColorMap(disparity8, d2, cv::COLORMAP_JET);
 				cv::imshow("Depth", depth);
-				cv::imshow("Depth8", depth8);
 				cv::imshow("Depth Cmap", d1);
 				cv::imshow("Depth Normalized", depthNorm);
 				cv::imshow("Disparity", disparity);
-				cv::imshow("Disparity8", d2);
 				cv::imshow("Disparity Norm", display);
 			}
 

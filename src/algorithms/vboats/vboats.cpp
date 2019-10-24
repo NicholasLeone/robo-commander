@@ -111,3 +111,55 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      }
      return dt;
 }
+
+
+
+/**
+def update(self):
+     nObs = 0
+     lineParams = None
+     img = np.copy(self.disparity)
+     raw_umap, raw_vmap, _ = self.vboat.get_uv_map(img)
+     cv2.rectangle(raw_vmap,(0,0),(3, raw_vmap.shape[0]),(0,0,0), cv2.FILLED)
+     cv2.rectangle(raw_umap,(0,0),(raw_umap.shape[1], 3),(0,0,0), cv2.FILLED)
+     self.umap = np.copy(raw_umap)
+     self.vmap = np.copy(raw_vmap)
+
+     vmapFiltered,_,_ = self.vboat.filter_disparity_umap(raw_vmap,[0.25,0.15,0.35,0.35])
+     vmapLessFiltered,_,_ = self.vboat.filter_disparity_vmap(raw_vmap,[0.15,0.15,0.01,0.01])
+
+     validGnd,bestM,bestIntercept, sets = self.vboat.estimate_houghline_coeffs(vmapFiltered)
+     if validGnd: lineParams = [bestM,bestIntercept]
+
+     filtU, strips, stripsT = self.vboat.filter_disparity_umap(raw_umap,[0.15,0.15,0.25,0.35])
+     kernelI = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
+     filtU = cv2.morphologyEx(filtU, cv2.MORPH_CLOSE, kernelI)
+     filtered_contours,contours = self.vboat.find_contours(filtU,threshold = 100.0, max_thresh=-1)
+
+     xLims, dLims, _ = self.vboat.extract_contour_bounds(filtered_contours)
+     obs, obsU, ybounds, dbounds, windows, nObs = self.vboat.find_obstacles_disparity(vmapLessFiltered, dLims, xLims, ground_detected=validGnd, lineCoeffs = lineParams, verbose=False)
+     # print(nObs)
+
+     distances, angles = self.vboat.extract_obstacle_information_disparity(raw_umap, xLims, dbounds, obs,focal=self.focal,baseline=self.baseline,dscale=self.cam.dscale, pp=self.ppoint, dtype_cvt_gain=self.disparity2uintGain)
+
+   if(self.flag_show_imgs):
+       cpyV = np.copy(vmapLessFiltered)
+       dispWindows = cv2.applyColorMap(cpyV,cv2.COLORMAP_PARULA)
+
+       for wins in windows:
+           for win in wins:
+               cv2.rectangle(dispWindows,win[0],win[1],(0,255,255), 1)
+       if validGnd:
+           w = cpyV.shape[1]
+           tmpy = int(w * bestM + bestIntercept)
+           cv2.line(dispWindows,(0,bestIntercept), (w,tmpy), (0,0,255),1)
+
+       try:
+           overlay = make_uv_overlay(cv2.cvtColor(self.disparity,cv2.COLOR_GRAY2BGR),self.umap,self.vmap)
+           cv2.imshow('overlay', overlay)
+       except:
+           print("[WARNING] Failed to create Overlay")
+           pass
+       cv2.imshow('disparity', dispWindows)
+        return nObs, obs
+*/

@@ -44,7 +44,6 @@ public:
           bool debug = false, bool timing = false);
 
      /** TODO: Convert these python functions to C++ */
-     // def get_uv_map(self, img, verbose=False, timing=False)
      // def extract_contour_bounds(self, cnts, verbose=False, timing=False)
      // def find_contours(self, _umap, threshold = 30.0, threshold_method = "perimeter", offset=(0,0), max_thresh=1500.0, debug=False)
      // def find_obstacles(self, vmap, dLims, xLims, search_thresholds = (3,30), ground_detected=True, verbose=False,timing=False)

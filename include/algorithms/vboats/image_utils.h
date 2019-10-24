@@ -37,49 +37,54 @@ void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
 std::string cvtype2str(int type);
 std::string cvStrSize(const char* name, const cv::Mat& mat);
 
-void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, bool verbose = false);
 
+/** TODO Make these functions part of the VBOATS class */
+void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, bool verbose = false, bool visualize = false);
+void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, bool verbose = false, bool visualize = false);
 
+int find_ground_line(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh = 100);
+int validate_ground_line(const vector<cv::Vec2f>& lines, double best_slope, int* best_intercept);
+bool is_ground_present(const cv::Mat& vmap, double* best_slope, int* best_intercept, int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = -89.0, double maxDeg = -26.0);
 /** TODO */
 // def histogram_sliding_filter(hist, window_size=16, flag_plot=False):
 
 
 /** TODO put these in a seperate place for realsense specific utils */
+/**
+cv::Mat frame_to_mat(const rs2::frame& f){
+    using namespace cv;
+    using namespace rs2;
 
-// cv::Mat frame_to_mat(const rs2::frame& f){
-//     using namespace cv;
-//     using namespace rs2;
-//
-//     rs2::video_frame vf = f.as<rs2::video_frame>();
-//     const int w = vf.get_width();
-//     const int h = vf.get_height();
-//
-// 	if (f.get_profile().format() == RS2_FORMAT_BGR8){
-// 		return cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_RGB8){
-// 		cv::Mat r = cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 		cv::cvtColor(r, r, COLOR_RGB2BGR);
-// 		return r;
-// 	} else if (f.get_profile().format() == RS2_FORMAT_Z16){
-// 		return cv::Mat(Size(w, h), CV_16UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_Y8){
-// 		return cv::Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32){
-// 		return cv::Mat(Size(w, h), CV_32FC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	}
-//
-//     throw std::runtime_error("Frame format is not supported yet!");
-// }
-//
-// // Converts depth frame to a matrix of doubles with distances in meters
-// cv::Mat depth_frame_to_meters(const rs2::pipeline& pipe, const rs2::depth_frame& f){
-//     cv::Mat dm = frame_to_mat(f);
-//     dm.convertTo(dm, CV_64F);
-//     double depth_scale = pipe.get_active_profile().get_device().first<rs2::depth_sensor>().get_depth_scale();
-//     dm = dm * depth_scale;
-//     return dm;
-// }
+    rs2::video_frame vf = f.as<rs2::video_frame>();
+    const int w = vf.get_width();
+    const int h = vf.get_height();
 
+	if (f.get_profile().format() == RS2_FORMAT_BGR8){
+		return cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+	} else if (f.get_profile().format() == RS2_FORMAT_RGB8){
+		cv::Mat r = cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+		cv::cvtColor(r, r, COLOR_RGB2BGR);
+		return r;
+	} else if (f.get_profile().format() == RS2_FORMAT_Z16){
+		return cv::Mat(Size(w, h), CV_16UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+	} else if (f.get_profile().format() == RS2_FORMAT_Y8){
+		return cv::Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+	} else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32){
+		return cv::Mat(Size(w, h), CV_32FC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+	}
+
+    throw std::runtime_error("Frame format is not supported yet!");
+}
+
+// Converts depth frame to a matrix of doubles with distances in meters
+cv::Mat depth_frame_to_meters(const rs2::pipeline& pipe, const rs2::depth_frame& f){
+    cv::Mat dm = frame_to_mat(f);
+    dm.convertTo(dm, CV_64F);
+    double depth_scale = pipe.get_active_profile().get_device().first<rs2::depth_sensor>().get_depth_scale();
+    dm = dm * depth_scale;
+    return dm;
+}
+*/
 // ===================================================================================
 /**
 static void get_field_of_view(const rs2::stream_profile& stream)

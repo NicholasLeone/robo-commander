@@ -34,12 +34,13 @@ int main(int argc, char *argv[]){
 	cv::namedWindow("Disparity", cv::WINDOW_AUTOSIZE );
 
 	cam->start_thread();
-
 	float dt;
 	double cvtGain, cvtRatio;
 	duration<float> time_span;
 	high_resolution_clock::time_point now;
 	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
+	bool verbose = false;
+	bool try_thresholding = false;
 	while(1){
 		err = cam->get_processed_queued_images(&rgb, &depth);
 		if(err >= 0){
@@ -48,20 +49,20 @@ int main(int argc, char *argv[]){
 			dt = time_span.count();
 			printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
 
-			printf("%s\r\n",cvStrSize("Depth",depth).c_str());
+			if(verbose) printf("%s\r\n",cvStrSize("Depth",depth).c_str());
 			cv::Mat tmp, tmp2;
 			double minVal, maxVal;
 			double dtypeGain;
-			try{
-			     cv::minMaxLoc(depth, &minVal, &maxVal);
-				printf("Depth before min, max = %.2f, %.2f\r\n",minVal, maxVal);
-				dtypeGain = (255.0/maxVal);
-				depth.convertTo(tmp, CV_8U, dtypeGain);
-				cv::minMaxLoc(tmp, &minVal, &maxVal);
-				printf("Depth after min, max = %.2f, %.2f\r\n",minVal, maxVal);
-				cv::imshow("Depth", tmp);
-				cv::waitKey(0);
-			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+			// try{
+			//      cv::minMaxLoc(depth, &minVal, &maxVal);
+			// 	printf("Depth before min, max = %.2f, %.2f\r\n",minVal, maxVal);
+			// 	dtypeGain = (255.0/maxVal);
+			// 	depth.convertTo(tmp, CV_8U, dtypeGain);
+			// 	cv::minMaxLoc(tmp, &minVal, &maxVal);
+			// 	printf("Depth after min, max = %.2f, %.2f\r\n",minVal, maxVal);
+			// 	cv::imshow("Depth", tmp);
+			// 	cv::waitKey(0);
+			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
 			// depth.convertTo(depth8,CV_8U, (255.0/65535.0));
 			// // depth.convertTo(depth8,CV_8U,(1.0/256.0));
@@ -72,16 +73,16 @@ int main(int argc, char *argv[]){
 			// 	cv::waitKey(0);
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
-			disparity = cam->convert_to_disparity(tmp,&cvtGain, &cvtRatio);
+			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			cv::minMaxLoc(disparity, &minVal, &maxVal);
-			printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
+			if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
 			// disparity = cam->convert_to_disparity(depth8,&cvtGain);
-			printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
+			if(verbose) printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
 			try{
 				cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
 				cv::imshow("Disparity", disp);
-				cv::waitKey(0);
+				// cv::waitKey(0);
 			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
 			// disparity.convertTo(disparity8,CV_8U);
@@ -96,24 +97,30 @@ int main(int argc, char *argv[]){
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
 			vb.get_uv_map(disparity,&umap,&vmap, true, "raw", true);
 			printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
+			cv::applyColorMap(umap, disp, cv::COLORMAP_JET);
+			cv::imshow("Umap", disp);
+			cv::applyColorMap(vmap, disp, cv::COLORMAP_JET);
+			cv::imshow("Vmap", disp);
+
 			cv::Mat th1, th2, th3;
-			int thresh = int(255*cvtRatio);
-			int thresh2 = int(255*(1 - cvtRatio));
-			printf("Threshs = %d, %d \r\n",thresh, thresh2);
-			// threshold(vmap, th1, 0, 255, cv::THRESH_TOZERO);
-			threshold(vmap, th1, 0, 255, cv::THRESH_BINARY);
-			threshold(vmap, th2, 0, thresh, cv::THRESH_BINARY);
-			threshold(vmap, th3, 0, thresh2, cv::THRESH_BINARY);
-			cv::imshow("Thresh", th1);
-			cv::imshow("Thresh1", th2);
-			cv::imshow("Thresh2", th3);
-			cv::waitKey(0);
+			if(try_thresholding){
+				int thresh = int(255*cvtRatio);
+				int thresh2 = int(255*(1 - cvtRatio));
+				printf("Threshs = %d, %d \r\n",thresh, thresh2);
+				// threshold(vmap, th1, 0, 255, cv::THRESH_TOZERO);
+				threshold(vmap, th1, 0, 255, cv::THRESH_BINARY);
+				threshold(vmap, th2, 0, thresh, cv::THRESH_BINARY);
+				threshold(vmap, th3, 0, thresh2, cv::THRESH_BINARY);
+				cv::imshow("Thresh", th1);
+				cv::imshow("Thresh1", th2);
+				cv::imshow("Thresh2", th3);
+				// cv::waitKey(0);
+			}
 
 			// cv::Scalar mean, stddev;
 		     // cv::meanStdDev(disparity,mean, stddev);
 		     // cv::Mat stdImg = (mean-disparity)/stddev;
 			// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
-
 			_prev_time = now;
 			cv::imshow("RGB", rgb);
 			// cv::imshow("Disparity", disparity);
