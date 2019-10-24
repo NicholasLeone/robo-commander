@@ -150,7 +150,7 @@ public:
      int process_frames(rs2::frameset frame, rs2::frameset* processed);
 
      /** Camera Data Conversions */
-     cv::Mat convert_to_disparity(const cv::Mat depth, double* conversion_gain);
+     cv::Mat convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
      /**TODO*/int get_pointcloud();
 
      /** Device Getters */

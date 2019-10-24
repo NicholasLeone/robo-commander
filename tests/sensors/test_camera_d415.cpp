@@ -3,45 +3,10 @@
 #include <unistd.h>                // For usleep
 #include <chrono>
 
+#include "algorithms/vboats/image_utils.h"
+
 using namespace chrono;
 using namespace std;
-
-typedef cv::Point_<uint8_t> Pixel;
-
-// cv::Mat frame_to_mat(const rs2::frame& f){
-//     using namespace cv;
-//     using namespace rs2;
-//
-//     rs2::video_frame vf = f.as<rs2::video_frame>();
-//     const int w = vf.get_width();
-//     const int h = vf.get_height();
-//
-// 	if (f.get_profile().format() == RS2_FORMAT_BGR8){
-// 		return cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_RGB8){
-// 		cv::Mat r = cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 		cv::cvtColor(r, r, COLOR_RGB2BGR);
-// 		return r;
-// 	} else if (f.get_profile().format() == RS2_FORMAT_Z16){
-// 		return cv::Mat(Size(w, h), CV_16UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_Y8){
-// 		return cv::Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32){
-// 		return cv::Mat(Size(w, h), CV_32FC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	}
-//
-//     throw std::runtime_error("Frame format is not supported yet!");
-// }
-//
-// // Converts depth frame to a matrix of doubles with distances in meters
-// cv::Mat depth_frame_to_meters(const rs2::pipeline& pipe, const rs2::depth_frame& f){
-//     cv::Mat dm = frame_to_mat(f);
-//     dm.convertTo(dm, CV_64F);
-//     double depth_scale = pipe.get_active_profile().get_device().first<rs2::depth_sensor>().get_depth_scale();
-//     dm = dm * depth_scale;
-//     return dm;
-// }
-
 
 void get_uv_map(const cv::Mat img, cv::Mat* _umap, cv::Mat* _vmap){
 	cv::namedWindow("UMap", cv::WINDOW_NORMAL );
@@ -112,7 +77,7 @@ int main(int argc, char *argv[]){
 	cv::Mat d1, d2, d3, processed;
 	cv::Mat umap, vmap;
 	int count = 0;
-	double cvtGain;
+	double cvtGain, cvtRatio;
 	float dt;
 	double minVal, maxVal;
 	high_resolution_clock::time_point _prev_time;
@@ -136,7 +101,7 @@ int main(int argc, char *argv[]){
 			int err = cam->read(&rgb, &depth, &processed, true, do_processing);
 			// printf("Image sizes: RGB (%d, %d, %d) type = %d -- Depth (%d, %d, %d) type = %d\r\n", rgb.cols,rgb.rows, rgb.channels(), rgb.type(), depth.cols,depth.rows, depth.channels(), depth.type());
 
-			disparity = cam->convert_to_disparity(depth,&cvtGain);
+			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			// now = high_resolution_clock::now();
 			// time_span = duration_cast<duration<float>>(now - _prev_time);
 			// dt = time_span.count();
@@ -173,16 +138,21 @@ int main(int argc, char *argv[]){
 			// printf("Image sizes: RGB (%d, %d, %d) type = %d -- Depth (%d, %d, %d) type = %d\r\n", rgb.cols,rgb.rows, rgb.channels(), rgb.type(), depth.cols,depth.rows, depth.channels(), depth.type());
 			errThread = cam->get_processed_queued_images(&rgb, &depth);
 			if(errThread >= 0){
-				disparity = cam->convert_to_disparity(depth,&cvtGain);
-				// depth.convertTo(depth8,CV_8U,(1.0/256.0));
+				disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
+				depth.convertTo(depth8,CV_8U,(1.0/256.0));
+				disparity8 = cam->convert_to_disparity(depth8,&cvtGain, &cvtRatio);
 				// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
 				cv::normalize(disparity, display, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 				cv::normalize(depth, depthNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 				cv::imshow("RGB", rgb);
-				// cv::applyColorMap(depth8, d1, cv::COLORMAP_JET);
-				// cv::applyColorMap(disparity, d2, cv::COLORMAP_JET);
-				cv::imshow("Depth", depthNorm);
+				cv::applyColorMap(depth8, d1, cv::COLORMAP_JET);
+				cv::applyColorMap(disparity8, d2, cv::COLORMAP_JET);
+				cv::imshow("Depth", depth);
+				cv::imshow("Depth8", depth8);
+				cv::imshow("Depth Cmap", d1);
+				cv::imshow("Depth Normalized", depthNorm);
 				cv::imshow("Disparity", disparity);
+				cv::imshow("Disparity8", d2);
 				cv::imshow("Disparity Norm", display);
 			}
 

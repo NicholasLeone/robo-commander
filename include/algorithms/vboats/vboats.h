@@ -39,8 +39,9 @@ public:
      */
      void update();
 
-     float get_uv_map(const cv::Mat& image, cv::Mat* umap, cv::Mat* vmap,
-          bool visualize = false, bool verbose = false, bool timing = false);
+     float get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
+          bool visualize = false, std::string dispId = "", bool verbose = false,
+          bool debug = false, bool timing = false);
 
      /** TODO: Convert these python functions to C++ */
      // def get_uv_map(self, img, verbose=False, timing=False)

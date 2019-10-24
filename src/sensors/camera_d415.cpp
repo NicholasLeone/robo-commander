@@ -3,6 +3,7 @@
 #include <limits>                  // For infinity
 
 #include "sensors/camera_d415.h"
+#include "algorithms/vboats/image_utils.h"
 
 using namespace std;
 using namespace chrono;
@@ -339,7 +340,7 @@ int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed){
  ██████  ██████  ██   ████   ████   ███████ ██   ██    ██
 */
 
-cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain){
+cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
      cv::Mat dm, disparity8;
      double minVal, maxVal;
      double min, max;
@@ -355,11 +356,14 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      // disparity.setTo(0, disparity == std::numeric_limits<int>::quiet_NaN());
      // disparity.setTo(0, disparity == std::numeric_limits<int>::infinity());
      minMaxLoc(disparity, &minVal, &maxVal);
-     double gain = 256.0 / maxVal;
+     double gain = 255.0 / maxVal;
+     double offset = maxVal / 65535.0;
+     // double gain = 256.0 / 65536.0;
 
      disparity.convertTo(disparity8,CV_8U,gain);
      // printf("[INFO] CameraD415::convert_to_disparity() ---- Depth Limits After: min = %.3f -- max = %.3f\r\n", minVal,maxVal);
      *conversion_gain = gain;
+     *conversion_offset = offset;
      return disparity8;
 }
 int CameraD415::get_pointcloud(){
@@ -696,194 +700,3 @@ void CameraD415::processingThread(){
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;
 }
-
-// ===================================================================================
-/**
-static void get_field_of_view(const rs2::stream_profile& stream)
-    {
-        // A sensor's stream (rs2::stream_profile) is in general a stream of data with no specific type.
-        // For video streams (streams of images), the sensor that produces the data has a lens and thus has properties such
-        //  as a focal point, distortion, and principal point.
-        // To get these intrinsics parameters, we need to take a stream and first check if it is a video stream
-        if (auto video_stream = stream.as<rs2::video_stream_profile>())
-        {
-            try
-            {
-                //If the stream is indeed a video stream, we can now simply call get_intrinsics()
-                rs2_intrinsics intrinsics = video_stream.get_intrinsics();
-
-                auto principal_point = std::make_pair(intrinsics.ppx, intrinsics.ppy);
-                auto focal_length = std::make_pair(intrinsics.fx, intrinsics.fy);
-                rs2_distortion model = intrinsics.model;
-
-                std::cout << "Principal Point         : " << principal_point.first << ", " << principal_point.second << std::endl;
-                std::cout << "Focal Length            : " << focal_length.first << ", " << focal_length.second << std::endl;
-                std::cout << "Distortion Model        : " << model << std::endl;
-                std::cout << "Distortion Coefficients : [" << intrinsics.coeffs[0] << "," << intrinsics.coeffs[1] << "," <<
-                    intrinsics.coeffs[2] << "," << intrinsics.coeffs[3] << "," << intrinsics.coeffs[4] << "]" << std::endl;
-            }
-            catch (const std::exception& e)
-            {
-                std::cerr << "Failed to get intrinsics for the given stream. " << e.what() << std::endl;
-            }
-        }
-        else if (auto motion_stream = stream.as<rs2::motion_stream_profile>())
-        {
-            try
-            {
-                //If the stream is indeed a motion stream, we can now simply call get_motion_intrinsics()
-                rs2_motion_device_intrinsic intrinsics = motion_stream.get_motion_intrinsics();
-
-                std::cout << " Scale X      cross axis      cross axis  Bias X \n";
-                std::cout << " cross axis    Scale Y        cross axis  Bias Y  \n";
-                std::cout << " cross axis    cross axis     Scale Z     Bias Z  \n";
-                for (int i = 0; i < 3; i++)
-                {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        std::cout << intrinsics.data[i][j] << "    ";
-                    }
-                    std::cout << "\n";
-                }
-
-                std::cout << "Variance of noise for X, Y, Z axis \n";
-                for (int i = 0; i < 3; i++)
-                    std::cout << intrinsics.noise_variances[i] << " ";
-                std::cout << "\n";
-
-                std::cout << "Variance of bias for X, Y, Z axis \n";
-                for (int i = 0; i < 3; i++)
-                    std::cout << intrinsics.bias_variances[i] << " ";
-                std::cout << "\n";
-            }
-            catch (const std::exception& e)
-            {
-                std::cerr << "Failed to get intrinsics for the given stream. " << e.what() << std::endl;
-            }
-        }
-        else
-        {
-            std::cerr << "Given stream profile has no intrinsics data" << std::endl;
-        }
-    }
-*/
-
-// ===================================================================================
-/**
-void BaseRealSenseNode::publishStaticTransforms()
-{
-    rs2::stream_profile base_profile = getAProfile(_base_stream);
-
-    // Publish static transforms
-    if (_publish_tf)
-    {
-        for (std::pair<stream_index_pair, bool> ienable : _enable)
-        {
-            if (ienable.second)
-            {
-                calcAndPublishStaticTransform(ienable.first, base_profile);
-            }
-        }
-        // Static transform for non-positive values
-        if (_tf_publish_rate > 0)
-            _tf_t = std::shared_ptr<std::thread>(new std::thread(boost::bind(&BaseRealSenseNode::publishDynamicTransforms, this)));
-        else
-            _static_tf_broadcaster.sendTransform(_static_tf_msgs);
-    }
-
-    // Publish Extrinsics Topics:
-    if (_enable[DEPTH] &&
-        _enable[FISHEYE])
-    {
-        static const char* frame_id = "depth_to_fisheye_extrinsics";
-        const auto& ex = base_profile.get_extrinsics_to(getAProfile(FISHEYE));
-
-        _depth_to_other_extrinsics[FISHEYE] = ex;
-        _depth_to_other_extrinsics_publishers[FISHEYE].publish(rsExtrinsicsToMsg(ex, frame_id));
-    }
-
-    if (_enable[DEPTH] &&
-        _enable[COLOR])
-    {
-        static const char* frame_id = "depth_to_color_extrinsics";
-        const auto& ex = base_profile.get_extrinsics_to(getAProfile(COLOR));
-        _depth_to_other_extrinsics[COLOR] = ex;
-        _depth_to_other_extrinsics_publishers[COLOR].publish(rsExtrinsicsToMsg(ex, frame_id));
-    }
-
-    if (_enable[DEPTH] &&
-        _enable[INFRA1])
-    {
-        static const char* frame_id = "depth_to_infra1_extrinsics";
-        const auto& ex = base_profile.get_extrinsics_to(getAProfile(INFRA1));
-        _depth_to_other_extrinsics[INFRA1] = ex;
-        _depth_to_other_extrinsics_publishers[INFRA1].publish(rsExtrinsicsToMsg(ex, frame_id));
-    }
-
-    if (_enable[DEPTH] &&
-        _enable[INFRA2])
-    {
-        static const char* frame_id = "depth_to_infra2_extrinsics";
-        const auto& ex = base_profile.get_extrinsics_to(getAProfile(INFRA2));
-        _depth_to_other_extrinsics[INFRA2] = ex;
-        _depth_to_other_extrinsics_publishers[INFRA2].publish(rsExtrinsicsToMsg(ex, frame_id));
-    }
-
-}
-*/
-
-// ===================================================================================
-/**
-static void change_sensor_option(const rs2::sensor& sensor, rs2_option option_type)
-    {
-        // Sensors usually have several options to control their properties
-        //  such as Exposure, Brightness etc.
-
-        // To control an option, use the following api:
-
-        // First, verify that the sensor actually supports this option
-        if (!sensor.supports(option_type))
-        {
-            std::cerr << "This option is not supported by this sensor" << std::endl;
-            return;
-        }
-
-        // Each option provides its rs2::option_range to provide information on how it can be changed
-        // To get the supported range of an option we do the following:
-
-        std::cout << "Supported range for option " << option_type << ":" << std::endl;
-
-        rs2::option_range range = sensor.get_option_range(option_type);
-        float default_value = range.def;
-        float maximum_supported_value = range.max;
-        float minimum_supported_value = range.min;
-        float difference_to_next_value = range.step;
-        std::cout << "  Min Value     : " << minimum_supported_value << std::endl;
-        std::cout << "  Max Value     : " << maximum_supported_value << std::endl;
-        std::cout << "  Default Value : " << default_value << std::endl;
-        std::cout << "  Step          : " << difference_to_next_value << std::endl;
-
-        bool change_option = false;
-        change_option = prompt_yes_no("Change option's value?");
-
-        if (change_option)
-        {
-            std::cout << "Enter the new value for this option: ";
-            float requested_value;
-            std::cin >> requested_value;
-            std::cout << std::endl;
-
-            // To set an option to a different value, we can call set_option with a new value
-            try
-            {
-                sensor.set_option(option_type, requested_value);
-            }
-            catch (const rs2::error& e)
-            {
-                // Some options can only be set while the camera is streaming,
-                // and generally the hardware might fail so it is good practice to catch exceptions from set_option
-                std::cerr << "Failed to set option " << option_type << ". (" << e.what() << ")" << std::endl;
-            }
-        }
-    }
-*/

@@ -1,45 +1,12 @@
 #include "algorithms/vboats/vboats.h"
 #include "sensors/camera_d415.h"
+#include "algorithms/vboats/image_utils.h"
 
 #include <iostream>
 #include <chrono>
 
 using namespace chrono;
 using namespace std;
-
-// cv::Mat frame_to_mat(const rs2::frame& f){
-//     using namespace cv;
-//     using namespace rs2;
-//
-//     rs2::video_frame vf = f.as<rs2::video_frame>();
-//     const int w = vf.get_width();
-//     const int h = vf.get_height();
-//
-// 	if (f.get_profile().format() == RS2_FORMAT_BGR8){
-// 		return cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_RGB8){
-// 		cv::Mat r = cv::Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 		cv::cvtColor(r, r, COLOR_RGB2BGR);
-// 		return r;
-// 	} else if (f.get_profile().format() == RS2_FORMAT_Z16){
-// 		return cv::Mat(Size(w, h), CV_16UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_Y8){
-// 		return cv::Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	} else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32){
-// 		return cv::Mat(Size(w, h), CV_32FC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
-// 	}
-//
-//     throw std::runtime_error("Frame format is not supported yet!");
-// }
-//
-// // Converts depth frame to a matrix of doubles with distances in meters
-// cv::Mat depth_frame_to_meters(const rs2::pipeline& pipe, const rs2::depth_frame& f){
-//     cv::Mat dm = frame_to_mat(f);
-//     dm.convertTo(dm, CV_64F);
-//     double depth_scale = pipe.get_active_profile().get_device().first<rs2::depth_sensor>().get_depth_scale();
-//     dm = dm * depth_scale;
-//     return dm;
-// }
 
 int main(int argc, char *argv[]){
 	int count = 0;
@@ -56,7 +23,11 @@ int main(int argc, char *argv[]){
 	VBOATS vb;
 	printf("Press Ctrl+C to Stop...\r\n");
 
-	cv::Mat depth, rgb, disparity, umap, vmap;
+	cv::Mat depth, rgb, disparity;
+	cv::Mat depth8, rgb8, disparity8;
+	cv::Mat d1, d2, d3;
+	cv::Mat disp;
+	cv::Mat umap, vmap;
 	cv::Mat* dummy = nullptr;
 
 	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
@@ -65,10 +36,10 @@ int main(int argc, char *argv[]){
 	cam->start_thread();
 
 	float dt;
-	double cvtGain;
-	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
-	high_resolution_clock::time_point now;
+	double cvtGain, cvtRatio;
 	duration<float> time_span;
+	high_resolution_clock::time_point now;
+	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
 	while(1){
 		err = cam->get_processed_queued_images(&rgb, &depth);
 		if(err >= 0){
@@ -76,13 +47,76 @@ int main(int argc, char *argv[]){
 			time_span = duration_cast<duration<float>>(now - _prev_time);
 			dt = time_span.count();
 			printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
-			disparity = cam->convert_to_disparity(depth,&cvtGain);
-			vb.get_uv_map(disparity,&umap,&vmap, true, false);
 
+			printf("%s\r\n",cvStrSize("Depth",depth).c_str());
+			cv::Mat tmp, tmp2;
+			double minVal, maxVal;
+			double dtypeGain;
+			try{
+			     cv::minMaxLoc(depth, &minVal, &maxVal);
+				printf("Depth before min, max = %.2f, %.2f\r\n",minVal, maxVal);
+				dtypeGain = (255.0/maxVal);
+				depth.convertTo(tmp, CV_8U, dtypeGain);
+				cv::minMaxLoc(tmp, &minVal, &maxVal);
+				printf("Depth after min, max = %.2f, %.2f\r\n",minVal, maxVal);
+				cv::imshow("Depth", tmp);
+				cv::waitKey(0);
+			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+
+			// depth.convertTo(depth8,CV_8U, (255.0/65535.0));
+			// // depth.convertTo(depth8,CV_8U,(1.0/256.0));
+			// printf("%s\r\n",cvStrSize("Depth8",depth8).c_str());
+			// try{
+			// 	cv::applyColorMap(depth8, disp, cv::COLORMAP_JET);
+			// 	cv::imshow("Depth8", disp);
+			// 	cv::waitKey(0);
+			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+
+			disparity = cam->convert_to_disparity(tmp,&cvtGain, &cvtRatio);
+			cv::minMaxLoc(disparity, &minVal, &maxVal);
+			printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
+			// disparity = cam->convert_to_disparity(depth,&cvtGain);
+			// disparity = cam->convert_to_disparity(depth8,&cvtGain);
+			printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
+			try{
+				cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
+				cv::imshow("Disparity", disp);
+				cv::waitKey(0);
+			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+
+			// disparity.convertTo(disparity8,CV_8U);
+			// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
+			// printf("%s\r\n",cvStrSize("Disparity8",disparity8).c_str());
+			// try{
+			// 	cv::applyColorMap(disparity8, disp, cv::COLORMAP_JET);
+			// 	cv::imshow("Disparity8", disp);
+			// 	cv::waitKey(0);
+			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+
+			// disparity = cam->convert_to_disparity(depth,&cvtGain);
+			vb.get_uv_map(disparity,&umap,&vmap, true, "raw", true);
+			printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
+			cv::Mat th1, th2, th3;
+			int thresh = int(255*cvtRatio);
+			int thresh2 = int(255*(1 - cvtRatio));
+			printf("Threshs = %d, %d \r\n",thresh, thresh2);
+			// threshold(vmap, th1, 0, 255, cv::THRESH_TOZERO);
+			threshold(vmap, th1, 0, 255, cv::THRESH_BINARY);
+			threshold(vmap, th2, 0, thresh, cv::THRESH_BINARY);
+			threshold(vmap, th3, 0, thresh2, cv::THRESH_BINARY);
+			cv::imshow("Thresh", th1);
+			cv::imshow("Thresh1", th2);
+			cv::imshow("Thresh2", th3);
+			cv::waitKey(0);
+
+			// cv::Scalar mean, stddev;
+		     // cv::meanStdDev(disparity,mean, stddev);
+		     // cv::Mat stdImg = (mean-disparity)/stddev;
+			// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
 
 			_prev_time = now;
 			cv::imshow("RGB", rgb);
-			cv::imshow("Disparity", disparity);
+			// cv::imshow("Disparity", disparity);
 		}
 
 		if(cv::waitKey(10) == 27){

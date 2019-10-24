@@ -101,7 +101,7 @@ if(WITH_LIBREALSENSE)
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${realsense2_LIBRARY}")
 endif(WITH_LIBREALSENSE)
 
-# For PurePursuit Controller
+# Matplotlib-cpp
 find_package(PythonLibs 2.7)
 
 include_directories(
@@ -119,6 +119,7 @@ set( RoboCommander_EXTERNAL_LIBRARIES
      ${pigpiod_if2_LIBRARY}
      ${CMAKE_THREAD_LIBS_INIT}
      ${EXTERNAL_PACKAGE_LIBRARIES}
+     ${PYTHON_LIBRARIES}
 )
 
 set( RoboCommander_INCLUDE_DIRS
