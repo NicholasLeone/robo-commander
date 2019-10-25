@@ -273,7 +273,6 @@ void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>*
      }
      if(output) *output = filtered;
 }
-
 void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool visualize){
      if(verbose) printf("%s\r\n",cvStrSize("Umap Filtering Input",input).c_str());
      vector<float> threshs;
@@ -491,6 +490,68 @@ bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_interce
      return true;
 }
 
+
+/** TODO: port to c++
+def find_contours(self, _umap, threshold = 30.0, threshold_method = "perimeter", offset=(0,0), max_thresh=1500.0, debug=False):
+"""
+============================================================================
+	Find contours in image and filter out those above a certain threshold
+============================================================================
+"""
+umap = np.copy(_umap)
+# try: umap = cv2.cvtColor(_umap,cv2.COLOR_BGR2GRAY)
+# except: print("[WARNING] find_contours --- Unnecessary Image Color Converting")
+
+_, contours, hierarchy = cv2.findContours(umap,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE,offset=offset)
+
+if(threshold_method == "perimeter"):
+  filtered_contours = [cnt for cnt in contours if cv2.arcLength(cnt,True) >= threshold]
+  if max_thresh > 0: # Dont filter out big contours
+      filtered_contours = [cnt for cnt in filtered_contours if cv2.arcLength(cnt,True) <= max_thresh]
+  if(debug):
+      raw_perimeters = np.array([cv2.arcLength(cnt,True) for cnt in contours])
+      filtered_perimeters = np.array([cv2.arcLength(cnt,True) for cnt in filtered_contours])
+      print("Raw Contour Perimeters:",np.unique(raw_perimeters))
+      print("Filtered Contour Perimeters:",np.unique(filtered_perimeters))
+elif(threshold_method == "area"):
+  filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) >= threshold]
+  if(debug):
+      raw_areas = np.array([cv2.contourArea(cnt) for cnt in contours])
+      filtered_areas = np.array([cv2.contourArea(cnt) for cnt in filtered_contours])
+      print("Raw Contour Areas:",np.unique(raw_areas))
+      print("Filtered Contour Areas:",np.unique(filtered_areas))
+else:
+  print("[ERROR] find_contours --- Unsupported filtering method!")
+
+return filtered_contours,contours
+*/
+
+
+/** TODO:
+def extract_contour_bounds(self, cnts, verbose=False, timing=False):
+""" ===================================================================
+	Attempt to find the horizontal bounds for detected contours
+==================================================================== """
+dt = 0
+xBounds = []
+disparityBounds = []
+
+if(timing): t0 = time.time()
+
+for cnt in cnts:
+  try:
+      x,y,rectw,recth = cv2.boundingRect(cnt)
+      xBounds.append([x, x + rectw])
+      disparityBounds.append([y, y + recth])
+  except: pass
+
+if(timing):
+  t1 = time.time()
+  dt = t1 - t0
+  print("\t[INFO] extract_contour_bounds() --- Took %f seconds (%.2f Hz) to complete" % (dt, 1/dt))
+return xBounds, disparityBounds, dt
+
+*/
 
 
 /** TODO */
