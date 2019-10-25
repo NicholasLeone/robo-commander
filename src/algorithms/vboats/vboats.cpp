@@ -55,7 +55,7 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
 		hist.col(0).copyTo(_umap.col(i));
 		// histNorm.col(0).copyTo(_umapNorm.col(i));
 	}
-     printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
+     // printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
 
 	for(int i = 0; i < h; i++){
 		cv::MatND hist;
@@ -71,14 +71,14 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
 		histrow.row(0).copyTo(_vmap.row(i));
 		// histNorm.row(0).copyTo(_vmapNorm.row(i));
 	}
-     printf("%s\r\n",cvStrSize("Genereated Vmap",_vmap).c_str());
+     // printf("%s\r\n",cvStrSize("Genereated Vmap",_vmap).c_str());
 
      cv::Mat _umap8, _vmap8;
      if(visualize){
-          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId);
-          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId);
-          std::string strU8 = format("UMap[CV_8UC1] %s", dispId);
-          std::string strV8 = format("VMap[CV_8UC1] %s", dispId);
+          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
+          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
+          std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
+          std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
           cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL );
           cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL );
           cv::imshow(strU, _umap);

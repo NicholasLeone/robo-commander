@@ -25,26 +25,50 @@ std::string format(const char* format, Args... args ){
      return str;
 }
 
-int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5, bool cut_horizontally = true, bool visualize=false, bool verbose=false);
-int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged, bool merge_horizontally = true, bool visualize=false, bool verbose=false);
+int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5,
+     bool cut_horizontally = true, bool visualize=false, bool verbose=false
+);
+int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged,
+     bool merge_horizontally = true, bool visualize=false, bool verbose=false
+);
 
-void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, double* fx, double* fy, bool verbose = false);
-void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy, cv::Size* new_size, bool verbose = false);
+void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
+     double* fx, double* fy, bool verbose = false
+);
+void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
+     cv::Size* new_size, bool verbose = false
+);
 
-void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, double* fx, double* fy, bool verbose = false);
-void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy, cv::Size* new_size, bool verbose = false);
+void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
+     double* fx, double* fy, bool verbose = false
+);
+void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
+     cv::Size* new_size, bool verbose = false
+);
 
 std::string cvtype2str(int type);
+std::string cvtype2str(cv::Mat mat);
 std::string cvStrSize(const char* name, const cv::Mat& mat);
-
+void cvinfo(const cv::Mat& mat, const char* label);
 
 /** TODO Make these functions part of the VBOATS class */
-void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, bool verbose = false, bool visualize = false);
-void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, bool verbose = false, bool visualize = false);
+void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
+void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
 
-int find_ground_line(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh = 100);
-int validate_ground_line(const vector<cv::Vec2f>& lines, double best_slope, int* best_intercept);
-bool is_ground_present(const cv::Mat& vmap, double* best_slope, int* best_intercept, int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = -89.0, double maxDeg = -26.0);
+int find_ground_lines(const cv::Mat& vmap, cv::Mat* rhos, cv::Mat* thetas, int hough_thresh = 100, bool verbose = false);
+int find_ground_lines(const cv::Mat& vmap, cv::Mat* found_lines, int hough_thresh = 100, bool verbose = false);
+int find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh = 100, bool verbose = false);
+
+void get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept);
+
+int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept,
+     double gnd_deadzone = 2.0, double minDeg = -89.0, double maxDeg = -26.0, bool verbose = false, bool debug_timing = false
+);
+bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
+     int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = -89.0,
+     double maxDeg = -26.0, bool verbose = false, bool debug_timing = false, bool visualize = true
+);
+
 /** TODO */
 // def histogram_sliding_filter(hist, window_size=16, flag_plot=False):
 

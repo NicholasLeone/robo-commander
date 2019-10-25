@@ -95,27 +95,55 @@ int main(int argc, char *argv[]){
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
-			vb.get_uv_map(disparity,&umap,&vmap, true, "raw", true);
-			printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
+			vb.get_uv_map(disparity,&umap,&vmap, true, "raw");
+			// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
 			cv::applyColorMap(umap, disp, cv::COLORMAP_JET);
 			cv::imshow("Umap", disp);
 			cv::applyColorMap(vmap, disp, cv::COLORMAP_JET);
 			cv::imshow("Vmap", disp);
 
-			cv::Mat th1, th2, th3;
-			if(try_thresholding){
-				int thresh = int(255*cvtRatio);
-				int thresh2 = int(255*(1 - cvtRatio));
-				printf("Threshs = %d, %d \r\n",thresh, thresh2);
-				// threshold(vmap, th1, 0, 255, cv::THRESH_TOZERO);
-				threshold(vmap, th1, 0, 255, cv::THRESH_BINARY);
-				threshold(vmap, th2, 0, thresh, cv::THRESH_BINARY);
-				threshold(vmap, th3, 0, thresh2, cv::THRESH_BINARY);
-				cv::imshow("Thresh", th1);
-				cv::imshow("Thresh1", th2);
-				cv::imshow("Thresh2", th3);
-				// cv::waitKey(0);
-			}
+			cv::Mat vProcessed, uProcessed;
+			cv::Mat dvProcessed, duProcessed;
+
+			// vector<float> vthreshs = {0.15,0.15,0.01,0.01};
+		     // vector<float> vthreshs = {0.85,0.85,0.75,0.5};
+		     // vector<float> vthreshs = {0.45, 0.45,0.35,0.25};
+		     vector<float> vthreshs = {0.35, 0.35,0.25,0.25};
+
+			vector<float> uthreshs = {0.25,0.15,0.35,0.35};
+			// vector<float> thresholds = {0.85,0.85,0.75,0.5};
+
+			filter_disparity_umap(umap, &uProcessed, &uthreshs);
+		     filter_disparity_vmap(vmap, &vProcessed, &vthreshs);
+			cv::applyColorMap(umap, duProcessed, cv::COLORMAP_JET);
+			cv::applyColorMap(vmap, dvProcessed, cv::COLORMAP_JET);
+
+		     // cv::namedWindow("vmap", cv::WINDOW_NORMAL );
+			// cv::imshow("vmap", vmap);
+		     cv::namedWindow("thresholded vmap", cv::WINDOW_NORMAL );
+		     cv::imshow("thresholded vmap", dvProcessed);
+
+		     // cv::namedWindow("umap", cv::WINDOW_NORMAL );
+		     cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL );
+		     // cv::imshow("umap", umap);
+		     cv::imshow("thresholded umap", duProcessed);
+			float mGnd;		int bGnd;
+		     bool gndPresent = is_ground_present(vProcessed, &mGnd,&bGnd);
+
+			// cv::Mat th1, th2, th3;
+			// if(try_thresholding){
+			// 	int thresh = int(255*cvtRatio);
+			// 	int thresh2 = int(255*(1 - cvtRatio));
+			// 	printf("Threshs = %d, %d \r\n",thresh, thresh2);
+			// 	// threshold(vmap, th1, 0, 255, cv::THRESH_TOZERO);
+			// 	threshold(vmap, th1, 0, 255, cv::THRESH_BINARY);
+			// 	threshold(vmap, th2, 0, thresh, cv::THRESH_BINARY);
+			// 	threshold(vmap, th3, 0, thresh2, cv::THRESH_BINARY);
+			// 	cv::imshow("Thresh", th1);
+			// 	cv::imshow("Thresh1", th2);
+			// 	cv::imshow("Thresh2", th3);
+			// 	// cv::waitKey(0);
+			// }
 
 			// cv::Scalar mean, stddev;
 		     // cv::meanStdDev(disparity,mean, stddev);
