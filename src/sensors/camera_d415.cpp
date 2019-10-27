@@ -5,6 +5,10 @@
 #include "sensors/camera_d415.h"
 #include "algorithms/vboats/image_utils.h"
 
+#define STARTUP_DELAY_SEC 3.0
+#define D415_MAX_DEPTH_M 10.0
+#define D415_MIN_DEPTH_M 0.1
+
 using namespace std;
 using namespace chrono;
 
@@ -36,7 +40,7 @@ CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
      this->_align = new rs2::align(RS2_STREAM_COLOR);
      this->_Dmat = cv::Mat::zeros(5, 1, CV_64F);
 
-     err = this->get_intrinsics(RS2_STREAM_DEPTH,&this->_Kdepth, &this->_Pdepth);
+     err = this->get_intrinsics(RS2_STREAM_DEPTH,&this->_Kdepth, &this->_Pdepth,true);
      this->_fxd = _Kdepth.at<double>(0);
      this->_fyd = _Kdepth.at<double>(4);
      this->_ppxd = _Kdepth.at<double>(2);
@@ -83,7 +87,7 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
      this->_align = new rs2::align(RS2_STREAM_COLOR);
      this->_Dmat = cv::Mat::zeros(5, 1, CV_64F);
 
-     err = this->get_intrinsics(RS2_STREAM_DEPTH,&this->_Kdepth, &this->_Pdepth);
+     err = this->get_intrinsics(RS2_STREAM_DEPTH,&this->_Kdepth, &this->_Pdepth, true);
      this->_fxd = _Kdepth.at<double>(0);
      this->_fyd = _Kdepth.at<double>(4);
      this->_ppxd = _Kdepth.at<double>(2);
@@ -128,7 +132,7 @@ void CameraD415::start_thread(){
 }
 bool CameraD415::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs){
      bool err = this->reset(stream_cfgs, false);
-     usleep(5.0 * 1000000);
+     usleep(STARTUP_DELAY_SEC * 1000000);
      // Try initializing camera hardware
      if(!this->hardware_startup(stream_cfgs)){
           // Attempt to initialize hardware with a reset, if unsuccessful initialization
@@ -341,30 +345,94 @@ int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed){
 */
 
 cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
-     cv::Mat dm, disparity8;
+     float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
+     float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
+     // bool use_test = true;
+     bool use_test = false;
+     bool debug = false;
+     cv::Mat tmp, disparity, disparity8, dispRaw, dispMeters;
+     cv::Mat disp1;
+     cv::Mat scaledDisparity;
+     double min, maxIn, maxMeter, maxDisparity, maxDisparity2, maxScaled, maxOut;
      double minVal, maxVal;
-     double min, max;
-     cv::minMaxLoc(depth, &min, &max);
-     // printf("[INFO] CameraD415::convert_to_disparity() ---- Depth Limits Before: min = %.3f -- max = %.3f\r\n", min,max);
-     depth.convertTo(dm, CV_64F);
-     cv::Mat tmp = dm*this->_dscale;
-     cv::Mat mask = cv::Mat(tmp == 0);
-     tmp.setTo(1, mask);
-     cv::Mat disparity = (this->_fxd * this->_baseline) / tmp;
+     cv::minMaxLoc(depth, &min, &maxIn);
+     depth.convertTo(tmp, CV_64F);
+     cv::Mat dMeters = tmp*(this->_dscale);
+     cv::minMaxLoc(dMeters, &min, &maxMeter);
+     // cv::Mat dMetersNorm = dMeters*(1.0/->_dscale);
+     // cv::minMaxLoc(dMeters, &min, &maxMeter);
+     if(debug){
+          cv::convertScaleAbs(depth, dispRaw, 255 / maxIn);
+          cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET); cv::imshow("DepthIn", dispRaw);
 
-     disparity.setTo(0, mask);
-     // disparity.setTo(0, disparity == std::numeric_limits<int>::quiet_NaN());
-     // disparity.setTo(0, disparity == std::numeric_limits<int>::infinity());
-     minMaxLoc(disparity, &minVal, &maxVal);
-     double gain = 255.0 / maxVal;
-     double offset = maxVal / 65535.0;
-     // double gain = 256.0 / 65536.0;
+          dMeters.convertTo(dispMeters, CV_32F);
+          cv::applyColorMap(dispMeters, dispMeters, cv::COLORMAP_JET); cv::imshow("MetersIn", dispMeters);
+          // printf("[INFO] CameraD415::convert_to_disparity() ---- Depth Limits Before: min = %.3f -- max = %.3f\r\n", min,max);
+     }
 
-     disparity.convertTo(disparity8,CV_8U,gain);
-     // printf("[INFO] CameraD415::convert_to_disparity() ---- Depth Limits After: min = %.3f -- max = %.3f\r\n", minVal,maxVal);
-     *conversion_gain = gain;
-     *conversion_offset = offset;
+     cv::Mat zerosMask = cv::Mat(dMeters == 0);
+     dMeters.setTo(1, zerosMask);
+     disparity = (this->_fxd * this->_baseline) / dMeters;
+     disparity.setTo(0, zerosMask);
+     cv::minMaxLoc(disparity, &minVal, &maxDisparity);
+     float dDisparity = (maxDisparity - minVal);
+     float dTrueDisp = (trueMaxDisparity - trueMinDisparity);
+     float disparityRatio = dDisparity / dTrueDisp;
+     float scale = (255.0*disparityRatio) / dDisparity;
+     // disparity.convertTo(disparity8,CV_8UC1);
+     disparity.convertTo(disparity8,CV_8UC1, scale, -minVal*scale);
+
+     cvinfo(disparity8,"disparity8");
+     double absRatio = ((double) trueMaxDisparity) / maxDisparity;
+
+     if(debug){
+          cv::convertScaleAbs(disparity, disp1, 255 / maxDisparity);
+          cv::applyColorMap(disp1, disp1, cv::COLORMAP_JET); cv::imshow("Raw Disparity", disp1);
+
+          disparity.convertTo(tmp, CV_32F);
+          cv::normalize(tmp,tmp, 1);
+          tmp.convertTo(disp1, CV_8U);
+          cv::applyColorMap(disp1, disp1, cv::COLORMAP_JET); cv::imshow("Temp Display", disp1);
+     }
+
+     printf("trueMinDisparity = %.2lf, trueMaxDisparity = %.2lf -- maxDisparity = %.2lf -- absRatio = %.2lf\r\n", trueMinDisparity, trueMaxDisparity,maxDisparity, absRatio);
+     cv::Mat disparity2 = disparity*absRatio;
+     cv::minMaxLoc(disparity2, &minVal, &maxDisparity2);
+     if(debug){
+     }
+
+     double gain = 255.0 / maxDisparity;
+     double gain2 = 255.0 / maxDisparity2;
+     double offset = maxDisparity / 65535.0;
+     double offset2 = maxDisparity2 / 65535.0;
+
+     // cv::Scalar avg,sdv;
+     // cv::meanStdDev(image, avg, sdv);
+     // sdv.val[0] = sqrt(image.cols*image.rows*sdv.val[0]*sdv.val[0]);
+     // cv::Mat image_32f;
+     // image.convertTo(image_32f,CV_32F,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
+
+     // cv::convertScaleAbs(disparity, scaledDisparity, 255 / maxDisparity);
+     cv::convertScaleAbs(disparity2, scaledDisparity, 255 / maxDisparity2);
+     cv::minMaxLoc(scaledDisparity, &minVal, &maxScaled);
+     double gainScaled = 255.0 / maxScaled;
+     double offsetScaled = maxScaled / 65535.0;
+
+     // if(use_test) cv::convertScaleAbs(disparity, disparity8, 255 / maxDisparity);
+     // else scaledDisparity.convertTo(disparity8,CV_8U,gainScaled);
+     // disparity2.convertTo(scaledDisparity,CV_8U,gain2);
+     // else disparity.convertTo(disparity8,CV_8U,gain);
+     // cv::minMaxLoc(disparity8, &minVal, &maxOut);
+
+     // cv::applyColorMap(disparity, disp, cv::COLORMAP_JET); cv::imshow("Disparity", disp);
+     // cv::waitKey(0);
+
+
+     // printf("[INFO] CameraD415::convert_to_disparity() ---- Max Values: Input (%.2f) --> depth (%.3f) --> disparity (%.2f) --> disparity2 (%.2f) --> scaled disparity (%.2f) --> Output (%.2f)\r\n", maxIn, maxMeter, maxDisparity, maxDisparity2, maxScaled, maxOut);
+     if(*conversion_gain) *conversion_gain = gain;
+     if(*conversion_offset) *conversion_offset = offset;
      return disparity8;
+     // return scaledDisparity;
 }
 int CameraD415::get_pointcloud(){
      // rs2::pointcloud pc;
@@ -531,7 +599,7 @@ std::vector<rs2::filter> CameraD415::get_default_filters(bool use_decimation, bo
      }
      /** Threshold  - removes values outside recommended range */
      if(use_threshold){
-          rs2::threshold_filter thresh_filter(0.1f, 10.0f);
+          rs2::threshold_filter thresh_filter(0.1f, D415_MAX_DEPTH_M);
           // filters.emplace_back("Threshold", thresh_filter);
           filters.push_back(thresh_filter);
      }

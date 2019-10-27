@@ -1,12 +1,27 @@
 #include "algorithms/vboats/vboats.h"
 #include "sensors/camera_d415.h"
 #include "algorithms/vboats/image_utils.h"
+#include "algorithms/vboats/plot_utils.h"
 
 #include <iostream>
 #include <chrono>
 
 using namespace chrono;
 using namespace std;
+
+
+int PlotGraph(cv::Mat& data){
+     //converting the Mat to CV_64F
+     data.convertTo(data, CV_64F);
+     cv::Mat plot_result;
+     cv::Ptr<cv::plot::Plot2d> plot = cv::plot::Plot2d::create(data);
+     plot->setPlotBackgroundColor(cv::Scalar(50, 50, 50));
+     plot->setPlotLineColor(cv::Scalar(50, 50, 255));
+     plot->render(plot_result);
+     cv::imshow("Graph", plot_result);
+     // cv::waitKey(0);
+     return 0;
+}
 
 int main(int argc, char *argv[]){
 	int count = 0;
@@ -26,7 +41,7 @@ int main(int argc, char *argv[]){
 	cv::Mat depth, rgb, disparity;
 	cv::Mat depth8, rgb8, disparity8;
 	cv::Mat d1, d2, d3;
-	cv::Mat disp;
+	cv::Mat disp, dispRaw;
 	cv::Mat umap, vmap;
 	cv::Mat* dummy = nullptr;
 
@@ -45,13 +60,10 @@ int main(int argc, char *argv[]){
 		err = cam->get_processed_queued_images(&rgb, &depth);
 		if(err >= 0){
 			now = high_resolution_clock::now();
-			time_span = duration_cast<duration<float>>(now - _prev_time);
-			dt = time_span.count();
-			printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
 
-			if(verbose) printf("%s\r\n",cvStrSize("Depth",depth).c_str());
+			if(verbose) cvinfo(depth,"DepthIn");
 			cv::Mat tmp, tmp2;
-			double minVal, maxVal;
+			double minVal, maxVal, dmax;
 			double dtypeGain;
 			// try{
 			//      cv::minMaxLoc(depth, &minVal, &maxVal);
@@ -73,6 +85,7 @@ int main(int argc, char *argv[]){
 			// 	cv::waitKey(0);
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
+			cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			cv::minMaxLoc(disparity, &minVal, &maxVal);
 			if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
@@ -82,6 +95,9 @@ int main(int argc, char *argv[]){
 			try{
 				cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
 				cv::imshow("Disparity", disp);
+				cv::convertScaleAbs(depth, dispRaw, 255 / dmax);
+				cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
+				cv::imshow("Depth", dispRaw);
 				// cv::waitKey(0);
 			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
@@ -108,7 +124,7 @@ int main(int argc, char *argv[]){
 			// vector<float> vthreshs = {0.15,0.15,0.01,0.01};
 		     // vector<float> vthreshs = {0.85,0.85,0.75,0.5};
 		     // vector<float> vthreshs = {0.45, 0.45,0.35,0.25};
-		     vector<float> vthreshs = {0.35, 0.35,0.25,0.25};
+		     vector<float> vthreshs = {0.35, 0.35,0.3,0.35};
 
 			vector<float> uthreshs = {0.25,0.15,0.35,0.35};
 			// vector<float> thresholds = {0.85,0.85,0.75,0.5};
@@ -124,9 +140,22 @@ int main(int argc, char *argv[]){
 		     cv::imshow("thresholded vmap", dvProcessed);
 
 		     // cv::namedWindow("umap", cv::WINDOW_NORMAL );
-		     cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL );
-		     // cv::imshow("umap", umap);
-		     cv::imshow("thresholded umap", duProcessed);
+			// cv::imshow("umap", umap);
+		     // cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL );
+		     // cv::imshow("thresholded umap", duProcessed);
+
+			cv::Mat vertMat, horzMat;
+		     // cvinfo(vProcessed, "processedV");
+		     // cv::reduce(vProcessed,vertMat,1,CV_REDUCE_SUM, CV_32S);
+		     // std::cout << "vertMat: " << vertMat << std::endl;
+		     cv::reduce(vProcessed,horzMat,0,CV_REDUCE_SUM, CV_32S);
+		     // std::cout << "horzMat: " << horzMat << std::endl;
+			int hist_w = 512; int hist_h = 400;
+		     cv::Mat histImage = cv::Mat(hist_h, hist_w, CV_8UC3, cv::Scalar(0,0,0));
+		     cv::Mat histNormImg = cv::Mat(hist_h, hist_w, CV_8UC3, cv::Scalar(0,0,0));
+		     // cvinfo(horzMat, "horzMat");
+		     PlotGraph(horzMat);
+
 			float mGnd;		int bGnd;
 		     bool gndPresent = is_ground_present(vProcessed, &mGnd,&bGnd);
 
@@ -149,9 +178,13 @@ int main(int argc, char *argv[]){
 		     // cv::meanStdDev(disparity,mean, stddev);
 		     // cv::Mat stdImg = (mean-disparity)/stddev;
 			// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
+			time_span = duration_cast<duration<float>>(now - _prev_time);
+			dt = time_span.count();
+			printf(" DMAX = %.2f --- %.7f (%.2f) ---- \r\n", dmax,dt, (1/dt));
 			_prev_time = now;
 			cv::imshow("RGB", rgb);
 			// cv::imshow("Disparity", disparity);
+			cv::waitKey(0);
 		}
 
 		if(cv::waitKey(10) == 27){

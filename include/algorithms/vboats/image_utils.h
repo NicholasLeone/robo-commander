@@ -7,10 +7,7 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "base/matplotlibcpp.h"
-
 using namespace std;
-namespace plt = matplotlibcpp;
 
 template<typename... Args>
 std::string format(const char* format, Args... args ){
@@ -61,13 +58,31 @@ int find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int h
 
 void get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept);
 
-int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept,
-     double gnd_deadzone = 2.0, double minDeg = -89.0, double maxDeg = -26.0, bool verbose = false, bool debug_timing = false
+int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept, float* worst_slope, int* worst_intercept,
+     double gnd_deadzone = 2.0, double minDeg = 26.0, double maxDeg = 89.0, bool verbose = false, bool debug_timing = false
 );
 bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
-     int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = -89.0,
-     double maxDeg = -26.0, bool verbose = false, bool debug_timing = false, bool visualize = true
+     int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = 26.0,
+     double maxDeg = 89.0, bool verbose = false, bool debug_timing = false, bool visualize = true
 );
+// bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
+//      int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = -89.0,
+//      double maxDeg = -26.0, bool verbose = false, bool debug_timing = false, bool visualize = true
+// );
+
+void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
+     int filter_method = 1, float min_threshold = 30.0, int* offsets = nullptr,
+     float max_threshold = -1, bool verbose = true, bool visualize = true,
+     bool debug = false, bool debug_timing = true
+);
+
+void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose = false);
+
+int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
+     int* pixel_thresholds = nullptr, int* window_size = nullptr, float* line_params = nullptr,
+     bool verbose = false, bool visualize = true, bool debug = false, bool debug_timing = true
+);
+
 
 /** TODO */
 // def histogram_sliding_filter(hist, window_size=16, flag_plot=False):
@@ -299,8 +314,5 @@ static void change_sensor_option(const rs2::sensor& sensor, rs2_option option_ty
         }
     }
 */
-
-
-
 
 #endif // VBOATS_IMAGE_UTILS_H_

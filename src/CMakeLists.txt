@@ -16,6 +16,10 @@ add_library(img_utils SHARED algorithms/vboats/image_utils.cpp)
 target_link_libraries(img_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES img_utils)
 
+add_library(plot_utils SHARED algorithms/vboats/plot_utils.cpp)
+target_link_libraries(plot_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES plot_utils)
+
 # =========================================
 #      Build Communication Libraries
 # =========================================
@@ -82,7 +86,7 @@ list(APPEND RoboCommander_LIBRARIES bno055_i2c)
 
 # Camera - D415
 add_library(camera_d415 SHARED sensors/camera_d415.cpp)
-target_link_libraries(camera_d415 ${RoboCommander_EXTERNAL_LIBRARIES})
+target_link_libraries(camera_d415 img_utils ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES camera_d415)
 
 # =========================================

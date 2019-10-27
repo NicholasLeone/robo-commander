@@ -163,7 +163,7 @@ public:
      float get_baseline(bool verbose = false);
      float get_depth_scale(bool verbose = false);
      std::vector<rs2::filter> get_default_filters(bool use_decimation = true,
-          bool use_threshold = false, bool depth_to_disparity = true,
+          bool use_threshold = true, bool depth_to_disparity = true,
           bool use_spatial = true, bool use_temporal = true, bool use_hole_filling = false
      );
 

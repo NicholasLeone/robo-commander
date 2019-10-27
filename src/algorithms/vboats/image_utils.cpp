@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <math.h>       /* ceil, cos, sin */
 
+// #include "plot.h"
+
 #include "base/definitions.h"
 #include "algorithms/vboats/image_utils.h"
 
@@ -51,8 +53,10 @@ std::string cvStrSize(const char* name, const cv::Mat& mat){
      return str;
 }
 void cvinfo(const cv::Mat& mat, const char* label){
-     if(!label) printf("%s\r\n",cvStrSize("Matrix",mat).c_str());
-     else printf("%s\r\n",cvStrSize(label,mat).c_str());
+     double min, max;
+     cv::minMaxLoc(mat, &min, &max);
+     if(!label) printf("%s -- Limits = [%.3lf, %.3lf]\r\n",cvStrSize("Matrix",mat).c_str(), min, max);
+     else printf("%s -- Limits = [%.3lf, %.3lf]\r\n",cvStrSize(label,mat).c_str(), min, max);
 }
 
 void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size, double* fx, double* fy, bool verbose){
@@ -241,18 +245,18 @@ void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>*
                continue;
           }
 
-          if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %.1f, Mean = %.1f, Std = %.1f\r\n", idx,tmpMax,tmpMean,tmpStd);
+          if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
           double maxValRatio = (double) vMax/255.0;
           double relRatio = (double)(tmpMax-tmpStd)/(double)vMax;
           double relRatio2 = (tmpMean)/(double)(tmpMax);
-          if(verbose) printf("\tRatios: %.3f, %.3f, %.3f\r\n", maxValRatio, relRatio, relRatio2);
+          if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
 
           double tmpGain;
           if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
           else tmpGain = 1.0 - (relRatio + relRatio2);
 
           int thresh = int(threshs[idx] * tmpGain * tmpMax);
-          if(verbose) printf("\tGain = %.2f, Thresh = %d\r\n", tmpGain,thresh);
+          if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
 
           cv::Mat tmpStrip;
           threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
@@ -320,18 +324,18 @@ void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>*
                continue;
           }
 
-          if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %.1f, Mean = %.1f, Std = %.1f\r\n", idx,tmpMax,tmpMean,tmpStd);
+          if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
           double maxValRatio = (double) uMax/255.0;
           double relRatio = (double)(tmpMax-tmpStd)/(double)uMax;
           double relRatio2 = (tmpMean)/(double)(tmpMax);
-          if(verbose) printf("\tRatios: %.3f, %.3f, %.3f\r\n", maxValRatio, relRatio, relRatio2);
+          if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
 
           double tmpGain;
           if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
           else tmpGain = 1.0 - (relRatio + relRatio2);
 
           int thresh = int(threshs[idx] * tmpGain * tmpMax);
-          if(verbose) printf("\tGain = %.2f, Thresh = %d\r\n", tmpGain,thresh);
+          if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
 
           cv::Mat tmpStrip;
           threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
@@ -408,15 +412,15 @@ void get_hough_line_params(const float& rho, const float& theta, float* slope, i
 }
 
 int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope,
-     int* best_intercept, double gnd_deadzone, double minDeg, double maxDeg,
-     bool verbose, bool debug_timing)
+     int* best_intercept, float* worst_slope, int* worst_intercept, double gnd_deadzone,
+     double minDeg, double maxDeg, bool verbose, bool debug_timing)
 {
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
 
      float dAng = gnd_deadzone * M_DEG2RAD;
-     float minAng = (minDeg * M_DEG2RAD) + CV_PI;
-     float maxAng = (maxDeg * M_DEG2RAD) + CV_PI;
+     float minAng = (minDeg * M_DEG2RAD) + (CV_PI/2.0);
+     float maxAng = (maxDeg * M_DEG2RAD) + (CV_PI/2.0);
 
      vector<cv::Vec2f> buf;
      int nLines = lines.size();
@@ -424,36 +428,66 @@ int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope,
 
      float sumRad = 0.0;
      float tmpRho, tmpAng;
+     if(verbose) printf("[INFO] estimate_ground_line() ---- Filtering lines using limits (deg): Min=%.2f -- Max=%.2f\r\n", minAng*M_RAD2DEG, maxAng*M_RAD2DEG);
      for(int i = 0; i < nLines; i++){
           tmpRho = lines[i][0];
           tmpAng = lines[i][1];
+          // tmpAng = lines[i][1] - (CV_PI/2.0);
+          if(verbose){
+               if(tmpAng > 0)
+                    printf("[INFO] estimate_ground_line() ---- \tFiltering Line[%d] -- Angle=%.2f (deg)\r\n", i, tmpAng*M_RAD2DEG);
+          }
+          // if(verbose) printf("[INFO] estimate_ground_line() ---- \tFiltering Line[%d] -- Angle=%.2f (deg)\r\n", i, tmpAng*M_RAD2DEG);
           if(tmpAng >= minAng && tmpAng <= maxAng){
                sumRad += tmpAng;
                buf.push_back(cv::Vec2f(tmpRho, tmpAng));
           }
      }
+     // if(verbose) printf("[INFO] estimate_ground_line() ---- using avg angle (%.2f deg) -> ground line (m = %.2f, b = %d) estimated found from %d / %d hough lines\r\n", avgAng*M_RAD2DEG, bestM, bestB, num,nLines);
 
-     int num = 0;
-     int tmpB = 0, bestB = 0;
-     float tmpM = 0.0, bestM = 0.0;
+     int num = 0, idx = 0;
+     int tmpB = 0, bestB = 0, worstB = 0;
+     float tmpM = 0.0, bestM = 0.0, worstM = 0.0;
      float avgAng = sumRad / float(buf.size());
      float minAvg = avgAng - dAng;
      float maxAvg = avgAng + dAng;
-     // printf("[INFO] %d filtered Lines --- avg angle = %.2f deg\r\n", buf.size(), avgAng*M_RAD2DEG);
+     if(verbose) printf("[INFO] estimate_ground_line() ---- Angle Limits (deg): Min=%.2f -- Avg=%.2f -- Max=%.2f\r\n", (minAvg*M_RAD2DEG)-90.0, (avgAng*M_RAD2DEG)-90.0, (maxAvg*M_RAD2DEG)-90.0);
      for(cv::Vec2f tmpLine : buf){
+          idx++;
+          if(verbose) printf("[INFO] estimate_ground_line() ---- Line[%d] -- Angle=%.2f (deg)\r\n", idx, (tmpLine[1]*M_RAD2DEG)-90.0);
           if(tmpLine[1] >= minAvg && tmpLine[1] <= maxAvg){
                get_hough_line_params(tmpLine[0],tmpLine[1], &tmpM, &tmpB);
+               // if(verbose) printf("[INFO] estimate_ground_line() ---- \t line params: m = %.2f -- b = %d\r\n", tmpM, tmpB);
                if(tmpB > bestB){ bestM = tmpM; bestB = tmpB; }
+               if(tmpB < worstB){ worstM = tmpM; worstB = tmpB; }
                num++;
           }
      }
-     if(verbose) printf("[INFO] estimate_ground_line() ---- estimated ground line (m = %.2f, b = %d) found from %d / %d hough lines\r\n", bestM, bestB, num,nLines);
+     if(verbose) printf("[INFO] estimate_ground_line() ---- ground line best(m = %.2f, b = %d) -- worst(m = %.2f, b = %d) estimated found from %d / %d hough lines\r\n", bestM, bestB, worstM, worstB, num,nLines);
      if(debug_timing){
           t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
           printf("[INFO] estimate_ground_line() ---- took %.4lf ms (%.2lf Hz)\r\n", t*1000.0, (1.0/t));
      }
-     if(best_slope) *best_slope = bestM;
-     if(best_intercept) *best_intercept = bestB;
+
+     float slope, otherSlope;  int intercept, otherIntercept;
+     bool bestValid = (bestB != 0) && (bestM != 0);
+     bool worstValid = (worstB != 0) && (worstM != 0);
+     if(!bestValid && worstValid){
+          slope = worstM;
+          intercept = worstB;
+          otherSlope = bestM;
+          otherIntercept = bestB;
+     } else{ //if(bestValid && !worstValid){
+          slope = bestM;
+          intercept = bestB;
+          otherSlope = worstM;
+          otherIntercept = worstB;
+     }
+
+     if(best_slope) *best_slope = slope;
+     if(best_intercept) *best_intercept = intercept;
+     if(worst_slope) *worst_slope = otherSlope;
+     if(worst_intercept) *worst_intercept = otherIntercept;
      return num;
 }
 
@@ -469,8 +503,8 @@ bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_interce
      int nLines = find_ground_lines(vmap, &lines, hough_thresh);
      if(nLines <= 0) return false;
 
-     float m;  int b;
-     int nUsed = estimate_ground_line(lines, &m, &b, gnd_deadzone, minDeg, maxDeg);
+     float m, badm;  int b, badb;
+     int nUsed = estimate_ground_line(lines, &m, &b, &badm, &badb, gnd_deadzone, minDeg, maxDeg);
      if(nUsed <= 0) return false;
      if(debug_timing){
           t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
@@ -485,101 +519,295 @@ bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_interce
           cv::cvtColor(vmap, display, cv::COLOR_GRAY2BGR);
           int yf = int(vmap.cols * m) + b;
           cv::line(display, cv::Point(0, b), cv::Point(vmap.cols, yf), cv::Scalar(0,255,0), 2, CV_AA);
+          // int yfbad = int(vmap.cols * badm) + badb;
+          // cv::line(display, cv::Point(0, badb), cv::Point(vmap.cols, yfbad), cv::Scalar(0,0,255), 2, CV_AA);
           cv::imshow("Estimated Gnd", display);
+          // cv::waitKey(0);
      }
      return true;
 }
 
+void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
+     int filter_method, float min_threshold, int* offsets, float max_threshold,
+     bool verbose, bool visualize, bool debug, bool debug_timing)
+{
+     double t;
+     if(debug_timing) t = (double)cv::getTickCount();
 
-/** TODO: port to c++
-def find_contours(self, _umap, threshold = 30.0, threshold_method = "perimeter", offset=(0,0), max_thresh=1500.0, debug=False):
-"""
-============================================================================
-	Find contours in image and filter out those above a certain threshold
-============================================================================
-"""
-umap = np.copy(_umap)
-# try: umap = cv2.cvtColor(_umap,cv2.COLOR_BGR2GRAY)
-# except: print("[WARNING] find_contours --- Unnecessary Image Color Converting")
+     cv::Mat image, drawing;
+     vector<cv::Vec4i> hierarchy;
+     vector<cv::Vec4i> filtHierarchy;
+     vector< vector<cv::Point> > contours;
+     vector<vector<cv::Point>> filtered_contours;
+     if(umap.channels() <= 3) image = umap;
+     else cv::cvtColor(umap, image, CV_BGR2GRAY);
+     if(visualize) drawing = cv::Mat::zeros(image.size(), CV_8UC3);
 
-_, contours, hierarchy = cv2.findContours(umap,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE,offset=offset)
+     int offx, offy;
+     if(offsets){
+          offx = offsets[0];
+          offy = offsets[1];
+     } else{ offx = 0; offy = 0; }
+     if(debug) printf("offsets (x,y): %d, %d\r\n", offx, offy);
 
-if(threshold_method == "perimeter"):
-  filtered_contours = [cnt for cnt in contours if cv2.arcLength(cnt,True) >= threshold]
-  if max_thresh > 0: # Dont filter out big contours
-      filtered_contours = [cnt for cnt in filtered_contours if cv2.arcLength(cnt,True) <= max_thresh]
-  if(debug):
-      raw_perimeters = np.array([cv2.arcLength(cnt,True) for cnt in contours])
-      filtered_perimeters = np.array([cv2.arcLength(cnt,True) for cnt in filtered_contours])
-      print("Raw Contour Perimeters:",np.unique(raw_perimeters))
-      print("Filtered Contour Perimeters:",np.unique(filtered_perimeters))
-elif(threshold_method == "area"):
-  filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) >= threshold]
-  if(debug):
-      raw_areas = np.array([cv2.contourArea(cnt) for cnt in contours])
-      filtered_areas = np.array([cv2.contourArea(cnt) for cnt in filtered_contours])
-      print("Raw Contour Areas:",np.unique(raw_areas))
-      print("Filtered Contour Areas:",np.unique(filtered_areas))
-else:
-  print("[ERROR] find_contours --- Unsupported filtering method!")
+     cv::findContours(image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(offx, offy));
 
-return filtered_contours,contours
+     int nFiltCnts = 0;
+     int nCnts = contours.size();
+     if(debug) printf("Found %d contours\r\n",nCnts);
+     double tmpVal, tmpArea, tmpLength, minVal = 1000, maxVal = 0;
+     if(filter_method > 0){
+          for(int i = 0; i<nCnts; i++){
+               if(visualize) cv::drawContours(drawing, contours, i, cv::Scalar(255,0,0), 2, 8, hierarchy, 0, cv::Point(offx,offy));
+               vector<cv::Point> contour = contours[i];
+               cv::Vec4i hier = hierarchy[i];
+               if(filter_method == 1){            /** Perimeter-based filtering */
+                    tmpVal = cv::arcLength(contour,true);
+                    if(tmpVal < min_threshold) continue;
+                    if(max_threshold > 0){ if(tmpVal > max_threshold) continue; }
+                    filtered_contours.push_back(contour);
+                    filtHierarchy.push_back(hier);
+                    if(tmpVal < minVal) minVal = tmpVal;
+                    if(tmpVal > maxVal) maxVal = tmpVal;
+               }else if(filter_method == 2){      /** Area-based filtering */
+                    tmpVal = cv::contourArea(contour);
+                    if(tmpVal < min_threshold) continue;
+                    if(max_threshold > 0){ if(tmpVal > max_threshold) continue; }
+                    filtered_contours.push_back(contour);
+                    filtHierarchy.push_back(hier);
+                    if(tmpVal < minVal) minVal = tmpVal;
+                    if(tmpVal > maxVal) maxVal = tmpVal;
+               }
+          }
+          if(debug) printf("Max val = %.2lf -- Min val = %.2lf\r\n",maxVal,minVal);
+     } else filtered_contours = contours;
+     nFiltCnts = filtered_contours.size();
+     if(debug) printf("Filtered %d contours\r\n",nFiltCnts);
+
+     if(debug_timing){
+          t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[INFO] find_contours() ---- took %.4lf ms (%.2lf Hz) to find %d / %d contours\r\n", t*1000.0, (1.0/t), nFiltCnts,nCnts);
+     }
+
+     if(visualize){
+          for(int i = 0; i<nFiltCnts; i++){ cv::drawContours(drawing, filtered_contours, i, cv::Scalar(0,255,0), 2, 8, filtHierarchy, 0, cv::Point(offx,offy)); }
+          cv::namedWindow( "Contours", CV_WINDOW_AUTOSIZE ); cv::imshow( "Contours", drawing );
+     }
+
+     if(found_contours) *found_contours = filtered_contours;
+}
+
+void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose){
+     cv::Rect tmpRect = cv::boundingRect(contour);
+     vector<int> _xbounds = {tmpRect.x, tmpRect.x + tmpRect.width};
+     vector<int> _dbounds = {tmpRect.y, tmpRect.y + tmpRect.height};
+
+     if(xbounds) *xbounds = _xbounds;
+     if(dbounds) *dbounds = _dbounds;
+}
+
+int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
+     int* pixel_thresholds, int* window_size, float* line_params,
+     bool verbose, bool visualize, bool debug, bool debug_timing)
+{
+     double t;
+     if(debug_timing) t = (double)cv::getTickCount();
+
+     int count = 0, nWindows = 0;
+     bool flag_found_start = false, flag_hit_limits = false;
+     bool flag_done = false, try_last_search = false, tried_last_resort = false;
+
+     vector<int> _yLimits;
+     vector<vector<cv::Point>> windows;
+     cv::Mat img, display;
+     if(vmap.channels() < 3) img = vmap;
+     else cv::cvtColor(vmap, img, CV_BGR2GRAY);
+     if(visualize){
+          display = vmap.clone();
+          cv::cvtColor(display, display, CV_GRAY2BGR);
+          cv::namedWindow("search windows", cv::WINDOW_NORMAL );
+     }
+
+     int h = img.rows, w = img.cols;
+     int xmin = xLimits.at(0);
+     int xmax = xLimits.at(1);
+     int pxlMin = 3, pxlMax = 30;
+     if(pixel_thresholds){ pxlMin = pixel_thresholds[0], pxlMax = pixel_thresholds[1]; }
+
+     int yk = 0, prev_yk = 0;
+     int xmid = (int)((float)(xmax + xmin) / 2.0);
+     int xk = (int) xmin;
+     int dWy = 10, dWx = abs(xmid - xmin);
+     int yf = h;
+
+     if(line_params){
+          yf = (int)(xmid * line_params[0] + line_params[1]);
+          printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
+     }
+     if(window_size){
+          dWx = (int)((float) window_size[0] / 2.0);
+          dWy = (int)((float) window_size[1] / 2.0);
+     }
+     if(dWx <= 2){
+          if(xk <= 5) dWx = 1;
+          else dWx = 2;
+     }
+     if(yk < 0) yk = 0;
+
+     if(debug){
+          printf("X limits = [%d, %d] --- Y limits = [%d, %d] --- Pixel limits = [%d, %d] --- Window Size = [%d, %d]\r\n", xmin,xmax,yk, yf,pxlMin,pxlMax,dWx,dWy);
+          printf("Object Search Window [%d x %d] -- Starting Location (%d, %d)\r\n", dWx,dWy,xk, yk);
+     }
+     cv::Rect searchRoi = cv::Rect(xk, yk, dWx*2, dWy*2);
+
+     while(!flag_done){
+          if(xk >= w){
+               flag_hit_limits = true;
+               if(debug) printf("[INFO] Reached max image width.\r\n");
+          }
+          if((yk >= yf) and (line_params)){
+               flag_hit_limits = true;
+               if(debug) printf("[INFO] Reached Estimated Ground line at y = %d.\r\n", yk);
+          } else if(yk + dWy >= h){
+               flag_hit_limits = true;
+               if(debug) printf("[INFO] Reached max image height.\r\n");
+          }
+          if(flag_hit_limits) flag_done = true;
+          if(count != 0){
+               // Slide window from previousy found center (Clip at image edges)
+               // Update vertical [Y] window edges
+               if(yk - 2*dWy < 0) yk = 0;
+               if(yk + 2*dWy >= h) yk = h - 2*dWy;
+
+               // Update horizontal [X] window edges
+               if(xk - 2*dWx < 0) xk = dWx;
+               if(xk + 2*dWx >= w) xk = w - 2*dWx;
+               searchRoi.y = yk;
+          }
+
+          cv::Mat roi = img(searchRoi);
+          int nPxls = cv::countNonZero(roi);
+          if(verbose) printf("Current Window [%d] ----- Center = (%d, %d) ----- %d of good pixels\r\n",count,xk,yk,nPxls);
+
+          if(nPxls >= pxlMax){
+               if(nWindows == 0){
+                    _yLimits.push_back(yk);
+                    if(visualize) cv::circle(display,cv::Point(xmid,yk),3,cv::Scalar(255,0,255),-1);
+                    if(flag_hit_limits){
+                         flag_done = false;
+                         if(debug) printf("\tTrying Last Ditch Search...\r\n");
+                    }
+               } else{
+                    _yLimits.push_back(yk+2*dWy);
+                    try_last_search = false;
+               }
+               cv::Point pt1(xk,yk);
+               cv::Point pt2(xk+2*dWx,yk+2*dWy);
+               vector<cv::Point> tmpWindow = {pt1, pt2};
+               windows.push_back(tmpWindow);
+               nWindows++;
+               prev_yk = yk;
+               flag_found_start = true;
+          } else if((nPxls <= pxlMin) && (flag_found_start)){
+               if(debug) printf("Exiting - minimum threshold found...\r\n");
+               // nWindows++;
+               flag_done = true;
+               _yLimits.push_back(yk);
+               if(visualize) cv::circle(display,cv::Point(xmid,yk),3,cv::Scalar(255,0,255),-1);
+          }
+          if(visualize){
+               cv::rectangle(display, searchRoi, cv::Scalar(0, 255, 255), 1);
+               if(debug){
+                    cv::imshow("search windows", display);
+                    cv::waitKey(0);
+               }
+          }
+          yk = yk + 2*dWy;
+          count++;
+     }
+     if(debug){
+          if(_yLimits.size() == 0) printf("[%d] Good Windows --- Ylimits = %d - %d\r\n", nWindows, 0, 0);
+          else printf("[%d] Good Windows --- Ylimits = %d - %d\r\n", nWindows, _yLimits[0], _yLimits.back());
+     }
+     if(debug_timing){
+          t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[INFO] obstacle_search_disparity() ---- took %.4lf ms (%.2lf Hz) to find %d good windows\r\n", t*1000.0, (1.0/t), nWindows);
+     }
+
+     if(!debug && visualize){
+          cv::imshow("search windows", display);
+          cv::waitKey(0);
+     }
+     if(yLimits) *yLimits = _yLimits;
+     return nWindows;
+}
+
+/** TODO
+def find_obstacles_disparity(self, vmap, dLims, xLims, search_thresholds = (3,30), ground_detected=True, lineCoeffs=None, verbose=False,timing=False):
+        obs = []; obsUmap = []; windows = []; ybounds = []; dBounds = []
+        nObs = len(dLims)
+
+        if(timing): t0 = time.time()
+
+        for i in range(nObs):
+            xs = xLims[i]
+            ds = dLims[i]
+            ys,ws,_ = self.obstacle_search_disparity(vmap, ds, search_thresholds, lineCoeffs=lineCoeffs, verbose=verbose)
+            # if self.debug_obstacle_search: print("Y Limits[",len(ys),"]: ", ys)
+            if(len(ys) <= 2 and ground_detected):
+                if(verbose): print("[INFO] Found obstacle with zero height. Skipping...")
+            elif(len(ys) <= 1):
+                if(verbose): print("[INFO] Found obstacle with zero height. Skipping...")
+            elif(ys[0] == ys[1]):
+                if(verbose): print("[INFO] Found obstacle with zero height. Skipping...")
+            else:
+                ybounds.append(ys)
+                obs.append([
+                    (xs[0],ys[0]),
+                    (xs[1],ys[-1])
+                ])
+                obsUmap.append([
+                    (xs[0],ds[0]),
+                    (xs[1],ds[1])
+                ])
+                windows.append(ws)
+                dBounds.append(ds)
+
+        if(timing):
+            t1 = time.time()
+            dt = t1 - t0
+            print("\t[INFO] find_obstacles_disparity() --- Took %f seconds (%.2f Hz) to complete" % (dt, 1/dt))
+        return obs, obsUmap, ybounds, dBounds, windows, len(obs)
 */
-
-
-/** TODO:
-def extract_contour_bounds(self, cnts, verbose=False, timing=False):
-""" ===================================================================
-	Attempt to find the horizontal bounds for detected contours
-==================================================================== """
-dt = 0
-xBounds = []
-disparityBounds = []
-
-if(timing): t0 = time.time()
-
-for cnt in cnts:
-  try:
-      x,y,rectw,recth = cv2.boundingRect(cnt)
-      xBounds.append([x, x + rectw])
-      disparityBounds.append([y, y + recth])
-  except: pass
-
-if(timing):
-  t1 = time.time()
-  dt = t1 - t0
-  print("\t[INFO] extract_contour_bounds() --- Took %f seconds (%.2f Hz) to complete" % (dt, 1/dt))
-return xBounds, disparityBounds, dt
-
-*/
-
 
 /** TODO */
-// def histogram_sliding_filter(hist, window_size=16, flag_plot=False):
-// 	avg_hist = np.zeros_like(hist).astype(np.int32)
-// 	sliding_window = np.ones((window_size,))/window_size
-//
-// 	try:
-// 		n, depth = hist.shape
-// 	except:
-// 		n = hist.shape
-// 		depth = None
-//
-// 	if flag_plot == True:
-// 		plt.figure(1)
-// 		plt.clf()
-// 		plt.title('Smoothed Histogram of the image')
-//
-// 	if depth == None:
-// 		avg_hist = np.convolve(hist[:], sliding_window , mode='same')
-// 		if flag_plot == True:
-// 			plt.plot(range(avg_hist.shape[0]), avg_hist[:])
-// 	else:
-// 		for channel in range(depth):
-// 			tmp_hist = np.convolve(hist[:,channel], sliding_window , mode='same')
-// 			avg_hist[:,channel] = tmp_hist
-// 			if flag_plot == True:
-// 				plt.plot(range(avg_hist.shape[0]), avg_hist[:,channel])
-// 				# plt.plot(range(avg_hist.shape[0]), avg_hist[:,1])
-// 				# plt.plot(range(avg_hist.shape[0]), avg_hist[:,2])
-// 	return avg_hist
+/**
+def histogram_sliding_filter(hist, window_size=16, flag_plot=False):
+	avg_hist = np.zeros_like(hist).astype(np.int32)
+	sliding_window = np.ones((window_size,))/window_size
+
+	try:
+		n, depth = hist.shape
+	except:
+		n = hist.shape
+		depth = None
+
+	if flag_plot == True:
+		plt.figure(1)
+		plt.clf()
+		plt.title('Smoothed Histogram of the image')
+
+	if depth == None:
+		avg_hist = np.convolve(hist[:], sliding_window , mode='same')
+		if flag_plot == True:
+			plt.plot(range(avg_hist.shape[0]), avg_hist[:])
+	else:
+		for channel in range(depth):
+			tmp_hist = np.convolve(hist[:,channel], sliding_window , mode='same')
+			avg_hist[:,channel] = tmp_hist
+			if flag_plot == True:
+				plt.plot(range(avg_hist.shape[0]), avg_hist[:,channel])
+				# plt.plot(range(avg_hist.shape[0]), avg_hist[:,1])
+				# plt.plot(range(avg_hist.shape[0]), avg_hist[:,2])
+	return avg_hist
+*/
