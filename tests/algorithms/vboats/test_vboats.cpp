@@ -88,18 +88,20 @@ int main(int argc, char *argv[]){
 			cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			cv::minMaxLoc(disparity, &minVal, &maxVal);
+               cvinfo(disparity,"Disparity");
 			// if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
 			// disparity = cam->convert_to_disparity(depth8,&cvtGain);
 			// if(verbose) printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
-			try{
-				cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
-				cv::imshow("Disparity", disp);
-				cv::convertScaleAbs(depth, dispRaw, 255 / dmax);
-				cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
-				cv::imshow("Depth", dispRaw);
-				// cv::waitKey(0);
-			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+
+               // try{
+			// 	cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
+			// 	cv::imshow("Disparity", disp);
+			// 	cv::convertScaleAbs(depth, dispRaw, 255 / dmax);
+			// 	cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
+			// 	cv::imshow("Depth", dispRaw);
+			// 	// cv::waitKey(0);
+			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
 			// disparity.convertTo(disparity8,CV_8U);
 			// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
@@ -113,8 +115,6 @@ int main(int argc, char *argv[]){
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
 			vb.get_uv_map(disparity,&umap,&vmap, true, "raw");
 			// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
-			cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
-			cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
 
 			vector<Obstacle> obs;
 		     pipeline_disparity(disparity, umap, vmap, &obs);
@@ -127,6 +127,8 @@ int main(int argc, char *argv[]){
 			dt = time_span.count();
 			printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 			_prev_time = now;
+               cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
+               cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
 			cv::imshow("RGB", rgb);
 			cv::imshow("Umap", udisp);
 			cv::imshow("Vmap", vdisp);

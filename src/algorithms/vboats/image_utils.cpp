@@ -675,7 +675,9 @@ void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contour
 }
 
 void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose){
+     printf("extract_contour_bounds() --- %d\r\n", contour.size());
      cv::Rect tmpRect = cv::boundingRect(contour);
+     std::cout << "tmpRect: " << tmpRect << std::endl;
      vector<int> _xbounds = {tmpRect.x, tmpRect.x + tmpRect.width};
      vector<int> _dbounds = {tmpRect.y, tmpRect.y + tmpRect.height};
 
@@ -762,6 +764,7 @@ int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, v
                searchRoi.y = yk;
           }
 
+          std::cout << "searchRoi: " << searchRoi << std::endl;
           cv::Mat roi = img(searchRoi);
           int nPxls = cv::countNonZero(roi);
           if(verbose) printf("Current Window [%d] ----- Center = (%d, %d) ----- %d of good pixels\r\n",count,xk,yk,nPxls);
@@ -841,7 +844,7 @@ int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>
      for(int i = 0; i < nCnts; i++){
           vector<cv::Point> contour = contours[i];
           extract_contour_bounds(contour,&xLims, &dLims);
-          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params);
+          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, true);
           if(nWins == 0) continue;
           if((yLims.size() <= 2) && (gndPresent)){
                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
@@ -860,20 +863,7 @@ int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>
                obs.push_back(Obstacle(pts,dLims));
                nObs++;
           }
-
           if(verbose) printf(" --------------------------- \r\n");
-
-          // ybounds.append(ys)
-          //  obs.append([
-          //      (xs[0],ys[0]),
-          //      (xs[1],ys[-1])
-          //  ])
-          //  obsUmap.append([
-          //      (xs[0],ds[0]),
-          //      (xs[1],ds[1])
-          //  ])
-          //  windows.append(ws)
-          //  dBounds.append(ds)
      }
 
      t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();

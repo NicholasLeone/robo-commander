@@ -378,9 +378,11 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      float dDisparity = (maxDisparity - minVal);
      float dTrueDisp = (trueMaxDisparity - trueMinDisparity);
      float disparityRatio = dDisparity / dTrueDisp;
-     float scale = (255.0*disparityRatio) / dDisparity;
+     // float scale = (255.0*disparityRatio) / dDisparity;
+     float scale = (255.0) / dDisparity;
      // disparity.convertTo(disparity8,CV_8UC1);
-     disparity.convertTo(disparity8,CV_8UC1, scale, -minVal*scale);
+     // disparity.convertTo(disparity8,CV_8UC1, scale, -minVal*scale);
+     disparity.convertTo(disparity8,CV_8UC1, scale);
 
      cvinfo(disparity8,"disparity8");
      double absRatio = ((double) trueMaxDisparity) / maxDisparity;
