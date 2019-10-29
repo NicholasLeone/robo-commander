@@ -1,6 +1,6 @@
 #include <iostream>
 #include <stdio.h>
-#include <math.h>       /* ceil, cos, sin */
+#include <math.h>       /* ceil, cos, sin, sqrt */
 
 // #include "plot.h"
 
@@ -8,6 +8,83 @@
 #include "algorithms/vboats/image_utils.h"
 
 using namespace std;
+
+Obstacle::Obstacle(vector<cv::Point> pts, vector<int> dBounds) :
+     minXY(pts[0]), maxXY(pts[1]), dMin(dBounds[0]), dMax(dBounds[1])
+{
+
+}
+
+void Obstacle::update(bool depth_based, float cam_baseline, float cam_dscale, float* cam_focal,
+     float* cam_principal_point, float dtype_gain, float aux_dist_factor, bool verbose)
+{
+     /** Default params for (Intel D415):
+        --------------------------------
+          focal     - 596.39, 596.39
+          principle - 423.74, 242.01 (for 848 x 480)
+          dscale    - 0.001
+          baseline  - 0.014732
+     */
+     float fx = 596.39, fy = 596.39;
+     if(cam_focal){
+          fx = (float)cam_focal[0];
+          fy = (float)cam_focal[1];
+     }
+     float ppx = 423.74, ppy = 242.01;
+     if(cam_principal_point){
+          ppx = (float)cam_principal_point[0];
+          ppy = (float)cam_principal_point[1];
+     }
+     float dscale = 0.001;
+     float baseline = 0.014732;
+     if(cam_dscale != 0) dscale = cam_dscale;
+     if(cam_baseline != 0) baseline = cam_baseline;
+
+     float cvt_gain = 1.0;
+     float aux_gain = 1.35;
+     if(dtype_gain != 0) cvt_gain = dtype_gain;
+     if(aux_dist_factor != 0) aux_gain = aux_dist_factor;
+
+     /** TODO: use this for more accurate  pixel information
+          nonzero = umap.nonzero()
+          nonzeroy = np.array(nonzero[0])
+          nonzerox = np.array(nonzero[1])
+          ymean = np.mean(ys)
+          xmean = np.int(np.mean(nonzerox[good_inds]))
+          dmean = np.mean(nonzeroy[good_inds])
+     */
+     float xmin = (float)this->minXY.x;
+     float ymin = (float)this->minXY.y;
+     float xmax = (float)this->maxXY.x;
+     float ymax = (float)this->maxXY.y;
+     float dmin = (float)this->dMin;
+     float dmax = (float)this->dMax;
+
+     float xmean = (xmin + xmax) / 2.0;
+     float ymean = (ymin + ymax) / 2.0;
+     float dmean = (dmin + dmax) / 2.0;
+
+     float zgain, pz;
+     if(depth_based){
+          zgain = (65535.0 / 255.0)*dscale;
+          pz = dmean * zgain;
+     } else{
+          zgain = 1.0 / (cvt_gain*dscale*aux_gain);
+          pz = zgain / dmean;
+     }
+
+     float x = ((xmean - ppx) * pz) / fx;
+     float y = ((ymean - ppy) * pz) / fy;
+     float dist = sqrt(x*x + pz*pz);
+     double theta = atan2(x,pz);
+     if(verbose) printf("Obstacle Relative Distance =  %.2fm --- Angle = %.2lf deg --- Position (X,Y,Z) = (%.2f, %.2f, %.2f) m \r\n", dist, theta*M_RAD2DEG, x,y, pz);
+     this->location.x = x;
+     this->location.y = y;
+     this->location.z = pz;
+     this->distance = dist;
+     this->angle = theta;
+}
+
 
 std::string cvtype2str(int type){
      std::string r;
@@ -642,7 +719,7 @@ int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, v
 
      if(line_params){
           yf = (int)(xmid * line_params[0] + line_params[1]);
-          printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
+          // printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
      }
      if(window_size){
           dWx = (int)((float) window_size[0] / 2.0);
@@ -740,6 +817,133 @@ int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, v
      }
      if(yLimits) *yLimits = _yLimits;
      return nWindows;
+}
+
+int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, vector<Obstacle>* found_obstacles, float* line_params, bool verbose){
+     int nObs = 0;
+     bool gndPresent;
+     vector<int> xLims;
+     vector<int> dLims;
+     vector<int> yLims;
+     vector<Obstacle> obs;
+     double t = (double)cv::getTickCount();
+
+     if(line_params){
+          printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
+          gndPresent = true;
+     } else{
+          printf("No Ground Found\r\n");
+          gndPresent = false;
+     }
+     // #pragma omp parallel for private(xLims,dLims,yLims)
+     // #pragma omp parallel for
+     int nCnts = contours.size();
+     for(int i = 0; i < nCnts; i++){
+          vector<cv::Point> contour = contours[i];
+          extract_contour_bounds(contour,&xLims, &dLims);
+          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params);
+          if(nWins == 0) continue;
+          if((yLims.size() <= 2) && (gndPresent)){
+               if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
+               continue;
+          } else if(yLims.size() <= 1){
+               if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
+               continue;
+          } else if(yLims[0] == yLims.back()){
+               if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
+               continue;
+          }else{
+               if(verbose) printf("[INFO] Adding Obstacle (%d y limits)...\r\n",yLims.size());
+               // cv::Point(xLims[0],yLims[0]);
+               // cv::Point(xLims[1],yLims.back());
+               vector<cv::Point> pts = {cv::Point(xLims[0],yLims[0]), cv::Point(xLims[1],yLims.back())};
+               obs.push_back(Obstacle(pts,dLims));
+               nObs++;
+          }
+
+          if(verbose) printf(" --------------------------- \r\n");
+
+          // ybounds.append(ys)
+          //  obs.append([
+          //      (xs[0],ys[0]),
+          //      (xs[1],ys[-1])
+          //  ])
+          //  obsUmap.append([
+          //      (xs[0],ds[0]),
+          //      (xs[1],ds[1])
+          //  ])
+          //  windows.append(ws)
+          //  dBounds.append(ds)
+     }
+
+     t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+     printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), obs.size());
+     if(found_obstacles) *found_obstacles = obs;
+     return nObs;
+}
+
+void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles, bool verbose, bool debug_timing){
+     double t0, dt1, dt2, dt3;
+     if(debug_timing) t0 = (double)cv::getTickCount();
+     // vector<float> vthreshs = {0.15,0.15,0.01,0.01};
+     // vector<float> vthreshs = {0.85,0.85,0.75,0.5};
+     // vector<float> vthreshs = {0.45, 0.45,0.35,0.25};
+     vector<float> vthreshs = {0.35, 0.35,0.25,0.35};
+
+     // vector<float> uthreshs = {0.25,0.15,0.35,0.35};
+     vector<float> uthreshs = {0.35,0.35,0.25,0.35};
+     // vector<float> thresholds = {0.85,0.85,0.75,0.5};
+
+     cv::Mat vTmp, uTmp, clone;
+     cv::Mat vProcessed, uProcessed, vSobel,absVsobel;
+
+     cv::cvtColor(disparity, clone, CV_GRAY2BGR);
+     filter_disparity_umap(umap, &uProcessed, &uthreshs);
+     filter_disparity_vmap(vmap, &vProcessed, &vthreshs);
+     cv::Sobel(vmap, vSobel, CV_64F, 0, 1, 3);
+
+     double minVal, maxVal;
+     cv::minMaxLoc(vSobel, &minVal, &maxVal);
+     vSobel = vSobel * (255.0/maxVal);
+     cv::convertScaleAbs(vSobel, absVsobel, 1, 0);
+     threshold(absVsobel, vSobel, 30, 255, cv::THRESH_TOZERO);
+
+     if(debug_timing){
+          dt1 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+          printf("[INFO] uv map filtering() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
+     }
+
+     float* line_params;
+     float gndM; int gndB;
+     bool gndPresent = is_ground_present(vSobel, &gndM,&gndB);
+     if(gndPresent){
+          float tmpParams[] = {gndM, (float) gndB};
+          line_params = &tmpParams[0];
+     }else line_params = nullptr;
+
+     if(debug_timing){
+          dt2 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+          printf("[INFO] line finding() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2*1000.0, (1.0/dt2));
+     }
+
+     vector<vector<cv::Point>> contours;
+     find_contours(uProcessed, &contours);
+
+     int n = 0;
+     vector<Obstacle> _obstacles;
+     int nObs = find_obstacles_disparity(vProcessed, contours, &_obstacles, line_params);
+     for(Obstacle ob : _obstacles){
+          n++;
+          // printf("Obstacle [%d]: \r\n", n);
+          ob.update(false);
+          cv::rectangle(clone, ob.minXY, ob.maxXY, cv::Scalar(255, 0, 255), 1);
+     }
+     if(debug_timing){
+          dt3 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+          printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt3*1000.0, (1.0/dt3));
+     }
+     if(obstacles) *obstacles = _obstacles;
+     cv::namedWindow("obstacles", cv::WINDOW_NORMAL ); cv::imshow("obstacles", clone);
 }
 
 /** TODO

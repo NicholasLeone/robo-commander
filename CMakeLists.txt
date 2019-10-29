@@ -14,6 +14,7 @@ set(BUILD_TESTS          ON CACHE INTERNAL "Build all test executables for each 
 set(WITH_GTSAM           OFF CACHE INTERNAL "Include the GTSAM library")
 set(WITH_OPENCV          ON CACHE INTERNAL "Include the OpenCV library")
 set(WITH_LIBREALSENSE    ON CACHE INTERNAL "Include the librealsense2 library")
+set(WITH_OPENMP          ON CACHE INTERNAL "Include the OpenMP library")
 
 set(COMPILE_ARM          OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
 
@@ -76,6 +77,18 @@ find_library(RTIMULib libRTIMULib.so)
 # Find pigpiod libraries
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/external/pigpiod")
 find_package(pigpio REQUIRED)
+
+# Find GTSAM libraries
+if(WITH_OPENMP)
+
+     # find_package(GTSAMCMakeTools)
+     include(FindOpenMP)
+     if(OPENMP_FOUND)
+          set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+     endif()
+endif(WITH_OPENMP)
 
 # Find GTSAM libraries
 if(WITH_GTSAM)

@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
 	cv::Mat depth, rgb, disparity;
 	cv::Mat depth8, rgb8, disparity8;
 	cv::Mat d1, d2, d3;
-	cv::Mat disp, dispRaw;
+	cv::Mat udisp, vdisp, disp, dispRaw;
 	cv::Mat umap, vmap;
 	cv::Mat* dummy = nullptr;
 
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]){
 		if(err >= 0){
 			now = high_resolution_clock::now();
 
-			if(verbose) cvinfo(depth,"DepthIn");
+			// if(verbose) cvinfo(depth,"DepthIn");
 			cv::Mat tmp, tmp2;
 			double minVal, maxVal, dmax;
 			double dtypeGain;
@@ -88,10 +88,10 @@ int main(int argc, char *argv[]){
 			cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			cv::minMaxLoc(disparity, &minVal, &maxVal);
-			if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
+			// if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
 			// disparity = cam->convert_to_disparity(depth8,&cvtGain);
-			if(verbose) printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
+			// if(verbose) printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
 			try{
 				cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
 				cv::imshow("Disparity", disp);
@@ -113,66 +113,11 @@ int main(int argc, char *argv[]){
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
 			vb.get_uv_map(disparity,&umap,&vmap, true, "raw");
 			// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
-			cv::applyColorMap(umap, disp, cv::COLORMAP_JET);
-			cv::imshow("Umap", disp);
-			cv::applyColorMap(vmap, disp, cv::COLORMAP_JET);
-			cv::imshow("Vmap", disp);
+			cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
+			cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
 
-			cv::Mat vProcessed, uProcessed;
-			cv::Mat dvProcessed, duProcessed;
-
-			// vector<float> vthreshs = {0.15,0.15,0.01,0.01};
-		     // vector<float> vthreshs = {0.85,0.85,0.75,0.5};
-		     // vector<float> vthreshs = {0.45, 0.45,0.35,0.25};
-		     vector<float> vthreshs = {0.35, 0.35,0.3,0.35};
-
-			vector<float> uthreshs = {0.25,0.15,0.35,0.35};
-			// vector<float> thresholds = {0.85,0.85,0.75,0.5};
-
-			filter_disparity_umap(umap, &uProcessed, &uthreshs);
-		     filter_disparity_vmap(vmap, &vProcessed, &vthreshs);
-			cv::applyColorMap(umap, duProcessed, cv::COLORMAP_JET);
-			cv::applyColorMap(vmap, dvProcessed, cv::COLORMAP_JET);
-
-		     // cv::namedWindow("vmap", cv::WINDOW_NORMAL );
-			// cv::imshow("vmap", vmap);
-		     cv::namedWindow("thresholded vmap", cv::WINDOW_NORMAL );
-		     cv::imshow("thresholded vmap", dvProcessed);
-
-		     // cv::namedWindow("umap", cv::WINDOW_NORMAL );
-			// cv::imshow("umap", umap);
-		     // cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL );
-		     // cv::imshow("thresholded umap", duProcessed);
-
-			cv::Mat vertMat, horzMat;
-		     // cvinfo(vProcessed, "processedV");
-		     // cv::reduce(vProcessed,vertMat,1,CV_REDUCE_SUM, CV_32S);
-		     // std::cout << "vertMat: " << vertMat << std::endl;
-		     cv::reduce(vProcessed,horzMat,0,CV_REDUCE_SUM, CV_32S);
-		     // std::cout << "horzMat: " << horzMat << std::endl;
-			int hist_w = 512; int hist_h = 400;
-		     cv::Mat histImage = cv::Mat(hist_h, hist_w, CV_8UC3, cv::Scalar(0,0,0));
-		     cv::Mat histNormImg = cv::Mat(hist_h, hist_w, CV_8UC3, cv::Scalar(0,0,0));
-		     // cvinfo(horzMat, "horzMat");
-		     PlotGraph(horzMat);
-
-			float mGnd;		int bGnd;
-		     bool gndPresent = is_ground_present(vProcessed, &mGnd,&bGnd);
-
-			// cv::Mat th1, th2, th3;
-			// if(try_thresholding){
-			// 	int thresh = int(255*cvtRatio);
-			// 	int thresh2 = int(255*(1 - cvtRatio));
-			// 	printf("Threshs = %d, %d \r\n",thresh, thresh2);
-			// 	// threshold(vmap, th1, 0, 255, cv::THRESH_TOZERO);
-			// 	threshold(vmap, th1, 0, 255, cv::THRESH_BINARY);
-			// 	threshold(vmap, th2, 0, thresh, cv::THRESH_BINARY);
-			// 	threshold(vmap, th3, 0, thresh2, cv::THRESH_BINARY);
-			// 	cv::imshow("Thresh", th1);
-			// 	cv::imshow("Thresh1", th2);
-			// 	cv::imshow("Thresh2", th3);
-			// 	// cv::waitKey(0);
-			// }
+			vector<Obstacle> obs;
+		     pipeline_disparity(disparity, umap, vmap, &obs);
 
 			// cv::Scalar mean, stddev;
 		     // cv::meanStdDev(disparity,mean, stddev);
@@ -180,11 +125,13 @@ int main(int argc, char *argv[]){
 			// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
 			time_span = duration_cast<duration<float>>(now - _prev_time);
 			dt = time_span.count();
-			printf(" DMAX = %.2f --- %.7f (%.2f) ---- \r\n", dmax,dt, (1/dt));
+			printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 			_prev_time = now;
 			cv::imshow("RGB", rgb);
+			cv::imshow("Umap", udisp);
+			cv::imshow("Vmap", vdisp);
 			// cv::imshow("Disparity", disparity);
-			cv::waitKey(0);
+			// cv::waitKey(0);
 		}
 
 		if(cv::waitKey(10) == 27){
