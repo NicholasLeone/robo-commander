@@ -9,6 +9,12 @@
 
 using namespace std;
 
+#define VERBOSE_OBS_SEARCH false
+#define VIZ_OBS_SEARCH false
+#define VERBOSE_CONTOURS false
+#define VIZ_CONTOURS true
+
+
 Obstacle::Obstacle(vector<cv::Point> pts, vector<int> dBounds) :
      minXY(pts[0]), maxXY(pts[1]), dMin(dBounds[0]), dMax(dBounds[1])
 {
@@ -269,9 +275,9 @@ void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>*
      int vMax = (int)maxVal;
      if(verbose) printf("vMax, nThreshs: %d, %d\r\n", vMax, nStrips);
 
+     /**
      int divSection = 3;
      int dSection = int(h/float(divSection));
-
      cv::Rect topHalfRoi = cv::Rect(0,0,w,dSection);
      cv::Rect botHalfRoi = cv::Rect(0,dSection,w,h-dSection);
      if(verbose){
@@ -304,7 +310,7 @@ void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>*
           // cv::imshow("input image w/ thresholded portion", imgCopy);
           // cv::waitKey(0);
      }
-
+*/
      int idx = 0;
      cv::Scalar cvMean, cvStddev;
      std::vector<cv::Mat> strips;
@@ -382,7 +388,7 @@ void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>*
      int nStrips = int(ceil(maxVal/255.0) * nThreshs);
      if(verbose) printf("uMax, nThreshs: %d, %d\r\n", uMax, nStrips);
 
-     threshold(imgCopy, imgCopy, 2, 255, cv::THRESH_TOZERO);
+     threshold(imgCopy, imgCopy, 8, 255, cv::THRESH_TOZERO);
 
      int idx = 0;
      cv::Scalar cvMean, cvStddev;
@@ -675,9 +681,9 @@ void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contour
 }
 
 void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose){
-     printf("extract_contour_bounds() --- %d\r\n", contour.size());
+     // printf("extract_contour_bounds() --- %d\r\n", contour.size());
      cv::Rect tmpRect = cv::boundingRect(contour);
-     std::cout << "tmpRect: " << tmpRect << std::endl;
+     // std::cout << "tmpRect: " << tmpRect << std::endl;
      vector<int> _xbounds = {tmpRect.x, tmpRect.x + tmpRect.width};
      vector<int> _dbounds = {tmpRect.y, tmpRect.y + tmpRect.height};
 
@@ -732,8 +738,15 @@ int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, v
           else dWx = 2;
      }
      if(yk < 0) yk = 0;
+     if(xk+2*dWx >= w){
+          if(debug) printf("Problem xk = %d\r\n", xk);
+          xk = (w-1)-2*dWx;
+          if(debug) printf("New xk = %d\r\n", xk);
+     }
+
 
      if(debug){
+          printf("Input Image [%d x %d]\r\n", w,h);
           printf("X limits = [%d, %d] --- Y limits = [%d, %d] --- Pixel limits = [%d, %d] --- Window Size = [%d, %d]\r\n", xmin,xmax,yk, yf,pxlMin,pxlMax,dWx,dWy);
           printf("Object Search Window [%d x %d] -- Starting Location (%d, %d)\r\n", dWx,dWy,xk, yk);
      }
@@ -764,7 +777,7 @@ int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, v
                searchRoi.y = yk;
           }
 
-          std::cout << "searchRoi: " << searchRoi << std::endl;
+          if(debug) std::cout << "searchRoi: " << searchRoi << std::endl;
           cv::Mat roi = img(searchRoi);
           int nPxls = cv::countNonZero(roi);
           if(verbose) printf("Current Window [%d] ----- Center = (%d, %d) ----- %d of good pixels\r\n",count,xk,yk,nPxls);
@@ -844,7 +857,8 @@ int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>
      for(int i = 0; i < nCnts; i++){
           vector<cv::Point> contour = contours[i];
           extract_contour_bounds(contour,&xLims, &dLims);
-          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, true);
+          // int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, true);
+          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
           if(nWins == 0) continue;
           if((yLims.size() <= 2) && (gndPresent)){
                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
@@ -878,25 +892,41 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
      // vector<float> vthreshs = {0.15,0.15,0.01,0.01};
      // vector<float> vthreshs = {0.85,0.85,0.75,0.5};
      // vector<float> vthreshs = {0.45, 0.45,0.35,0.25};
-     vector<float> vthreshs = {0.35, 0.35,0.25,0.35};
+     vector<float> vthreshs = {0.3, 0.3,0.25,0.4};
 
      // vector<float> uthreshs = {0.25,0.15,0.35,0.35};
-     vector<float> uthreshs = {0.35,0.35,0.25,0.35};
+     vector<float> uthreshs = {0.3,0.295,0.3,0.35};
      // vector<float> thresholds = {0.85,0.85,0.75,0.5};
 
      cv::Mat vTmp, uTmp, clone;
-     cv::Mat vProcessed, uProcessed, vSobel,absVsobel;
+     cv::Mat vProcessed, uProcessed, sobelU,sobelV,tmpSobel, tmpAbsSobel;
 
      cv::cvtColor(disparity, clone, CV_GRAY2BGR);
-     filter_disparity_umap(umap, &uProcessed, &uthreshs);
-     filter_disparity_vmap(vmap, &vProcessed, &vthreshs);
-     cv::Sobel(vmap, vSobel, CV_64F, 0, 1, 3);
+
+     cv::cvtColor(umap, uTmp, CV_GRAY2BGR);
+     cv::rectangle(uTmp, cv::Point(0,0), cv::Point(umap.cols,3), cv::Scalar(0, 0, 0), -1);
+     cv::cvtColor(uTmp, uTmp, CV_BGR2GRAY);
+
+     int morph_size = 10;
+     int morph_size2 = 3;
+     // cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2*morph_size + 1, 2*morph_size+1), cv::Point(morph_size, morph_size));
+     cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2*morph_size + 1, 2*morph_size2+1), cv::Point(morph_size, morph_size2));
+     cv::morphologyEx(uTmp, uTmp, cv::MORPH_CLOSE, element);
+
+     filter_disparity_umap(uTmp, &uProcessed, &uthreshs);
+     // cv::morphologyEx(uProcessed, uProcessed, cv::MORPH_CLOSE, element);
+
+     cv::cvtColor(vmap, vTmp, CV_GRAY2BGR);
+     cv::rectangle(vTmp, cv::Point(0,0), cv::Point(3,vmap.rows), cv::Scalar(0, 0, 0), -1);
+     cv::cvtColor(vTmp, vTmp, CV_BGR2GRAY);
+     filter_disparity_vmap(vTmp, &vProcessed, &vthreshs);
 
      double minVal, maxVal;
-     cv::minMaxLoc(vSobel, &minVal, &maxVal);
-     vSobel = vSobel * (255.0/maxVal);
-     cv::convertScaleAbs(vSobel, absVsobel, 1, 0);
-     threshold(absVsobel, vSobel, 30, 255, cv::THRESH_TOZERO);
+     cv::Sobel(vmap, tmpSobel, CV_64F, 0, 1, 3);
+     cv::minMaxLoc(tmpSobel, &minVal, &maxVal);
+     tmpSobel = tmpSobel * (255.0/maxVal);
+     cv::convertScaleAbs(tmpSobel, tmpAbsSobel, 1, 0);
+     threshold(tmpAbsSobel, sobelV, 30, 255, cv::THRESH_TOZERO);
 
      if(debug_timing){
           dt1 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
@@ -905,7 +935,7 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
 
      float* line_params;
      float gndM; int gndB;
-     bool gndPresent = is_ground_present(vSobel, &gndM,&gndB);
+     bool gndPresent = is_ground_present(sobelV, &gndM,&gndB);
      if(gndPresent){
           float tmpParams[] = {gndM, (float) gndB};
           line_params = &tmpParams[0];
@@ -917,11 +947,14 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
      }
 
      vector<vector<cv::Point>> contours;
-     find_contours(uProcessed, &contours);
+     find_contours(uProcessed, &contours, 1, 100,nullptr,-1,VERBOSE_CONTOURS, VIZ_CONTOURS);
+     // find_contours(uProcessed, &contours, 1, 30);
+     // find_contours(sobelU, &contours);
 
      int n = 0;
      vector<Obstacle> _obstacles;
-     int nObs = find_obstacles_disparity(vProcessed, contours, &_obstacles, line_params);
+     int nObs = find_obstacles_disparity(vmap, contours, &_obstacles, line_params);
+     // int nObs = find_obstacles_disparity(vProcessed, contours, &_obstacles, line_params);
      for(Obstacle ob : _obstacles){
           n++;
           // printf("Obstacle [%d]: \r\n", n);
@@ -933,46 +966,16 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
           printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt3*1000.0, (1.0/dt3));
      }
      if(obstacles) *obstacles = _obstacles;
-     cv::namedWindow("obstacles", cv::WINDOW_NORMAL ); cv::imshow("obstacles", clone);
+     cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
+     cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
+     cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
+     cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
+     cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", vProcessed);
+     cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", uProcessed);
+     // cv::namedWindow("sobel vmap", cv::WINDOW_NORMAL ); cv::imshow("sobel vmap", sobelV);
+     // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
+     // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
 }
-
-/** TODO
-def find_obstacles_disparity(self, vmap, dLims, xLims, search_thresholds = (3,30), ground_detected=True, lineCoeffs=None, verbose=False,timing=False):
-        obs = []; obsUmap = []; windows = []; ybounds = []; dBounds = []
-        nObs = len(dLims)
-
-        if(timing): t0 = time.time()
-
-        for i in range(nObs):
-            xs = xLims[i]
-            ds = dLims[i]
-            ys,ws,_ = self.obstacle_search_disparity(vmap, ds, search_thresholds, lineCoeffs=lineCoeffs, verbose=verbose)
-            # if self.debug_obstacle_search: print("Y Limits[",len(ys),"]: ", ys)
-            if(len(ys) <= 2 and ground_detected):
-                if(verbose): print("[INFO] Found obstacle with zero height. Skipping...")
-            elif(len(ys) <= 1):
-                if(verbose): print("[INFO] Found obstacle with zero height. Skipping...")
-            elif(ys[0] == ys[1]):
-                if(verbose): print("[INFO] Found obstacle with zero height. Skipping...")
-            else:
-                ybounds.append(ys)
-                obs.append([
-                    (xs[0],ys[0]),
-                    (xs[1],ys[-1])
-                ])
-                obsUmap.append([
-                    (xs[0],ds[0]),
-                    (xs[1],ds[1])
-                ])
-                windows.append(ws)
-                dBounds.append(ds)
-
-        if(timing):
-            t1 = time.time()
-            dt = t1 - t0
-            print("\t[INFO] find_obstacles_disparity() --- Took %f seconds (%.2f Hz) to complete" % (dt, 1/dt))
-        return obs, obsUmap, ybounds, dBounds, windows, len(obs)
-*/
 
 /** TODO */
 /**

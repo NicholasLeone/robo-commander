@@ -89,7 +89,7 @@ bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_interce
 
 void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
      int filter_method = 1, float min_threshold = 30.0, int* offsets = nullptr,
-     float max_threshold = -1, bool verbose = false, bool visualize = false,
+     float max_threshold = -1, bool verbose = false, bool visualize = true,
      bool debug = false, bool debug_timing = false
 );
 
@@ -97,7 +97,7 @@ void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xboun
 
 int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
      int* pixel_thresholds = nullptr, int* window_size = nullptr, float* line_params = nullptr,
-     bool verbose = false, bool visualize = false, bool debug = false, bool debug_timing = false
+     bool verbose = true, bool visualize = true, bool debug = false, bool debug_timing = false
 );
 
 int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
