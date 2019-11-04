@@ -345,23 +345,24 @@ int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed){
 */
 
 cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
-     float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
-     float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
+     // float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
+     // float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
      // bool use_test = true;
      bool use_test = false;
      bool debug = false;
-     cv::Mat tmp, disparity, disparity8, dispRaw, dispMeters;
-     cv::Mat disp1;
-     cv::Mat scaledDisparity;
-     double min, maxIn, maxMeter, maxDisparity, maxDisparity2, maxScaled, maxOut;
+     cv::Mat tmp, disparity, disparity8;
+     double min, maxMeter, maxDisparity;
+     // double maxIn, maxDisparity2, maxScaled, maxOut;
      double minVal, maxVal;
-     cv::minMaxLoc(depth, &min, &maxIn);
+     // cv::minMaxLoc(depth, &min, &maxIn);
      depth.convertTo(tmp, CV_64F);
      cv::Mat dMeters = tmp*(this->_dscale);
-     cv::minMaxLoc(dMeters, &min, &maxMeter);
+     // cv::minMaxLoc(dMeters, &min, &maxMeter);
      // cv::Mat dMetersNorm = dMeters*(1.0/->_dscale);
      // cv::minMaxLoc(dMeters, &min, &maxMeter);
      if(debug){
+          cv::Mat scaledDisparity, dispRaw, dispMeters;
+          double maxIn;
           cv::convertScaleAbs(depth, dispRaw, 255 / maxIn);
           cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET); cv::imshow("DepthIn", dispRaw);
 
@@ -376,18 +377,19 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      disparity.setTo(0, zerosMask);
      cv::minMaxLoc(disparity, &minVal, &maxDisparity);
      float dDisparity = (maxDisparity - minVal);
-     float dTrueDisp = (trueMaxDisparity - trueMinDisparity);
-     float disparityRatio = dDisparity / dTrueDisp;
+     // float dTrueDisp = (trueMaxDisparity - trueMinDisparity);
+     // float disparityRatio = dDisparity / dTrueDisp;
      // float scale = (255.0*disparityRatio) / dDisparity;
      float scale = (255.0) / dDisparity;
      // disparity.convertTo(disparity8,CV_8UC1);
      // disparity.convertTo(disparity8,CV_8UC1, scale, -minVal*scale);
      disparity.convertTo(disparity8,CV_8UC1, scale);
 
-     cvinfo(disparity8,"disparity8");
-     double absRatio = ((double) trueMaxDisparity) / maxDisparity;
+     // cvinfo(disparity8,"disparity8");
+     // double absRatio = ((double) trueMaxDisparity) / maxDisparity;
 
      if(debug){
+          cv::Mat disp1;
           cv::convertScaleAbs(disparity, disp1, 255 / maxDisparity);
           cv::applyColorMap(disp1, disp1, cv::COLORMAP_JET); cv::imshow("Raw Disparity", disp1);
 
@@ -397,16 +399,16 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
           cv::applyColorMap(disp1, disp1, cv::COLORMAP_JET); cv::imshow("Temp Display", disp1);
      }
 
-     printf("trueMinDisparity = %.2lf, trueMaxDisparity = %.2lf -- maxDisparity = %.2lf -- absRatio = %.2lf\r\n", trueMinDisparity, trueMaxDisparity,maxDisparity, absRatio);
-     cv::Mat disparity2 = disparity*absRatio;
-     cv::minMaxLoc(disparity2, &minVal, &maxDisparity2);
-     if(debug){
-     }
+     // printf("trueMinDisparity = %.2lf, trueMaxDisparity = %.2lf -- maxDisparity = %.2lf -- absRatio = %.2lf\r\n", trueMinDisparity, trueMaxDisparity,maxDisparity, absRatio);
+     // cv::Mat disparity2 = disparity*absRatio;
+     // cv::minMaxLoc(disparity2, &minVal, &maxDisparity2);
+     // if(debug){
+     // }
 
      double gain = 255.0 / maxDisparity;
-     double gain2 = 255.0 / maxDisparity2;
      double offset = maxDisparity / 65535.0;
-     double offset2 = maxDisparity2 / 65535.0;
+     // double gain2 = 255.0 / maxDisparity2;
+     // double offset2 = maxDisparity2 / 65535.0;
 
      // cv::Scalar avg,sdv;
      // cv::meanStdDev(image, avg, sdv);
@@ -414,11 +416,10 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      // cv::Mat image_32f;
      // image.convertTo(image_32f,CV_32F,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
 
-     // cv::convertScaleAbs(disparity, scaledDisparity, 255 / maxDisparity);
-     cv::convertScaleAbs(disparity2, scaledDisparity, 255 / maxDisparity2);
-     cv::minMaxLoc(scaledDisparity, &minVal, &maxScaled);
-     double gainScaled = 255.0 / maxScaled;
-     double offsetScaled = maxScaled / 65535.0;
+     // cv::convertScaleAbs(disparity2, scaledDisparity, 255 / maxDisparity2);
+     // cv::minMaxLoc(scaledDisparity, &minVal, &maxScaled);
+     // double gainScaled = 255.0 / maxScaled;
+     // double offsetScaled = maxScaled / 65535.0;
 
      // if(use_test) cv::convertScaleAbs(disparity, disparity8, 255 / maxDisparity);
      // else scaledDisparity.convertTo(disparity8,CV_8U,gainScaled);

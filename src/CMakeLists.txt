@@ -4,8 +4,8 @@ set(CMAKE_CXX_STANDARD 11)
 # ===========================
 #     Set Build Options
 # ===========================
-
-
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 # =========================================
 #          Build Common Libraries
 # =========================================

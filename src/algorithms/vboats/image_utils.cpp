@@ -10,7 +10,7 @@
 using namespace std;
 
 #define VERBOSE_OBS_SEARCH false
-#define VIZ_OBS_SEARCH true
+#define VIZ_OBS_SEARCH false
 #define VERBOSE_CONTOURS false
 #define VIZ_CONTOURS true
 
@@ -835,20 +835,21 @@ int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, v
      return nWindows;
 }
 
-int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, vector<Obstacle>* found_obstacles, float* line_params, bool verbose){
+int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, vector<Obstacle>* found_obstacles, float* line_params, bool verbose, bool debug_timing){
      int nObs = 0;
      bool gndPresent;
      vector<int> xLims;
      vector<int> dLims;
      vector<int> yLims;
      vector<Obstacle> obs;
-     double t = (double)cv::getTickCount();
+     double t;
+     if(debug_timing) t = (double)cv::getTickCount();
 
      if(line_params){
-          printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
+          if(verbose) printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
           gndPresent = true;
      } else{
-          printf("No Ground Found\r\n");
+          if(verbose) printf("No Ground Found\r\n");
           gndPresent = false;
      }
      // #pragma omp parallel for private(xLims,dLims,yLims)
@@ -879,15 +880,17 @@ int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>
           }
           if(verbose) printf(" --------------------------- \r\n");
      }
-
-     t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-     printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), obs.size());
+     if(debug_timing){
+          t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), obs.size());
+     }
      if(found_obstacles) *found_obstacles = obs;
      return nObs;
 }
 
-void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles, bool verbose, bool debug_timing){
-     double t0, dt1, dt2, dt3;
+void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles, cv::Mat* uMorphElement, bool verbose, bool debug_timing){
+     bool visualize = true;
+     double t0, tmpT,tmpT1, tmpDt, dt1, dt2, dt3;
      if(debug_timing) t0 = (double)cv::getTickCount();
      // vector<float> vthreshs = {0.15,0.15,0.01,0.01};
      // vector<float> vthreshs = {0.85,0.85,0.75,0.5};
@@ -901,21 +904,23 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
      cv::Mat vTmp, uTmp, clone;
      cv::Mat vProcessed, uProcessed, sobelU,sobelV,tmpSobel, tmpAbsSobel;
 
-     cv::cvtColor(disparity, clone, CV_GRAY2BGR);
+     if(visualize) cv::cvtColor(disparity, clone, CV_GRAY2BGR);
 
+     if(debug_timing) tmpT1 = (double)cv::getTickCount();
      cv::cvtColor(umap, uTmp, CV_GRAY2BGR);
      cv::rectangle(uTmp, cv::Point(0,0), cv::Point(umap.cols,3), cv::Scalar(0, 0, 0), -1);
      cv::cvtColor(uTmp, uTmp, CV_BGR2GRAY);
 
-     int morph_size = 10;
-     int morph_size2 = 3;
-     // cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2*morph_size + 1, 2*morph_size+1), cv::Point(morph_size, morph_size));
-     cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2*morph_size + 1, 2*morph_size2+1), cv::Point(morph_size, morph_size2));
-     cv::morphologyEx(uTmp, uTmp, cv::MORPH_CLOSE, element);
-
+     if(uMorphElement) cv::morphologyEx(uTmp, uTmp, cv::MORPH_CLOSE, *uMorphElement);
+     cv::boxFilter(uTmp,uTmp,-1, cv::Size(2,2));
      filter_disparity_umap(uTmp, &uProcessed, &uthreshs);
      // cv::morphologyEx(uProcessed, uProcessed, cv::MORPH_CLOSE, element);
+     if(debug_timing){
+          tmpDt = ((double)cv::getTickCount() - tmpT1)/cv::getTickFrequency();
+          printf("[INFO] umap prefiltering() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+     }
 
+     if(debug_timing) tmpT = (double)cv::getTickCount();
      cv::cvtColor(vmap, vTmp, CV_GRAY2BGR);
      cv::rectangle(vTmp, cv::Point(0,0), cv::Point(3,vmap.rows), cv::Scalar(0, 0, 0), -1);
      cv::cvtColor(vTmp, vTmp, CV_BGR2GRAY);
@@ -927,25 +932,32 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
      tmpSobel = tmpSobel * (255.0/maxVal);
      cv::convertScaleAbs(tmpSobel, tmpAbsSobel, 1, 0);
      threshold(tmpAbsSobel, sobelV, 30, 255, cv::THRESH_TOZERO);
+     if(debug_timing){
+          tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+          printf("[INFO] vmap prefiltering() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+     }
 
      if(debug_timing){
-          dt1 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+          dt1 = ((double)cv::getTickCount() - tmpT1)/cv::getTickFrequency();
           printf("[INFO] uv map filtering() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
      }
 
+     if(debug_timing) tmpT = (double)cv::getTickCount();
      float* line_params;
      float gndM; int gndB;
      bool gndPresent = is_ground_present(sobelV, &gndM,&gndB);
+     // bool gndPresent = is_ground_present(vProcessed, &gndM,&gndB);
      if(gndPresent){
           float tmpParams[] = {gndM, (float) gndB};
           line_params = &tmpParams[0];
      }else line_params = nullptr;
 
      if(debug_timing){
-          dt2 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+          dt2 = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
           printf("[INFO] line finding() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2*1000.0, (1.0/dt2));
      }
 
+     if(debug_timing) tmpT = (double)cv::getTickCount();
      vector<vector<cv::Point>> contours;
      find_contours(uProcessed, &contours, 1, 100,nullptr,-1,VERBOSE_CONTOURS, VIZ_CONTOURS);
      // find_contours(uProcessed, &contours, 1, 30);
@@ -955,26 +967,34 @@ void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv:
      vector<Obstacle> _obstacles;
      int nObs = find_obstacles_disparity(vmap, contours, &_obstacles, line_params);
      // int nObs = find_obstacles_disparity(vProcessed, contours, &_obstacles, line_params);
+     if(debug_timing){
+          double dt2a = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+          printf("[INFO] obstacle finding() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2a*1000.0, (1.0/dt2a));
+     }
+
+     if(debug_timing) tmpT = (double)cv::getTickCount();
      for(Obstacle ob : _obstacles){
           n++;
           // printf("Obstacle [%d]: \r\n", n);
           ob.update(false);
-          cv::rectangle(clone, ob.minXY, ob.maxXY, cv::Scalar(255, 0, 255), 1);
+          if(visualize) cv::rectangle(clone, ob.minXY, ob.maxXY, cv::Scalar(255, 0, 255), 1);
      }
      if(debug_timing){
-          dt3 = ((double)cv::getTickCount() - t0)/cv::getTickFrequency();
+          dt3 = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
           printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt3*1000.0, (1.0/dt3));
      }
      if(obstacles) *obstacles = _obstacles;
-     cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
-     cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
-     cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
-     cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
-     cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", vProcessed);
-     cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", uProcessed);
-     // cv::namedWindow("sobel vmap", cv::WINDOW_NORMAL ); cv::imshow("sobel vmap", sobelV);
-     // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
-     // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
+     if(visualize){
+          cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
+          cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
+          // cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
+          cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
+          cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", vProcessed);
+          cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", uProcessed);
+          // cv::namedWindow("sobel vmap", cv::WINDOW_NORMAL ); cv::imshow("sobel vmap", sobelV);
+          // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
+          // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
+     }
 }
 
 /** TODO */

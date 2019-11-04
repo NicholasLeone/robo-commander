@@ -43,6 +43,7 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      int histSize[] = {dmax};
 	float sranges[] = { 0, dmax };
 	const float* ranges[] = { sranges };
+     #pragma omp parallel for
 	for(int i = 0; i < w; i++){
 		cv::MatND hist, histNorm;
 		cv::Mat uscan = image.col(i);
@@ -56,7 +57,7 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
 		// histNorm.col(0).copyTo(_umapNorm.col(i));
 	}
      // printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
-
+     #pragma omp parallel for
 	for(int i = 0; i < h; i++){
 		cv::MatND hist;
           cv::Mat histNorm;

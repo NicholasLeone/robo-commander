@@ -45,21 +45,31 @@ int main(int argc, char *argv[]){
 	cv::Mat umap, vmap;
 	cv::Mat* dummy = nullptr;
 
-	cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
-	cv::namedWindow("Disparity", cv::WINDOW_AUTOSIZE );
+	// cv::namedWindow("RGB", cv::WINDOW_AUTOSIZE );
+	// cv::namedWindow("Disparity", cv::WINDOW_AUTOSIZE );
 
 	cam->start_thread();
 	float dt;
+	double tmpT, tmpDt;
 	double cvtGain, cvtRatio;
 	duration<float> time_span;
 	high_resolution_clock::time_point now;
 	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
-	bool verbose = false;
+     double t0, t1;
+     bool verbose = false;
 	bool try_thresholding = false;
+	bool debug_timing = false;
+
+     int morph_size = 10;
+     int morph_size2 = 3;
+     // cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2*morph_size + 1, 2*morph_size+1), cv::Point(morph_size, morph_size));
+     cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2*morph_size + 1, 2*morph_size2+1), cv::Point(morph_size, morph_size2));
+
 	while(1){
 		err = cam->get_processed_queued_images(&rgb, &depth);
 		if(err >= 0){
-			now = high_resolution_clock::now();
+               t1 = (double)cv::getTickCount();
+			// now = high_resolution_clock::now();
 
 			// if(verbose) cvinfo(depth,"DepthIn");
 			cv::Mat tmp, tmp2;
@@ -84,10 +94,14 @@ int main(int argc, char *argv[]){
 			// 	cv::imshow("Depth8", disp);
 			// 	cv::waitKey(0);
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
-
-			cv::minMaxLoc(depth, &minVal, &dmax);
+               if(debug_timing) tmpT = (double)cv::getTickCount();
+			// cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
-			cv::minMaxLoc(disparity, &minVal, &maxVal);
+			// cv::minMaxLoc(disparity, &minVal, &maxVal);
+               if(debug_timing){
+                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+                    printf("[INFO] disparity conversion() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+               }
                // cvinfo(disparity,"Disparity");
 			// if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
@@ -106,39 +120,54 @@ int main(int argc, char *argv[]){
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
 			// disparity = cam->convert_to_disparity(depth,&cvtGain);
-			vb.get_uv_map(disparity,&umap,&vmap, true, "raw");
+               if(debug_timing) tmpT = (double)cv::getTickCount();
+			vb.get_uv_map(disparity,&umap,&vmap, false, "raw");
 			// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
+               if(debug_timing){
+                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+                    printf("[INFO] UV Map generation() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+               }
 
+               if(debug_timing) tmpT = (double)cv::getTickCount();
 			vector<Obstacle> obs;
+		     // pipeline_disparity(disparity, umap, vmap, &obs, &element);
 		     pipeline_disparity(disparity, umap, vmap, &obs);
+               if(debug_timing){
+                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+                    printf("[INFO] pipeline_disparity() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+               }
 
 			// cv::Scalar mean, stddev;
 		     // cv::meanStdDev(disparity,mean, stddev);
 		     // cv::Mat stdImg = (mean-disparity)/stddev;
 			// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
-			time_span = duration_cast<duration<float>>(now - _prev_time);
-			dt = time_span.count();
-			printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
-			try{
-				cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
-				cv::imshow("Disparity", disp);
-				cv::convertScaleAbs(depth, dispRaw, 255 / dmax);
-				cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
-				cv::imshow("Depth", dispRaw);
-				// cv::waitKey(0);
-			} catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+			// time_span = duration_cast<duration<float>>(now - _prev_time);
+               // _prev_time = now;
+			// dt = time_span.count();
+               tmpDt = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
+               printf("[INFO] Vboats pipeline() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+			// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+			printf(" -------------------------------- \r\n");
+			// try{
+			// 	cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
+			// 	cv::imshow("Disparity", disp);
+			// 	cv::convertScaleAbs(depth, dispRaw, 255 / dmax);
+			// 	cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
+			// 	cv::imshow("Depth", dispRaw);
+			// 	// cv::waitKey(0);
+			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
-               cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
-               cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
-			cv::imshow("RGB", rgb);
-			cv::imshow("Umap", udisp);
-			cv::imshow("Vmap", vdisp);
+               // cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
+               // cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
+			// cv::imshow("RGB", rgb);
+			// cv::imshow("Umap", udisp);
+			// cv::imshow("Vmap", vdisp);
+
 			// cv::imshow("Disparity", disparity);
 			// cv::waitKey(0);
-			_prev_time = now;
 		}
 
-		if(cv::waitKey(10) == 27){
+		if(cv::waitKey(1) == 27){
 			std::cout << "Esc key is pressed by user. Stoppig the video" << std::endl;
 			break;
 		}
