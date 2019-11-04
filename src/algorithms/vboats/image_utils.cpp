@@ -10,7 +10,7 @@
 using namespace std;
 
 #define VERBOSE_OBS_SEARCH false
-#define VIZ_OBS_SEARCH true
+#define VIZ_OBS_SEARCH false
 #define VERBOSE_CONTOURS false
 #define VIZ_CONTOURS true
 
