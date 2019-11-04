@@ -1,98 +1,14 @@
-#ifndef VBOATS_IMAGE_UTILS_H_
-#define VBOATS_IMAGE_UTILS_H_
-
-#include <string>
-#include <vector>
-#include <cassert>
+#ifndef UTILITIES_CV_UTILS_H_
+#define UTILITIES_CV_UTILS_H_
 
 #include <opencv2/opencv.hpp>
 
 using namespace std;
 
-template<typename... Args>
-std::string format(const char* format, Args... args ){
-     int length = std::snprintf(nullptr, 0, format, args...);
-     assert(length >= 0);
-
-     char* buf = new char[length + 1];
-     std::snprintf(buf, length + 1, format, args...);
-
-     std::string str(buf);
-     delete[] buf;
-     return str;
-}
-
-int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5,
-     bool cut_horizontally = true, bool visualize=false, bool verbose=false
-);
-int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged,
-     bool merge_horizontally = true, bool visualize=false, bool verbose=false
-);
-
-void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
-     double* fx, double* fy, bool verbose = false
-);
-void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
-     cv::Size* new_size, bool verbose = false
-);
-
-void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
-     double* fx, double* fy, bool verbose = false
-);
-void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
-     cv::Size* new_size, bool verbose = false
-);
-
 std::string cvtype2str(int type);
 std::string cvtype2str(cv::Mat mat);
 std::string cvStrSize(const char* name, const cv::Mat& mat);
 void cvinfo(const cv::Mat& mat, const char* label);
-
-/** TODO Make these functions part of the VBOATS class */
-void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
-void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
-
-int find_ground_lines(const cv::Mat& vmap, cv::Mat* rhos, cv::Mat* thetas, int hough_thresh = 100, bool verbose = false);
-int find_ground_lines(const cv::Mat& vmap, cv::Mat* found_lines, int hough_thresh = 100, bool verbose = false);
-int find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh = 100, bool verbose = false);
-
-void get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept);
-
-int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept, float* worst_slope, int* worst_intercept,
-     double gnd_deadzone = 2.0, double minDeg = 26.0, double maxDeg = 89.0, bool verbose = false, bool debug_timing = false
-);
-bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
-     int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = 26.0,
-     double maxDeg = 89.0, bool verbose = false, bool debug_timing = false, bool visualize = false
-);
-// bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
-//      int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = -89.0,
-//      double maxDeg = -26.0, bool verbose = false, bool debug_timing = false, bool visualize = true
-// );
-
-void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
-     int filter_method = 1, float min_threshold = 30.0, int* offsets = nullptr,
-     float max_threshold = -1, bool verbose = false, bool visualize = false,
-     bool debug = false, bool debug_timing = false
-);
-
-void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose = false);
-
-int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
-     int* pixel_thresholds = nullptr, int* window_size = nullptr, float* line_params = nullptr,
-     bool verbose = true, bool visualize = false, bool debug = false, bool debug_timing = false
-);
-
-int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
-      vector<Obstacle>* found_obstacles, float* line_params, bool verbose = false, bool debug_timing = false
-);
-
-void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap,
-     vector<Obstacle>* obstacles, cv::Mat* uMorphElement = nullptr, bool verbose = false, bool debug_timing = false
-);
-/** TODO */
-// def histogram_sliding_filter(hist, window_size=16, flag_plot=False):
-
 
 /** TODO put these in a seperate place for realsense specific utils */
 /**
@@ -321,4 +237,4 @@ static void change_sensor_option(const rs2::sensor& sensor, rs2_option option_ty
     }
 */
 
-#endif // VBOATS_IMAGE_UTILS_H_
+#endif // UTILITIES_CV_UTILS_H_

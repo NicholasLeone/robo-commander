@@ -1,5 +1,5 @@
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef UTILITIES_UTILS_H_
+#define UTILITIES_UTILS_H_
 
 #include <vector>
 #include <map>
@@ -36,6 +36,19 @@ template<typename T> void print_vectors(string header, vector< vector<T> > vecs)
 void attach_CtrlC(void_int_fun func2call);
 void attach_CtrlZ(void_int_fun func2call);
 
+template<typename... Args>
+std::string format(const char* format, Args... args ){
+     int length = std::snprintf(nullptr, 0, format, args...);
+     assert(length >= 0);
+
+     char* buf = new char[length + 1];
+     std::snprintf(buf, length + 1, format, args...);
+
+     std::string str(buf);
+     delete[] buf;
+     return str;
+}
+
 // void printUdpHeader(CommunicationHeaderByte* header);
 // void printImu(Sim_Msg_IMUData data);
 // void printGps(Sim_Msg_GPSData data);
@@ -46,4 +59,4 @@ void attach_CtrlZ(void_int_fun func2call);
 // int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_GPSData data);
 // int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_LidarData data);
 
-#endif /* UTILS_H_ */
+#endif /* UTILITIES_UTILS_H_ */

@@ -3,7 +3,7 @@
 #include <limits>                  // For infinity
 
 #include "sensors/camera_d415.h"
-#include "algorithms/vboats/image_utils.h"
+#include "utilities/image_utils.h"
 
 #define STARTUP_DELAY_SEC 3.0
 #define D415_MAX_DEPTH_M 10.0

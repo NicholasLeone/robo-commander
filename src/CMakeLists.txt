@@ -12,11 +12,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 add_library(utils SHARED utilities/utils.cpp)
 set(RoboCommander_LIBRARIES utils)
 
-add_library(img_utils SHARED algorithms/vboats/image_utils.cpp)
+add_library(img_utils SHARED utilities/image_utils.cpp)
 target_link_libraries(img_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES img_utils)
 
-add_library(plot_utils SHARED algorithms/vboats/plot_utils.cpp)
+add_library(cv_utils SHARED utilities/cv_utils.cpp)
+target_link_libraries(cv_utils PUBLIC utils ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES cv_utils)
+
+add_library(plot_utils SHARED utilities/plot_utils.cpp)
 target_link_libraries(plot_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES plot_utils)
 
@@ -67,7 +71,7 @@ list(APPEND RoboCommander_LIBRARIES encoder)
 
 # IMU
 add_library(rtimu SHARED sensors/generic_rtimu.cpp)
-target_link_libraries(rtimu PUBLIC RTIMULib ${RoboCommander_EXTERNAL_LIBRARIES})
+target_link_libraries(rtimu PUBLIC RTIMULib)
 list(APPEND RoboCommander_LIBRARIES rtimu)
 
 # MPU-9250
@@ -81,12 +85,12 @@ target_link_libraries(bno055_uart PUBLIC uart ${RoboCommander_EXTERNAL_LIBRARIES
 list(APPEND RoboCommander_LIBRARIES bno055_uart)
 # BNO-055 - I2C
 add_library(bno055_i2c SHARED sensors/bno055_i2c.cpp)
-target_link_libraries(bno055_i2c PUBLIC i2c tca9548a ${RoboCommander_EXTERNAL_LIBRARIES})
+target_link_libraries(bno055_i2c PUBLIC i2c tca9548a)
 list(APPEND RoboCommander_LIBRARIES bno055_i2c)
 
 # Camera - D415
 add_library(camera_d415 SHARED sensors/camera_d415.cpp)
-target_link_libraries(camera_d415 img_utils ${RoboCommander_EXTERNAL_LIBRARIES})
+target_link_libraries(camera_d415 img_utils ${realsense2_LIBRARY})
 list(APPEND RoboCommander_LIBRARIES camera_d415)
 
 # =========================================
@@ -122,7 +126,7 @@ list(APPEND RoboCommander_LIBRARIES ekf)
 
 # VBOATS - RGBD Obstacle Avoidance
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
+target_link_libraries(vboats PUBLIC cv_utils img_utils ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES vboats)
 
 # =========================================
@@ -141,7 +145,7 @@ list(APPEND RoboCommander_LIBRARIES pca9685)
 
 # I2C Multiplexer - TCA9548A
 add_library(tca9548a SHARED devices/tca9548a.cpp)
-target_link_libraries(tca9548a PUBLIC i2c ${RoboCommander_EXTERNAL_LIBRARIES})
+target_link_libraries(tca9548a PUBLIC i2c)
 list(APPEND RoboCommander_LIBRARIES tca9548a)
 
 # =========================================

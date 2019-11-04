@@ -1,7 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "algorithms/vboats/plot_utils.h"
-
+#include "utilities/plot_utils.h"
 
 int PlotGraph(cv::Mat& data){
      //converting the Mat to CV_64F

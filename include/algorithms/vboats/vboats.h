@@ -11,19 +11,35 @@
 
 using namespace std;
 
+class Obstacle{
+public:
+    Obstacle(vector<cv::Point> pts, vector<int> dBounds);
+    int dMin;
+    int dMax;
+    cv::Point maxXY;
+    cv::Point minXY;
+    double angle;
+    float distance;
+    cv::Point3f location;
+    void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0,
+         float* cam_focal = nullptr, float* cam_principal_point = nullptr,
+         float dtype_gain = 0, float aux_dist_factor = 0, bool verbose = false
+    );
+};
+
 class VBOATS{
 private:
      // Counters
      int nObs = 0;
      // Operational Flags
-     bool is_ground_present = true;
+     bool _is_ground_present = true;
 
      // Debug Flags
-     bool debug = false;
-     bool flag_simulation = false;
-     bool debug_contours = false;
-     bool debug_windows = false;
-     bool debug_obstacle_search = false;
+     bool _debug = false;
+     bool _flag_simulation = false;
+     bool _debug_contours = false;
+     bool _debug_windows = false;
+     bool _debug_obstacle_search = false;
 public:
      /** Constructors */
      VBOATS();
@@ -41,19 +57,53 @@ public:
 
      float get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
           bool visualize = false, std::string dispId = "", bool verbose = false,
-          bool debug = false, bool timing = false);
+          bool debug = false, bool timing = false
+     );
+
+     /** TODO Make these functions part of the VBOATS class */
+     void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
+     void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
+
+     int find_ground_lines(const cv::Mat& vmap, cv::Mat* rhos, cv::Mat* thetas, int hough_thresh = 100, bool verbose = false);
+     int find_ground_lines(const cv::Mat& vmap, cv::Mat* found_lines, int hough_thresh = 100, bool verbose = false);
+     int find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh = 100, bool verbose = false);
+
+     void get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept);
+
+     int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept, float* worst_slope, int* worst_intercept,
+          double gnd_deadzone = 2.0, double minDeg = 26.0, double maxDeg = 89.0, bool verbose = false, bool debug_timing = false
+     );
+     bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
+          int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = 26.0,
+          double maxDeg = 89.0, bool verbose = false, bool debug_timing = false, bool visualize = false
+     );
+
+     void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
+          int filter_method = 1, float min_threshold = 30.0, int* offsets = nullptr,
+          float max_threshold = -1, bool verbose = false, bool visualize = false,
+          bool debug = false, bool debug_timing = false
+     );
+
+     void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose = false);
+
+     int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
+          int* pixel_thresholds = nullptr, int* window_size = nullptr, float* line_params = nullptr,
+          bool verbose = true, bool visualize = false, bool debug = false, bool debug_timing = false
+     );
+
+     int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
+           vector<Obstacle>* found_obstacles, float* line_params, bool verbose = false, bool debug_timing = false
+     );
+
+     void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap,
+          vector<Obstacle>* obstacles, cv::Mat* uMorphElement = nullptr, bool verbose = false, bool debug_timing = false
+     );
 
      /** TODO: Convert these python functions to C++ */
-     // def extract_contour_bounds(self, cnts, verbose=False, timing=False)
-     // def find_contours(self, _umap, threshold = 30.0, threshold_method = "perimeter", offset=(0,0), max_thresh=1500.0, debug=False)
      // def find_obstacles(self, vmap, dLims, xLims, search_thresholds = (3,30), ground_detected=True, verbose=False,timing=False)
      // def obstacle_search(self, _vmap, x_limits, pixel_thresholds=(1,30), window_size=None, verbose=False, timing=False)
-     // def find_obstacles_disparity(self, vmap, dLims, xLims, search_thresholds = (3,30), ground_detected=True, lineCoeffs=None, verbose=False,timing=False)
-     // def obstacle_search_disparity(self, _vmap, x_limits, pixel_thresholds=(1,30), window_size=None, lineCoeffs=None, verbose=False, timing=False)
      // def get_vmap_mask(self, vmap, threshold=20, min_ground_pixels=6, shift_gain=2, dxmean_thresh=1.0, max_extensions=3, extension = 4, maxStep=14, deltas=(0,20), mask_size = [10,30], window_size = [10,30], draw_method=1, verbose=False, timing=False)
-     // def is_gnd_present_disparity(self,found_lines,minDeg=-89.0, maxDeg=-26.0)
-     // def estimate_houghline_coeffs(self, filtered_vmap,hough_thresh=100, deg_offset=2.0)
-     //
+
      // def calculate_distance(self, umap, xs, ds, ys, focal=[462.138,462.138],
      //    baseline=0.055, dscale=0.001, pp=[320.551,232.202], dsbuffer=1,
      //    use_principle_point=True, use_disparity_buffer=True, verbose=False)

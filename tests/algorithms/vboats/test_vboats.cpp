@@ -1,27 +1,13 @@
-#include "algorithms/vboats/vboats.h"
 #include "sensors/camera_d415.h"
-#include "algorithms/vboats/image_utils.h"
-#include "algorithms/vboats/plot_utils.h"
+#include "utilities/image_utils.h"
+#include "utilities/plot_utils.h"
+#include "algorithms/vboats/vboats.h"
 
 #include <iostream>
 #include <chrono>
 
 using namespace chrono;
 using namespace std;
-
-
-int PlotGraph(cv::Mat& data){
-     //converting the Mat to CV_64F
-     data.convertTo(data, CV_64F);
-     cv::Mat plot_result;
-     cv::Ptr<cv::plot::Plot2d> plot = cv::plot::Plot2d::create(data);
-     plot->setPlotBackgroundColor(cv::Scalar(50, 50, 50));
-     plot->setPlotLineColor(cv::Scalar(50, 50, 255));
-     plot->render(plot_result);
-     cv::imshow("Graph", plot_result);
-     // cv::waitKey(0);
-     return 0;
-}
 
 int main(int argc, char *argv[]){
 	int count = 0;
@@ -131,7 +117,7 @@ int main(int argc, char *argv[]){
                if(debug_timing) tmpT = (double)cv::getTickCount();
 			vector<Obstacle> obs;
 		     // pipeline_disparity(disparity, umap, vmap, &obs, &element);
-		     pipeline_disparity(disparity, umap, vmap, &obs);
+		     vb.pipeline_disparity(disparity, umap, vmap, &obs);
                if(debug_timing){
                     tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
                     printf("[INFO] pipeline_disparity() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));

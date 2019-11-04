@@ -1,4 +1,7 @@
-#include "algorithms/vboats/image_utils.h"
+#include "utilities/image_utils.h"
+#include "utilities/plot_utils.h"
+#include "utilities/cv_utils.h"
+#include "algorithms/vboats/vboats.h"
 
 /** NOTES:
 
@@ -24,23 +27,9 @@ cv::Mat mask = cv::Mat(tmp == 0);
 tmp.setTo(1, mask);
 */
 
-#include "algorithms/vboats/plot_utils.h"
 // #define TEST_IMG_STRIPPING
 // #define TEST_IMG_SPREADING
 #define TEST_UVMAP_FILTERING
-
-int PlotGraph(cv::Mat& data){
-     //converting the Mat to CV_64F
-     data.convertTo(data, CV_64F);
-     cv::Mat plot_result;
-     cv::Ptr<cv::plot::Plot2d> plot = cv::plot::Plot2d::create(data);
-     plot->setPlotBackgroundColor(cv::Scalar(50, 50, 50));
-     plot->setPlotLineColor(cv::Scalar(50, 50, 255));
-     plot->render(plot_result);
-     cv::imshow("Graph", plot_result);
-     cv::waitKey(0);
-     return 0;
-}
 
 /**
 [INFO] CameraD415::get_depth_scale() --- Depth Scale = 0.001000
@@ -87,7 +76,8 @@ int main(int argc, char *argv[]){
      int err;
      std::string fp;
      // const std::string imgDir = "/home/hyoung/devel/robo-commander/extras/data/uvmaps/img_util_vboats_tests/";
-     const std::string imgDir = "../../../extras/data/uvmaps/img_util_vboats_tests/";
+     // const std::string imgDir = "../../../extras/data/uvmaps/img_util_vboats_tests/";
+     const std::string imgDir = "../extras/data/uvmaps/img_util_vboats_tests/";
      const std::string disparityPrefix = "disparity_";
      const std::string umapPrefix = "raw_umap_";
      const std::string vmapPrefix = "raw_vmap_";
@@ -235,6 +225,8 @@ int main(int argc, char *argv[]){
 #endif
 
 #ifdef TEST_UVMAP_FILTERING
+     VBOATS vboats;
+
      std::string dispF = imgDir + disparityPrefix + fp + ".png";
      std::string umapF = imgDir + umapPrefix + fp + ".png";
      std::string vmapF = imgDir + vmapPrefix + fp + ".png";
@@ -244,7 +236,7 @@ int main(int argc, char *argv[]){
      cv::Mat vmapSaved = cv::imread(vmapF, cv::IMREAD_GRAYSCALE);
 
      vector<Obstacle> obs;
-     pipeline_disparity(disparity, umapSaved, vmapSaved, &obs);
+     vboats.pipeline_disparity(disparity, umapSaved, vmapSaved, &obs);
 
      cv::namedWindow("disparity", cv::WINDOW_NORMAL ); cv::imshow("disparity", disparity);
      cv::namedWindow("vmap", cv::WINDOW_NORMAL ); cv::imshow("vmap", vmapSaved);

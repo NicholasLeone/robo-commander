@@ -110,8 +110,8 @@ if(WITH_LIBREALSENSE)
      if(NOT realsense2_FOUND)
           message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
      endif()
-     list(APPEND EXTERNAL_PACKAGE_INCLUDES "${realsense2_INCLUDE_DIR}")
-     list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${realsense2_LIBRARY}")
+     # list(APPEND EXTERNAL_PACKAGE_INCLUDES "${realsense2_INCLUDE_DIR}")
+     # list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${realsense2_LIBRARY}")
 endif(WITH_LIBREALSENSE)
 
 # Matplotlib-cpp
@@ -125,6 +125,7 @@ include_directories(
      # For PurePursuit Controller
      ${PYTHON_INCLUDE_DIRS}
      /usr/local/lib/python2.7/dist-packages/numpy/core/include
+     ${realsense2_INCLUDE_DIR}
 )
 
 set( RoboCommander_EXTERNAL_LIBRARIES

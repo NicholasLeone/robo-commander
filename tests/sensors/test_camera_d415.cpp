@@ -3,7 +3,7 @@
 #include <unistd.h>                // For usleep
 #include <chrono>
 
-#include "algorithms/vboats/image_utils.h"
+#include "utilities/image_utils.h"
 
 using namespace chrono;
 using namespace std;
