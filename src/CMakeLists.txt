@@ -12,10 +12,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 add_library(utils SHARED utilities/utils.cpp)
 set(RoboCommander_LIBRARIES utils)
 
-add_library(img_utils SHARED utilities/image_utils.cpp)
-target_link_libraries(img_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
-list(APPEND RoboCommander_LIBRARIES img_utils)
-
 add_library(cv_utils SHARED utilities/cv_utils.cpp)
 target_link_libraries(cv_utils PUBLIC utils ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES cv_utils)
@@ -23,6 +19,10 @@ list(APPEND RoboCommander_LIBRARIES cv_utils)
 add_library(plot_utils SHARED utilities/plot_utils.cpp)
 target_link_libraries(plot_utils PUBLIC ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES plot_utils)
+
+add_library(img_utils SHARED utilities/image_utils.cpp)
+target_link_libraries(img_utils PUBLIC cv_utils ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES img_utils)
 
 # =========================================
 #      Build Communication Libraries
@@ -126,7 +126,7 @@ list(APPEND RoboCommander_LIBRARIES ekf)
 
 # VBOATS - RGBD Obstacle Avoidance
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC cv_utils img_utils ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
+target_link_libraries(vboats PUBLIC img_utils ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES vboats)
 
 # =========================================
