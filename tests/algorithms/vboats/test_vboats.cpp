@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
      double t0, t1;
      bool verbose = false;
 	bool try_thresholding = false;
-	bool debug_timing = false;
+	bool debug_timing = true;
 
      int morph_size = 10;
      int morph_size2 = 3;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]){
 			// 	cv::waitKey(0);
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
                if(debug_timing) tmpT = (double)cv::getTickCount();
-			// cv::minMaxLoc(depth, &minVal, &dmax);
+			cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			// cv::minMaxLoc(disparity, &minVal, &maxVal);
                if(debug_timing){
@@ -116,8 +116,9 @@ int main(int argc, char *argv[]){
 
                if(debug_timing) tmpT = (double)cv::getTickCount();
 			vector<Obstacle> obs;
-		     // pipeline_disparity(disparity, umap, vmap, &obs, &element);
-		     vb.pipeline_disparity(disparity, umap, vmap, &obs);
+			// vb.pipeline_disparity(disparity, umap, vmap, &obs);
+		     // vb.pipeline_disparity(disparity, umap, vmap, &obs, &element);
+		     vb.pipeline_disparity(disparity, umap, vmap, &obs, nullptr,false,true);
                if(debug_timing){
                     tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
                     printf("[INFO] pipeline_disparity() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
@@ -135,19 +136,19 @@ int main(int argc, char *argv[]){
 			// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 			printf(" -------------------------------- \r\n");
 			// try{
-			// 	cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
-			// 	cv::imshow("Disparity", disp);
-			// 	cv::convertScaleAbs(depth, dispRaw, 255 / dmax);
-			// 	cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
-			// 	cv::imshow("Depth", dispRaw);
+			// 	// cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
+			// 	// cv::imshow("Disparity", disp);
+			// 	// cv::convertScaleAbs(depth, dispRaw, 255.0 / dmax);
+			// 	// cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
+			// 	cv::imshow("Depth", depth);
 			// 	// cv::waitKey(0);
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
-               // cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
-               // cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
+               cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
+               cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
+			cv::imshow("Umap", udisp);
+			cv::imshow("Vmap", vdisp);
 			// cv::imshow("RGB", rgb);
-			// cv::imshow("Umap", udisp);
-			// cv::imshow("Vmap", vdisp);
 
 			// cv::imshow("Disparity", disparity);
 			// cv::waitKey(0);

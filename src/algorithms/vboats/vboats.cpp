@@ -130,32 +130,21 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
 	const float* ranges[] = { sranges };
      #pragma omp parallel for
 	for(int i = 0; i < w; i++){
-		cv::MatND hist, histNorm;
+          cv::MatND histU;
 		cv::Mat uscan = image.col(i);
-		cv::calcHist(&uscan, 1, channels, cv::Mat(), hist, 1, histSize, ranges);
-          // cv::normalize(hist, histNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-		if(debug){
-               printf("Umap Column %d: h = %d, w = %d\r\n",i, hist.rows, hist.cols);
-               // printf("Normalized Umap Column %d: h = %d, w = %d\r\n",i, histNorm.rows, histNorm.cols);
-          }
-		hist.col(0).copyTo(_umap.col(i));
-		// histNorm.col(0).copyTo(_umapNorm.col(i));
+		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+		if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
+		histU.col(0).copyTo(_umap.col(i));
 	}
      // printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
      #pragma omp parallel for
 	for(int i = 0; i < h; i++){
 		cv::MatND hist;
-          cv::Mat histNorm;
 		cv::Mat vscan = image.row(i);
 		cv::calcHist(&vscan, 1, channels, cv::Mat(), hist, 1, histSize, ranges);
 		cv::Mat histrow = hist.t();
-          // cv::normalize(histrow, histNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-		if(debug){
-               printf("VMap Row %d: h = %d, w = %d\r\n",i, histrow.rows, histrow.cols);
-               // printf("Normalized Vmap Row %d: h = %d, w = %d\r\n",i, histNorm.rows, histNorm.cols);
-          }
+		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",i, histrow.rows, histrow.cols);
 		histrow.row(0).copyTo(_vmap.row(i));
-		// histNorm.row(0).copyTo(_vmapNorm.row(i));
 	}
      // printf("%s\r\n",cvStrSize("Genereated Vmap",_vmap).c_str());
 
