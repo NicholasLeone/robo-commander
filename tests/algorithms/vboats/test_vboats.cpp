@@ -1,4 +1,5 @@
 #include "sensors/camera_d415.h"
+#include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 #include "utilities/plot_utils.h"
 #include "algorithms/vboats/vboats.h"
@@ -84,57 +85,64 @@ int main(int argc, char *argv[]){
 			cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			// cv::minMaxLoc(disparity, &minVal, &maxVal);
-               if(debug_timing){
-                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
-                    printf("[INFO] disparity conversion() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
-               }
-               // cvinfo(disparity,"Disparity");
-			// if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
-			// disparity = cam->convert_to_disparity(depth,&cvtGain);
-			// disparity = cam->convert_to_disparity(depth8,&cvtGain);
-			// if(verbose) printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
+			// cvinfo(disparity,"disparity");
+			if(!disparity.empty()){
+				// if(debug_timing){
+	               //      tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+	               //      printf("[INFO] disparity conversion() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+	               // }
 
+	               // cvinfo(disparity,"Disparity");
+				// if(verbose) printf("disparity min, max = %.2f, %.2f --- ratio = %.3f\r\n",minVal, maxVal, cvtRatio);
+				// disparity = cam->convert_to_disparity(depth,&cvtGain);
+				// disparity = cam->convert_to_disparity(depth8,&cvtGain);
+				// if(verbose) printf("%s\r\n",cvStrSize("Disparity",disparity).c_str());
 
+				// disparity.convertTo(disparity8,CV_8U);
+				// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
+				// printf("%s\r\n",cvStrSize("Disparity8",disparity8).c_str());
+				// try{
+				// 	cv::applyColorMap(disparity8, disp, cv::COLORMAP_JET);
+				// 	cv::imshow("Disparity8", disp);
+				// 	cv::waitKey(0);
+				// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
 
-			// disparity.convertTo(disparity8,CV_8U);
-			// disparity.convertTo(disparity8,CV_8U,(1.0/256.0));
-			// printf("%s\r\n",cvStrSize("Disparity8",disparity8).c_str());
-			// try{
-			// 	cv::applyColorMap(disparity8, disp, cv::COLORMAP_JET);
-			// 	cv::imshow("Disparity8", disp);
-			// 	cv::waitKey(0);
-			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+				// disparity = cam->convert_to_disparity(depth,&cvtGain);
+	               if(debug_timing) tmpT = (double)cv::getTickCount();
+				// vb.get_uv_map_scaled(disparity,&umap,&vmap, cvtRatio, true, "raw");
+				vb.get_uv_map(disparity,&umap,&vmap, false, "raw");
+				// vb.get_uv_map(disparity,&umap,&vmap, true, "raw");
+				// cvinfo(umap,"umap");
+				// cvinfo(vmap,"vmap");
+				// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
+	               // if(debug_timing){
+	               //      tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+	               //      printf("[INFO] UV Map generation() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+	               // }
 
-			// disparity = cam->convert_to_disparity(depth,&cvtGain);
-               if(debug_timing) tmpT = (double)cv::getTickCount();
-			vb.get_uv_map(disparity,&umap,&vmap, false, "raw");
-			// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
-               if(debug_timing){
-                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
-                    printf("[INFO] UV Map generation() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
-               }
+	               if(debug_timing) tmpT = (double)cv::getTickCount();
+				vector<Obstacle> obs;
+				// vb.pipeline_disparity(disparity, umap, vmap, &obs);
+			     // vb.pipeline_disparity(disparity, umap, vmap, &obs, &element);
+			     // vb.pipeline_disparity(disparity, umap, vmap, &obs, nullptr,false,true);
+			     vb.pipeline_disparity(disparity, umap, vmap, &obs, nullptr,false,false);
+	               // if(debug_timing){
+	               //      tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+	               //      printf("[INFO] pipeline_disparity() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+	               // }
 
-               if(debug_timing) tmpT = (double)cv::getTickCount();
-			vector<Obstacle> obs;
-			// vb.pipeline_disparity(disparity, umap, vmap, &obs);
-		     // vb.pipeline_disparity(disparity, umap, vmap, &obs, &element);
-		     vb.pipeline_disparity(disparity, umap, vmap, &obs, nullptr,false,true);
-               if(debug_timing){
-                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
-                    printf("[INFO] pipeline_disparity() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
-               }
-
-			// cv::Scalar mean, stddev;
-		     // cv::meanStdDev(disparity,mean, stddev);
-		     // cv::Mat stdImg = (mean-disparity)/stddev;
-			// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
-			// time_span = duration_cast<duration<float>>(now - _prev_time);
-               // _prev_time = now;
-			// dt = time_span.count();
-               tmpDt = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
-               printf("[INFO] Vboats pipeline() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
-			// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
-			printf(" -------------------------------- \r\n");
+				// cv::Scalar mean, stddev;
+			     // cv::meanStdDev(disparity,mean, stddev);
+			     // cv::Mat stdImg = (mean-disparity)/stddev;
+				// vb.get_uv_map(disparity,&umap,&vmap, true, "standardized");
+				// time_span = duration_cast<duration<float>>(now - _prev_time);
+	               // _prev_time = now;
+				// dt = time_span.count();
+	               tmpDt = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
+	               printf("[INFO] Vboats pipeline() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+				// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+				// printf(" -------------------------------- \r\n");
+			}
 			// try{
 			// 	// cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
 			// 	// cv::imshow("Disparity", disp);
@@ -143,11 +151,14 @@ int main(int argc, char *argv[]){
 			// 	cv::imshow("Depth", depth);
 			// 	// cv::waitKey(0);
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
-
-               cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
-               cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
-			cv::imshow("Umap", udisp);
-			cv::imshow("Vmap", vdisp);
+			if(!umap.empty()){
+				cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
+				cv::imshow("Umap", udisp);
+			}
+			if(!vmap.empty()){
+				cv::applyColorMap(vmap, vdisp, cv::COLORMAP_JET);
+				cv::imshow("Vmap", vdisp);
+			}
 			// cv::imshow("RGB", rgb);
 
 			// cv::imshow("Disparity", disparity);
