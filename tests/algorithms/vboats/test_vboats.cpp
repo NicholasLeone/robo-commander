@@ -143,14 +143,7 @@ int main(int argc, char *argv[]){
 				// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 				// printf(" -------------------------------- \r\n");
 			}
-			// try{
-			// 	// cv::applyColorMap(disparity, disp, cv::COLORMAP_JET);
-			// 	// cv::imshow("Disparity", disp);
-			// 	// cv::convertScaleAbs(depth, dispRaw, 255.0 / dmax);
-			// 	// cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET);
-			// 	cv::imshow("Depth", depth);
-			// 	// cv::waitKey(0);
-			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
+			
 			if(!umap.empty()){
 				cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
 				cv::imshow("Umap", udisp);
