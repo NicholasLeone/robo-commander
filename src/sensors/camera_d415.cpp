@@ -1,8 +1,10 @@
 #include <iostream>
 #include <unistd.h>                // For usleep
 #include <limits>                  // For infinity
+#include <math.h>                  // For fabs
 
 #include "sensors/camera_d415.h"
+#include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 
 #define STARTUP_DELAY_SEC 3.0
@@ -52,8 +54,10 @@ CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
      this->_ppxc = _Krgb.at<double>(2);
      this->_ppyc = _Krgb.at<double>(5);
 
-     float dscale = this->get_depth_scale(verbose);
-     float baseline = this->get_baseline(verbose);
+     this->_dscale = this->_get_depth_scale(verbose);
+     this->_baseline = this->_get_baseline(verbose);
+     this->_trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
+     this->_trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
      this->_filters = this->get_default_filters();
      printf("[INFO] CameraD415::CameraD415() --- Successfully created.\r\n");
 }
@@ -99,8 +103,10 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
      this->_ppxc = _Krgb.at<double>(2);
      this->_ppyc = _Krgb.at<double>(5);
 
-     float dscale = this->get_depth_scale(verbose);
-     float baseline = this->get_baseline(verbose);
+     this->_dscale = this->_get_depth_scale(verbose);
+     this->_baseline = this->_get_baseline(verbose);
+     this->_trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
+     this->_trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
      this->_filters = this->get_default_filters();
      printf("[INFO] CameraD415::CameraD415() --- Successfully created.\r\n");
 }
@@ -343,8 +349,148 @@ int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed){
 ██      ██    ██ ██  ██ ██  ██  ██  ██      ██   ██    ██
  ██████  ██████  ██   ████   ████   ███████ ██   ██    ██
 */
-
+/** BETA TESTING FUNCTION */
 cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+     cv::Mat tmp, disparity8;
+     double min, maxIn, maxDisparity, maxDepth;
+     // cvinfo(depth,"depth input");
+     depth.convertTo(tmp, CV_64F);
+     tmp = tmp * this->_dscale;
+     cv::minMaxLoc(tmp, &min, &maxDepth);
+     // cvinfo(tmp,"depth input to CV_64F");
+
+     cv::Mat disparity = cv::Mat((this->_fxd * this->_baseline) / tmp);
+     // cvinfo(disparity,"disparity");
+     cv::minMaxLoc(disparity, &min, &maxDisparity);
+     double gain = 256.0 / maxDepth;
+     double ratio = this->_trueMinDisparity / maxDisparity;
+     double offset = ratio / gain;
+     double tmpgain = 256.0 / (double)(this->_trueMinDisparity);
+     int tmpVal = (tmpgain*maxDisparity);
+     double delta = 256.0 / (double)(tmpVal);
+     // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
+     // float tmpgain = 256.0 / maxDisparity;
+     disparity.convertTo(disparity8,CV_8UC1, tmpgain);
+     if(false){
+          cvinfo(disparity8,"disparity8 pregain");
+          printf(" --- tmpgain=%.2f | ratio=%.2f | maxDisparity=%.2f | delta=%.2f | tmpVal=%d --- \r\n",tmpgain, ratio, maxDisparity, delta,tmpVal);
+          // disparity8.convertTo(disparity8,CV_8UC1, ratio);
+          cv::Mat disparity88 = cv::Mat_<uchar>(disparity8 * delta);
+          cvinfo(disparity88,"disparity8 postgain");
+     }
+     // disparity.convertTo(disparity8,CV_8UC1, 255.0/this->_trueMinDisparity);
+     // cvinfo(tmpDisp,"tmpDisp");
+     // cvinfo(disparity8,"disparity8");
+
+     // cv::minMaxLoc(disparity8, &min, &maxIn);
+     // double dmaxHat = maxIn * offset;
+     // printf(" --- maxDisparity=%.2f | maxDepth=%.2f | trueMaxDisparity=%.2f | derivedMaxDepth=%.2f --- \r\n",maxDisparity, maxDepth, this->_trueMinDisparity, dmaxHat);
+
+     // cv::imshow("disparity", disparity);
+     // cv::imshow("tmpDisp", tmpDisp);
+     // cv::imshow("disparity8", disparity8);
+
+     if(*conversion_gain) *conversion_gain = offset;
+     if(*conversion_offset) *conversion_offset = delta;
+     return disparity8;
+     // return disparity88;
+}
+
+cv::Mat CameraD415::convert_to_disparity_alternative(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+     cv::Mat tmp, disparity8;
+     double min, maxIn, maxDisparity, maxDepth;
+     // cvinfo(depth,"depth input");
+     depth.convertTo(tmp, CV_64F);
+     tmp = tmp * this->_dscale;
+     cv::minMaxLoc(tmp, &min, &maxDepth);
+     // cvinfo(tmp,"depth input to CV_64F");
+
+     cv::Mat disparity = cv::Mat((this->_fxd * this->_baseline) / tmp);
+     // cvinfo(disparity,"disparity");
+     cv::minMaxLoc(disparity, &min, &maxDisparity);
+     double gain = 256.0 / maxDepth;
+     double ratio = (double)(this->_trueMinDisparity) / maxDisparity;
+     double offset = ratio / gain;
+     double tmpgain = 256.0 / (double)(this->_trueMinDisparity);
+     // double tmpgain = 256.0 / maxDisparity;
+     // double tmpgain = (double)(256.0*this->_trueMinDisparity) / ();
+     int tmpVal = (tmpgain*maxDisparity);
+     double delta = 256.0 / (double)(tmpVal);
+     // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
+     // float tmpgain = 256.0 / maxDisparity;
+     cv::Mat disparityTest = cv::Mat(disparity*ratio);
+     cvinfo(disparityTest,"\tdisparityTest");
+     disparityTest.convertTo(disparity8,CV_8UC1, tmpgain);
+     cvinfo(disparity8,"\tdisparityTest8 pregain");
+     printf(" --- tmpgain=%.2f | ratio=%.2f | maxDisparity=%.2f | delta=%.2f | tmpVal=%d --- \r\n",tmpgain, ratio, maxDisparity, delta,tmpVal);
+     // disparity8.convertTo(disparity8,CV_8UC1, ratio);
+     // cvinfo(disparity8,"disparity8 postgain");
+     // disparity.convertTo(disparity8,CV_8UC1, 255.0/this->_trueMinDisparity);
+     // cvinfo(tmpDisp,"tmpDisp");
+     // cvinfo(disparity8,"disparity8");
+
+     // cv::minMaxLoc(disparity8, &min, &maxIn);
+     // double dmaxHat = maxIn * offset;
+     // printf(" --- maxDisparity=%.2f | maxDepth=%.2f | trueMaxDisparity=%.2f | derivedMaxDepth=%.2f --- \r\n",maxDisparity, maxDepth, this->_trueMinDisparity, dmaxHat);
+
+     // cv::imshow("disparity", disparity);
+     // cv::imshow("tmpDisp", tmpDisp);
+     // cv::imshow("disparity8", disparity8);
+
+     if(*conversion_gain) *conversion_gain = offset;
+     if(*conversion_offset) *conversion_offset = delta;
+     return disparity8;
+}
+
+/** ALPHA TESTING FUNCTION */
+/**
+cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+     // float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
+     // float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
+     // float cvter = (this->_fxd * this->_baseline) / (this->_dscale);
+     // float cvter = (this->_fxd * this->_baseline);
+
+     // cv::Mat zerosMask = cv::Mat(depth == 0);
+     cv::Mat tmp, disparity8;
+     double min, maxIn, maxDisparity;
+     // double maxIn, maxDisparity2, maxScaled, maxOut;
+     // cvinfo(depth,"depth input");
+     depth.convertTo(tmp, CV_64F);
+     tmp = tmp * this->_dscale;
+     // cvinfo(tmp,"depth input to CV_64F");
+     cv::minMaxLoc(tmp, &min, &maxIn);
+
+     // cv::Mat dMeters;
+     // cv::Mat tmp2 = tmp / maxIn;
+     // cvinfo(tmp2,"tmp / max(tmp)");
+     // cv::Mat dMeters = cv::Mat(1.0 / tmp);
+     // // cv::Mat dMeters = cv::Mat(1.0 / tmp2);
+     // // cv::minMaxLoc(dMeters, &minMeter, &maxMeter);
+     // // cvinfo(dMeters,"dMeters");
+
+     cv::Mat disparity = cv::Mat((this->_fxd * this->_baseline) / tmp);
+     cv::minMaxLoc(disparity, &min, &maxDisparity);
+     float scale = (255.0) / maxDisparity;
+     // cv::Mat tmpDisp = disparity * scale;
+     // tmpDisp.convertTo(disparity8,CV_8UC1);
+     disparity.convertTo(disparity8,CV_8UC1,scale);
+     // cvinfo(tmpDisp,"tmpDisp");
+     // cvinfo(disparity8,"disparity8");
+     // printf(" --- dDisparity=%.2f  --- \r\n", dDisparity);
+     // cv::imshow("disparity", disparity);
+     // cv::imshow("tmpDisp", tmpDisp);
+     // cv::imshow("disparity8", disparity8);
+
+     double gain = 255.0 / maxDisparity;
+     double offset = 255.0 / maxIn;
+
+     if(*conversion_gain) *conversion_gain = gain;
+     if(*conversion_offset) *conversion_offset = offset;
+     return disparity8;
+}*/
+/** BASE FUNCTION */
+/** */
+cv::Mat CameraD415::convert_to_disparity_test(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
      // float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
      // float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
      // bool use_test = true;
@@ -561,7 +707,7 @@ void CameraD415::get_extrinsics(bool verbose){
           rs2_extrinsics extr = depth_stream.get_extrinsics_to(rgb_stream);
      }
 }
-float CameraD415::get_baseline(bool verbose){
+float CameraD415::_get_baseline(bool verbose){
      if(this->_profile){
           // rs2::stream_profile ir1_stream = this->_profile.get_stream(RS2_STREAM_INFRARED, 1);
           // rs2::stream_profile ir2_stream = this->_profile.get_stream(RS2_STREAM_INFRARED, 2);
@@ -571,23 +717,24 @@ float CameraD415::get_baseline(bool verbose){
           rs2_extrinsics extr = depth_stream.get_extrinsics_to(rgb_stream);
 
           float baseline = extr.translation[0];
-          this->_baseline = baseline;
-          if(verbose) printf("[INFO] CameraD415::get_baseline() --- Baseline = %f\r\n",baseline);
+          if(verbose) printf("[INFO] CameraD415::_get_baseline() --- Baseline = %f\r\n",baseline);
           return baseline;
      }else{ return -1.0;}
 }
-float CameraD415::get_depth_scale(bool verbose){
+float CameraD415::get_baseline(bool verbose){ return this->_baseline; }
+float CameraD415::_get_depth_scale(bool verbose){
      if(!this->_profile){
           printf("[ERROR] CameraD415::get_depth_scale() --- Camera Profile is not initialized.\r\n");
           return -1.0;
      } else{
           rs2::depth_sensor sensor = this->_profile.get_device().first<rs2::depth_sensor>();
           float scale = sensor.get_depth_scale();
-          this->_dscale = scale;
           if(verbose) printf("[INFO] CameraD415::get_depth_scale() --- Depth Scale = %f\r\n",scale);
           return scale;
      }
 }
+float CameraD415::get_depth_scale(bool verbose){ return this->_dscale; }
+
 std::vector<rs2::filter> CameraD415::get_default_filters(bool use_decimation, bool use_threshold,
      bool depth_to_disparity, bool use_spatial, bool use_temporal, bool use_hole_filling)
 {
@@ -725,7 +872,7 @@ int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth){
 // }
 
 void CameraD415::processingThread(){
-     float dt;
+     float rsdt;
      int err = 0;
      int step = 0;
      bool goodRgb = false;
@@ -740,31 +887,37 @@ void CameraD415::processingThread(){
      rs2::temporal_filter temporal_filter(0.4f, 40.0f, 0);
      rs2::hole_filling_filter hole_filler(1);
      rs2::disparity_transform disparity_to_depth(false);
+     rs2::frameset data;
+     rs2::frameset processed;
 
-	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
+     duration<float> time_span;
 	high_resolution_clock::time_point now;
-	duration<float> time_span;
+     high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
+     double t = (double)cv::getTickCount();
      while(!this->_stopped){
-          if(this->_debug_timings){
-               now = high_resolution_clock::now();
-               time_span = duration_cast<duration<float>>(now - _prev_time);
-               dt = time_span.count();
-               // printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
-               printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2f sec [%.2f Hz]):\r\n", step,dt, (1/dt));
-          }
-          // else printf("[INFO] CameraD415::processingThread() ---- Starting Step %d:\r\n", step);
+          // if(this->_debug_timings){
+          //      now = high_resolution_clock::now();
+          //      time_span = duration_cast<duration<float>>(now - _prev_time);
+          //      rsdt = time_span.count();
+          //      printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2f sec [%.2f Hz]):\r\n", step,rsdt, (1/rsdt));
+          //      // printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
+          // }
 
-          rs2::frameset data;
+          // rs2::frameset data;
           if(this->_pipe.poll_for_frames(&data)){
                if(this->_do_align) data = data.apply_filter(*this->_align);
                rs2::frameset raw = data;
-
-               rs2::frameset processed;
-               if(this->_do_processing) this->process_frames(data,&processed);
-
                this->_raw_queue.enqueue(raw);
+
+               // rs2::frameset processed;
+               if(this->_do_processing) this->process_frames(data,&processed);
                this->_proc_queue.enqueue(processed);
-               if(this->_debug_timings){ _prev_time = now; }
+               if(this->_debug_timings){
+                    _prev_time = now;
+                    double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+                    t = (double)cv::getTickCount();
+                    printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
+               }
                step++;
           }
      }

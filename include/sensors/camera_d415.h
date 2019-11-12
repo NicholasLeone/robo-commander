@@ -104,6 +104,8 @@ private:
      cv::Mat _Dmat;
      float _dscale;
      float _baseline;
+     float _trueMinDisparity;
+     float _trueMaxDisparity;
      std::string _device_name;
      std::string _distortion_model = "plumb_bob";
 
@@ -117,6 +119,9 @@ private:
      const std::string disparity_filter_name = "Disparity";
      const std::string depth_filter_name = "Disparity2Depth";
 
+     /** Private Functions */
+     float _get_baseline(bool verbose = false);
+     float _get_depth_scale(bool verbose = false);
 public:
      /** Constructors */
 	CameraD415(bool show_options = false);
@@ -151,6 +156,8 @@ public:
 
      /** Camera Data Conversions */
      cv::Mat convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
+     /** Experimental */cv::Mat convert_to_disparity_alternative(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
+     /** Experimental */cv::Mat convert_to_disparity_test(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
      /**TODO*/int get_pointcloud();
 
      /** Device Getters */
@@ -162,9 +169,9 @@ public:
      void get_extrinsics(bool verbose = false);
      float get_baseline(bool verbose = false);
      float get_depth_scale(bool verbose = false);
-     std::vector<rs2::filter> get_default_filters(bool use_decimation = true,
+     std::vector<rs2::filter> get_default_filters(bool use_decimation = false,
           bool use_threshold = true, bool depth_to_disparity = true,
-          bool use_spatial = true, bool use_temporal = true, bool use_hole_filling = false
+          bool use_spatial = false, bool use_temporal = true, bool use_hole_filling = false
      );
 
      /** Device Setters */

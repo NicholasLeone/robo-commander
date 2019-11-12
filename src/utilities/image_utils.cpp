@@ -72,10 +72,10 @@ int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips, bool
      if( (w % ncols == 0) && (h % nrows == 0) ){
           if(verbose) printf("[INFO] strip_image() ---- Stripping input image (%d, %d) %s into %d strips of size %d, %d.\r\n",h, w,strDebug.c_str(), nstrips, dx,dy);
      }else if(w % ncols != 0){
-          printf("[ERROR] strip_image() ---- Please choose another value for nstrips.\r\n");
+          if(verbose) printf("[ERROR] strip_image() ---- \'w %% ncols = %d %% %d != 0\' Please choose another value for nstrips.\r\n", w, ncols);
           return -1;
      }else if(h % nrows != 0){
-          printf("[ERROR] strip_image() ---- Please choose another value for nstrips.\r\n");
+          if(verbose) printf("[ERROR] strip_image() ---- \'h %% nrows = %d %% %d != 0\' Please choose another value for nstrips.\r\n", h, nrows);
           return -1;
      }
 
