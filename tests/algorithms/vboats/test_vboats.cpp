@@ -84,6 +84,7 @@ int main(int argc, char *argv[]){
                if(debug_timing) tmpT = (double)cv::getTickCount();
 			cv::minMaxLoc(depth, &minVal, &dmax);
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
+			// disparity = cam->convert_to_disparity_alternative(depth,&cvtGain, &cvtRatio);
 			// cv::minMaxLoc(disparity, &minVal, &maxVal);
 			// cvinfo(disparity,"disparity");
 			if(!disparity.empty()){
@@ -143,7 +144,7 @@ int main(int argc, char *argv[]){
 				// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 				// printf(" -------------------------------- \r\n");
 			}
-			
+
 			if(!umap.empty()){
 				cv::applyColorMap(umap, udisp, cv::COLORMAP_JET);
 				cv::imshow("Umap", udisp);

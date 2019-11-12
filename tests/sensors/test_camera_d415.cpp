@@ -98,6 +98,7 @@ int main(int argc, char *argv[]){
 	                    double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
 	                    printf("[INFO] TestCameraD415() ---- convert_to_disparity step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 	               }
+				printf(" --------------------------- \r\n");
 				if(debug_timing) t = (double)cv::getTickCount();
 				disparityTest = cam->convert_to_disparity_alternative(depth,&cvtGain, &cvtRatio);
 				cvinfo(disparityTest,"disparityTest");
@@ -105,6 +106,7 @@ int main(int argc, char *argv[]){
 	                    double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
 	                    printf("[INFO] TestCameraD415() ---- convert_to_disparity_alternative step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 	               }
+				printf(" --------------------------- \r\n");
 				cv::imshow("RGB", rgb);
 				cv::imshow("Depth", depth);
 				cv::imshow("Disparity", disparity);
@@ -124,7 +126,7 @@ int main(int argc, char *argv[]){
 	                    double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
 	                    printf("[INFO] TestCameraD415() ---- convert_to_disparity_test step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 	               }
-
+				printf(" =========================== \r\n");
 			}
 
 			// errThread = cam->get_raw_queued_images(&rgbraw, &depthraw);
