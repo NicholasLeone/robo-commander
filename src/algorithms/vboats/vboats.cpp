@@ -3,8 +3,8 @@
 
 #include "base/definitions.h"
 #include "utilities/utils.h"
-#include "utilities/image_utils.h"
 #include "utilities/cv_utils.h"
+#include "utilities/image_utils.h"
 #include "algorithms/vboats/vboats.h"
 
 #define VERBOSE_OBS_SEARCH false
@@ -102,7 +102,7 @@ void VBOATS::update(){}
 float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      bool visualize, std::string dispId, bool verbose, bool debug, bool timing)
 {
-     float dt = -1.0;
+     float dt = 0.0;
      high_resolution_clock::time_point prev_time, now;
      if(timing) prev_time = high_resolution_clock::now();
 
@@ -128,25 +128,46 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      int histSize[] = {dmax};
 	float sranges[] = { 0, dmax };
 	const float* ranges[] = { sranges };
-     #pragma omp parallel for
+     cv::MatND histU, histV;
+     // #pragma omp parallel for private(histU)
 	for(int i = 0; i < w; i++){
-          cv::MatND histU;
 		cv::Mat uscan = image.col(i);
 		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
 		if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
 		histU.col(0).copyTo(_umap.col(i));
 	}
      // printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
-     #pragma omp parallel for
-	for(int i = 0; i < h; i++){
-		cv::MatND hist;
-		cv::Mat vscan = image.row(i);
-		cv::calcHist(&vscan, 1, channels, cv::Mat(), hist, 1, histSize, ranges);
-		cv::Mat histrow = hist.t();
-		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",i, histrow.rows, histrow.cols);
-		histrow.row(0).copyTo(_vmap.row(i));
+     // #pragma omp parallel for private(histV)
+	for(int j = 0; j < h; j++){
+		cv::Mat vscan = image.row(j);
+		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+		cv::Mat histrow = histV.t();
+		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",j, histrow.rows, histrow.cols);
+          histrow.row(0).copyTo(_vmap.row(j));
+          // if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",i, histV.t().rows, histV.t().cols);
+		// histV.t().row(0).copyTo(_vmap.row(i));
 	}
      // printf("%s\r\n",cvStrSize("Genereated Vmap",_vmap).c_str());
+
+     // #pragma omp parallel
+     // {
+     //      #pragma omp for private(histU)
+     //      for(int i = 0; i < w; i++){
+     //           cv::Mat uscan = image.col(i);
+     //           cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+     //           if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
+     //           histU.col(0).copyTo(_umap.col(i));
+     //      }
+     //
+     //      #pragma omp for private(histV)
+     //      for(int j = 0; j < h; j++){
+     //           cv::Mat vscan = image.row(j);
+     //           cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+     //           cv::Mat histrow = histV.t();
+     //           if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",j, histrow.rows, histrow.cols);
+     //           histrow.row(0).copyTo(_vmap.row(j));
+     //      }
+     // }
 
      cv::Mat _umap8, _vmap8;
      if(visualize){
@@ -166,6 +187,7 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
                cv::imshow(strU8, _umap8);
                cv::imshow(strV8, _vmap8);
           }
+          // cv::waitKey(0);
      }
      if(image.type() != CV_8UC1){
           printf("UVMap Generator --- Converting uv map data type to uint8...\r\n");
@@ -187,6 +209,114 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      return dt;
 }
 
+float VBOATS::get_uv_map_scaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale,
+     bool visualize, std::string dispId, bool verbose, bool debug, bool timing)
+{
+     float dt = -1.0;
+     high_resolution_clock::time_point prev_time, now;
+     if(timing) prev_time = high_resolution_clock::now();
+
+     int w = image.cols;
+     int h = image.rows;
+     double minVal, maxVal;
+     // cv::Mat scaledImage = cv::Mat_<uchar>(image*scale);
+     cv::Mat scaledImage = image;
+     cv::minMaxLoc(scaledImage, &minVal, &maxVal);
+     if(verbose) printf("min, max = %.2f, %.2f, h = %d, w = %d\r\n",minVal, maxVal,h,w);
+     int dmax = (int) maxVal + 1;
+
+	int hu = dmax; int wu = w; int hv = h; int wv = dmax;
+	// cv::Mat _umap = cv::Mat::zeros(dmax, w, image.type());
+	// cv::Mat _vmap = cv::Mat::zeros(h, dmax, image.type());
+	cv::Mat _umap = cv::Mat::zeros(dmax, w, CV_8UC1);
+	cv::Mat _vmap = cv::Mat::zeros(h, dmax, CV_8UC1);
+
+
+	// cv::Mat _umapNorm = cv::Mat::zeros(dmax, w, CV_8UC1);
+	// cv::Mat _vmapNorm = cv::Mat::zeros(h, dmax, CV_8UC1);
+     if(verbose) printf("%s\r\n",cvStrSize("Initialized Umap",_umap).c_str());
+
+     int channels[] = {0};
+     int histSize[] = {dmax};
+	float sranges[] = { 0, dmax };
+	const float* ranges[] = { sranges };
+     #pragma omp parallel for
+	for(int i = 0; i < w; i++){
+          cv::MatND histU;
+		cv::Mat uscan = scaledImage.col(i);
+		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+		if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
+		histU.col(0).copyTo(_umap.col(i));
+	}
+     // printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
+     #pragma omp parallel for
+	for(int i = 0; i < h; i++){
+		cv::MatND hist;
+		cv::Mat vscan = scaledImage.row(i);
+		cv::calcHist(&vscan, 1, channels, cv::Mat(), hist, 1, histSize, ranges);
+		cv::Mat histrow = hist.t();
+		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",i, histrow.rows, histrow.cols);
+		histrow.row(0).copyTo(_vmap.row(i));
+	}
+     // printf("%s\r\n",cvStrSize("Genereated Vmap",_vmap).c_str());
+     cv::Mat _umap8, _vmap8;
+     cv::Mat spreadUmap, spreadVmap;
+     if(maxVal < 255.0){
+          double spreadRatio = 256.0 / (maxVal+1.0);
+          printf("spread ratio = %.4f\r\n",spreadRatio);
+          spread_image(_umap, &spreadUmap, 1.0, spreadRatio, nullptr);
+          spread_image(_vmap, &spreadVmap, spreadRatio, 1.0, nullptr);
+          cvinfo(_umap,"raw umap");
+          cvinfo(_vmap,"raw vmap");
+          cvinfo(spreadUmap,"Spread umap");
+          cvinfo(spreadVmap,"Spread vmap");
+          cv::imshow("raw Umap", _umap);
+          cv::imshow("raw Vmap", _vmap);
+          cv::imshow("spread umap", spreadUmap);
+          cv::imshow("spread vmap", spreadVmap);
+          cv::waitKey(0);
+     } else{
+          spreadUmap = _umap.clone();
+          spreadVmap = _vmap.clone();
+     }
+     if(visualize){
+          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
+          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
+          std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
+          std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
+          cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL );
+          cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL );
+          cv::imshow(strU, _umap);
+          cv::imshow(strV, _vmap);
+          if(scaledImage.type() != CV_8UC1){
+               cv::namedWindow(strU8.c_str(), cv::WINDOW_NORMAL );
+               cv::namedWindow(strV8.c_str(), cv::WINDOW_NORMAL );
+               _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
+               _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
+               cv::imshow(strU8, _umap8);
+               cv::imshow(strV8, _vmap8);
+          }
+          cv::waitKey(0);
+     }
+     if(scaledImage.type() != CV_8UC1){
+          printf("UVMap Generator --- Converting uv map data type to uint8...\r\n");
+          _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
+          _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
+          *umap = _umap8;
+          *vmap = _vmap8;
+     }else{
+          *umap = _umap;
+          *vmap = _vmap;
+     }
+
+     if(timing){
+          // duration<float> time_span = duration_cast<duration<float>>(now - _prev_time);
+          // dt = time_span.count();
+          now = high_resolution_clock::now();
+          dt = duration_cast<duration<float>>(now - prev_time).count();
+     }
+     return dt;
+}
 
 void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool visualize){
      if(verbose) printf("%s\r\n",cvStrSize("Vmap Filtering Input",input).c_str());
@@ -212,9 +342,10 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
      double minVal, maxVal;
      cv::minMaxLoc(imgCopy, &minVal, &maxVal);
 
-     int nStrips = int(ceil(maxVal/255.0) * nThreshs);
+     float ratio = (float)(w) / 255.0;
+     int nStrips = int(ceil(ratio * nThreshs));
      int vMax = (int)maxVal;
-     if(verbose) printf("vMax, nThreshs: %d, %d\r\n", vMax, nStrips);
+     if(verbose) printf("vMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", vMax, ratio, nStrips);
 
      /**
      int divSection = 3;
@@ -257,43 +388,49 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
      std::vector<cv::Mat> strips;
      std::vector<cv::Mat> pStrips;
      err = strip_image(imgCopy, &strips, nStrips, true);
-     for(cv::Mat strip : strips){
-          cv::minMaxLoc(strip, &minVal, &maxVal);
-          cv::meanStdDev(strip, cvMean, cvStddev);
-          int tmpMax = (int) maxVal;
-          double tmpMean = (double) cvMean[0];
-          double tmpStd = (double) cvStddev[0];
-          if(tmpMean == 0.0){
-               pStrips.push_back(strip.clone());
+     if(err >= 0){
+          for(cv::Mat strip : strips){
+               cv::minMaxLoc(strip, &minVal, &maxVal);
+               cv::meanStdDev(strip, cvMean, cvStddev);
+               int tmpMax = (int) maxVal;
+               double tmpMean = (double) cvMean[0];
+               double tmpStd = (double) cvStddev[0];
+               if(tmpMean == 0.0){
+                    pStrips.push_back(strip.clone());
+                    idx++;
+                    continue;
+               }
+
+               if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
+               double maxValRatio = (double) vMax/255.0;
+               double relRatio = (double)(tmpMax-tmpStd)/(double)vMax;
+               double relRatio2 = (tmpMean)/(double)(tmpMax);
+               if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
+
+               double tmpGain;
+               if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
+               else tmpGain = 1.0 - (relRatio + relRatio2);
+
+               int thresh = int(threshs[idx] * tmpGain * tmpMax);
+               if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
+
+               cv::Mat tmpStrip;
+               threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
+               pStrips.push_back(tmpStrip.clone());
+               if(visualize){
+                    // cv::imshow("strip", strip);
+                    // cv::imshow("thresholded strip", tmpStrip);
+                    // cv::waitKey(0);
+               }
                idx++;
-               continue;
           }
-
-          if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
-          double maxValRatio = (double) vMax/255.0;
-          double relRatio = (double)(tmpMax-tmpStd)/(double)vMax;
-          double relRatio2 = (tmpMean)/(double)(tmpMax);
-          if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
-
-          double tmpGain;
-          if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
-          else tmpGain = 1.0 - (relRatio + relRatio2);
-
-          int thresh = int(threshs[idx] * tmpGain * tmpMax);
-          if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
-
-          cv::Mat tmpStrip;
-          threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
-          pStrips.push_back(tmpStrip.clone());
-          if(visualize){
-               // cv::imshow("strip", strip);
-               // cv::imshow("thresholded strip", tmpStrip);
-               // cv::waitKey(0);
-          }
-          idx++;
+          err = merge_strips(pStrips, &filtered);
+     }else{
+          if(verbose) printf("[WARNING] VBOATS::filter_disparity_vmap() --- Could not properly strip input vmap given the stripping parameters. Returning unfiltered vmap.\r\n");
+          int wholeThresh = int(0.25*vMax);
+          cv::threshold(imgCopy, filtered, wholeThresh, 255, cv::THRESH_TOZERO);
+          //filtered = imgCopy.clone(); /** okay results */
      }
-
-     err = merge_strips(pStrips, &filtered);
      if(visualize){
           cv::namedWindow("reconstructed thresholded input", cv::WINDOW_NORMAL );
           cv::imshow("reconstructed thresholded input", filtered);
@@ -325,9 +462,10 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
      double minVal, maxVal;
      cv::minMaxLoc(imgCopy, &minVal, &maxVal);
 
+     float ratio = (float)(h) / 255.0;
      int uMax = (int)maxVal;
-     int nStrips = int(ceil(maxVal/255.0) * nThreshs);
-     if(verbose) printf("uMax, nThreshs: %d, %d\r\n", uMax, nStrips);
+     int nStrips = int(ceil(ratio * nThreshs));
+     if(verbose) printf("uMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", uMax, ratio, nStrips);
 
      cv::threshold(imgCopy, imgCopy, 8, 255, cv::THRESH_TOZERO);
 
@@ -336,43 +474,49 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
      std::vector<cv::Mat> strips;
      std::vector<cv::Mat> pStrips;
      err = strip_image(imgCopy, &strips, nStrips, false);
-     for(cv::Mat strip : strips){
-          cv::minMaxLoc(strip, &minVal, &maxVal);
-          cv::meanStdDev(strip, cvMean, cvStddev);
-          int tmpMax = (int) maxVal;
-          double tmpMean = (double) cvMean[0];
-          double tmpStd = (double) cvStddev[0];
-          if(tmpMean == 0.0){
-               pStrips.push_back(strip.clone());
+     if(err >= 0){
+          for(cv::Mat strip : strips){
+               cv::minMaxLoc(strip, &minVal, &maxVal);
+               cv::meanStdDev(strip, cvMean, cvStddev);
+               int tmpMax = (int) maxVal;
+               double tmpMean = (double) cvMean[0];
+               double tmpStd = (double) cvStddev[0];
+               if(tmpMean == 0.0){
+                    pStrips.push_back(strip.clone());
+                    idx++;
+                    continue;
+               }
+
+               if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
+               double maxValRatio = (double) uMax/255.0;
+               double relRatio = (double)(tmpMax-tmpStd)/(double)uMax;
+               double relRatio2 = (tmpMean)/(double)(tmpMax);
+               if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
+
+               double tmpGain;
+               if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
+               else tmpGain = 1.0 - (relRatio + relRatio2);
+
+               int thresh = int(threshs[idx] * tmpGain * tmpMax);
+               if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
+
+               cv::Mat tmpStrip;
+               threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
+               pStrips.push_back(tmpStrip.clone());
+               if(visualize){
+                    // cv::imshow("strip", strip);
+                    // cv::imshow("thresholded strip", tmpStrip);
+                    // cv::waitKey(0);
+               }
                idx++;
-               continue;
           }
-
-          if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
-          double maxValRatio = (double) uMax/255.0;
-          double relRatio = (double)(tmpMax-tmpStd)/(double)uMax;
-          double relRatio2 = (tmpMean)/(double)(tmpMax);
-          if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
-
-          double tmpGain;
-          if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
-          else tmpGain = 1.0 - (relRatio + relRatio2);
-
-          int thresh = int(threshs[idx] * tmpGain * tmpMax);
-          if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
-
-          cv::Mat tmpStrip;
-          threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
-          pStrips.push_back(tmpStrip.clone());
-          if(visualize){
-               // cv::imshow("strip", strip);
-               // cv::imshow("thresholded strip", tmpStrip);
-               // cv::waitKey(0);
-          }
-          idx++;
+          err = merge_strips(pStrips, &filtered, false);
+     } else{
+          if(verbose) printf("[WARNING] VBOATS::filter_disparity_umap() --- Could not properly strip input umap given the stripping parameters. Returning unfiltered umap.\r\n");
+          int wholeThresh = int(0.25*uMax);
+          cv::threshold(imgCopy, filtered, wholeThresh, 255, cv::THRESH_TOZERO);
+          //filtered = imgCopy.clone(); /** okay results */
      }
-
-     err = merge_strips(pStrips, &filtered, false);
      if(visualize){
           cv::namedWindow("reconstructed thresholded input", cv::WINDOW_NORMAL );
           cv::imshow("reconstructed thresholded input", filtered);
@@ -883,6 +1027,15 @@ void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, c
           printf("[INFO] uv map filtering() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
      }
 
+     if(visualize){
+          cv::Mat dvProcessed, duProcessed;
+          cv::applyColorMap(uProcessed, duProcessed, cv::COLORMAP_JET);
+          cv::applyColorMap(vProcessed, dvProcessed, cv::COLORMAP_JET);
+          cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", dvProcessed);
+          cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", duProcessed);
+          // cv::waitKey(0);
+     }
+
      if(debug_timing) tmpT = (double)cv::getTickCount();
      float* line_params;
      float gndM; int gndB;
@@ -903,7 +1056,6 @@ void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, c
      find_contours(uProcessed, &contours, 1, 100,nullptr,-1,VERBOSE_CONTOURS, VIZ_CONTOURS);
      // find_contours(uProcessed, &contours, 1, 30);
      // find_contours(sobelU, &contours);
-
      int n = 0;
      vector<Obstacle> _obstacles;
      int nObs = find_obstacles_disparity(vmap, contours, &_obstacles, line_params);
@@ -926,14 +1078,14 @@ void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, c
      }
      if(obstacles) *obstacles = _obstacles;
      if(visualize){
-          cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
-          cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
-          // cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
           cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
-          cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", vProcessed);
-          cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", uProcessed);
-          // cv::namedWindow("sobel vmap", cv::WINDOW_NORMAL ); cv::imshow("sobel vmap", sobelV);
-          // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
-          // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
+          // cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
+          // cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
+          // // cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
+          // cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", vProcessed);
+          // cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", uProcessed);
+          // // cv::namedWindow("sobel vmap", cv::WINDOW_NORMAL ); cv::imshow("sobel vmap", sobelV);
+          // // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
+          // // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
      }
 }

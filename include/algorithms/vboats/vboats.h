@@ -60,6 +60,12 @@ public:
           bool debug = false, bool timing = false
      );
 
+     /** WARNING: Experimental function */
+     float get_uv_map_scaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale,
+          bool visualize = false, std::string dispId = "", bool verbose = false,
+          bool debug = false, bool timing = false
+     );
+
      /** TODO Make these functions part of the VBOATS class */
      void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
      void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool visualize = false);
