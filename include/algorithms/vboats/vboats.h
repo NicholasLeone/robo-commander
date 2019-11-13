@@ -8,6 +8,7 @@
 #include <mutex>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
 
 using namespace std;
 
@@ -55,9 +56,12 @@ public:
      */
      void update();
 
-     float get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
-          bool visualize = false, std::string dispId = "", bool verbose = true,
-          bool debug = false, bool timing = false
+     void get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
+          bool verbose = true, bool debug = false, bool timing = false
+     );
+
+     void get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
+          double nThreads = -1.0, bool verbose = false, bool timing = false
      );
 
      /** WARNING: Experimental function */

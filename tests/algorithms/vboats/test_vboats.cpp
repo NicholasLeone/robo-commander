@@ -111,7 +111,7 @@ int main(int argc, char *argv[]){
 				// disparity = cam->convert_to_disparity(depth,&cvtGain);
 	               if(debug_timing) tmpT = (double)cv::getTickCount();
 				// vb.get_uv_map_scaled(disparity,&umap,&vmap, cvtRatio, true, "raw");
-				vb.get_uv_map(disparity,&umap,&vmap, false, "raw");
+				vb.get_uv_map(disparity,&umap,&vmap);
 				// vb.get_uv_map(disparity,&umap,&vmap, true, "raw");
 				// cvinfo(umap,"umap");
 				// cvinfo(vmap,"vmap");
