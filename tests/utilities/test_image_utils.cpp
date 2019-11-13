@@ -2,6 +2,7 @@
 #include "utilities/plot_utils.h"
 #include "utilities/cv_utils.h"
 #include "algorithms/vboats/vboats.h"
+#include <opencv2/core/utility.hpp>
 
 /** NOTES:
 
@@ -59,30 +60,112 @@ void create_umap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap){
      int histSize[] = {dmax};
 	float sranges[] = { 0, dmax };
 	const float* ranges[] = { sranges };
-     cv::MatND histU, histV;
+     // cv::MatND histU, histV;
 
+     // cv::MatND histU;
+     double nthreads = 8.0;
      cv::parallel_for_(cv::Range(0,image.cols), [&](const cv::Range& range){
+          cv::MatND histU;
           for(int i = range.start; i < range.end; i++){
      		cv::Mat uscan = image.col(i);
      		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+     		// cv::calcHist(&(cv::Mat(image.col(i))), 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+               // cv::calcHist(cv::Mat(image.col(i)), 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+               // cv::calcHist(image.col(i), 1, channels, cv::Mat(), histU, 1, histSize, ranges);
      		histU.col(0).copyTo(umapMat.col(i));
+               // histU.release();
      	}
-     });
+     },nthreads);
 
+     // cv::MatND histV;
      cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
+          cv::MatND histV;
           for(int j = range.start; j < range.end; j++){
      		cv::Mat vscan = image.row(j);
      		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+               // cv::calcHist(&(cv::Mat(image.row(j))), 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+               // cv::calcHist(cv::Mat(image.row(j)), 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+               // cv::calcHist(image.row(j), 1, channels, cv::Mat(), histV, 1, histSize, ranges);
      		cv::Mat histrow = histV.t();
                histrow.row(0).copyTo(vmapMat.row(j));
+               // cvinfo(histV.col(0),"histV.col(0)");
+               // cvinfo(histrow.row(0),"histrow.row(0)");
+               // histV.col(0).copyTo(vmapMat.row(j));
+               // histV.release();
      	}
-     });
+     },nthreads);
 
      if(umap) *umap = umapMat;
      if(vmap) *vmap = vmapMat;
 }
 
+void create_umap2(cv::Mat image, cv::Mat* umap, cv::Mat* vmap){
+     // cv::Range ws(0,image.cols);
+     // cv::Range hs(0, image.rows);
+     double minVal, maxVal;
+     cv::minMaxLoc(image, &minVal, &maxVal);
+     int dmax = (int) maxVal + 1;
+
+     cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
+     /** Size Temporarily transposed for ease of for-loop copying (Target size = h x dmax)*/
+	cv::Mat vmapMat = cv::Mat::zeros(dmax, image.rows, CV_8UC1);
+	// cv::Mat vmapMat = cv::Mat::zeros(image.rows, dmax, CV_8UC1);
+
+     int channels[] = {0};
+     int histSize[] = {dmax};
+	float sranges[] = { 0, dmax };
+	const float* ranges[] = { sranges };
+     // cv::MatND histU, histV;
+
+     // cv::MatND histU;
+     double nthreads = 8.0;
+     cv::parallel_for_(cv::Range(0,image.cols), [&](const cv::Range& range){
+          cv::MatND histU;
+          for(int i = range.start; i < range.end; i++){
+     		cv::Mat uscan = image.col(i);
+     		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+     		histU.col(0).copyTo(umapMat.col(i));
+     	}
+     }, nthreads);
+
+     // cv::MatND histV;
+     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
+          cv::MatND histV;
+          for(int j = range.start; j < range.end; j++){
+     		cv::Mat vscan = image.row(j);
+     		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+               histV.col(0).copyTo(vmapMat.col(j));
+     	}
+     }, nthreads);
+     cv::Mat vmapTrans = vmapMat.t();
+     // vmapMat = vmapMat.t();
+     // cvinfo(vmapTrans,"vmapTrans");
+     if(umap) *umap = umapMat;
+     if(vmap) *vmap = vmapTrans;
+}
+
 using namespace std;
+
+// struct ForEachOperator{
+// 	uchar m_table[256];
+// 	ForEachOperator(const uchar* const table){
+// 		for(size_t i = 0; i < 256; i++){
+// 			m_table[i] = table[i];
+// 		}
+// 	}
+//
+// 	void operator ()(uchar& p, const int * position) const{
+// 		// Perform a simple operation
+// 		p = m_table[p];
+// 	}
+// };
+//
+// // forEach use multiple processors, very fast
+// cv::Mat& ScanImageAndReduce_forEach(cv::Mat& I, const uchar* const table){
+// 	I.forEach<uchar>(ForEachOperator(table));
+// 	return I;
+// }
+
 
 int main(int argc, char *argv[]){
      int err;
@@ -237,7 +320,7 @@ int main(int argc, char *argv[]){
 #endif
 
 #ifdef TEST_UVMAP_FILTERING
-     double t, dt;
+     double t, t1, t2, dt, dt1, dt2;
      VBOATS vboats;
      std::string dispF = imgDir + disparityPrefix + fp + ".png";
      std::string umapF = imgDir + umapPrefix + fp + ".png";
@@ -247,16 +330,47 @@ int main(int argc, char *argv[]){
      cv::Mat umapSaved = cv::imread(umapF, cv::IMREAD_GRAYSCALE);
      cv::Mat vmapSaved = cv::imread(vmapF, cv::IMREAD_GRAYSCALE);
 
-     cv::Mat umap,vmap, umap2,vmap2;
-     t = (double)cv::getTickCount();
-     vboats.get_uv_map(disparity,&umap,&vmap, false, "raw");
-     dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-     printf("[INFO] vboats.get_uv_map() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+     printf("[INFO] OpenCV ---- Num of cv threads = %d\r\n", cv::getNumThreads());
+     printf("[INFO] OpenCV ---- Build Info:\r\n");
+     std::cout << cv::getBuildInformation() << std::endl;
+     printf(" ------------------------------------ \r\n");
+     // cv::setNumThreads(2);
 
-     t = (double)cv::getTickCount();
-     create_umap(disparity,&umap2,&vmap2);
-     dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-     printf("[INFO] test() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+     int nLoops = 10;
+     double sum1 = 0.0, sum2 = 0.0, sum3 = 0.0;
+     cv::Mat umap,vmap, umap2,vmap2, umap3,vmap3;
+     printf(" =========================================== \r\n");
+     for(int i = 0;i<nLoops;i++){
+          printf("[INFO] UV Map Generation Performance Run %d:\r\n", i+1);
+          printf(" ------------------------------------------- \r\n");
+
+          t = (double)cv::getTickCount();
+          vboats.get_uv_map(disparity,&umap,&vmap);
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          sum1 += dt*1000.0;
+          printf("[INFO] ----- get_uv_map() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+          // printf("[INFO] vboats.get_uv_map() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+
+          t1 = (double)cv::getTickCount();
+          vboats.get_uv_map_parallel(disparity,&umap2,&vmap2, 2.0);
+          dt1 = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
+          sum2 += dt1*1000.0;
+          printf("[INFO] ----- get_uv_map_parallel() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
+          // printf("[INFO] create_umap() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
+
+          t2 = (double)cv::getTickCount();
+          create_umap2(disparity,&umap3,&vmap3);
+          dt2 = ((double)cv::getTickCount() - t2)/cv::getTickFrequency();
+          sum3 += dt2*1000.0;
+          printf("[INFO] ----- create_umap2() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2*1000.0, (1.0/dt2));
+          // printf("[INFO] create_umap2() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2*1000.0, (1.0/dt2));
+          // printf(" ------------------------------------------- \r\n");
+          printf(" =========================================== \r\n");
+     }
+     double avg0 = sum1 / (double)nLoops;
+     double avg1 = sum2 / (double)nLoops;
+     double avg2 = sum3 / (double)nLoops;
+     printf("[INFO] UV Map Generation Avg Times ---- get_uv_map = %.4lf ms | get_uv_map_parallel = %.4lf ms | test2 = %.4lf ms\r\n", avg0,avg1,avg2);
 
      vector<Obstacle> obs;
      vboats.pipeline_disparity(disparity, umapSaved, vmapSaved, &obs);
@@ -264,6 +378,10 @@ int main(int argc, char *argv[]){
      cv::namedWindow("disparity", cv::WINDOW_NORMAL ); cv::imshow("disparity", disparity);
      cv::namedWindow("vmap", cv::WINDOW_NORMAL ); cv::imshow("vmap", vmapSaved);
      cv::namedWindow("umap", cv::WINDOW_NORMAL ); cv::imshow("umap", umapSaved);
+     cv::namedWindow("vmapTest", cv::WINDOW_NORMAL ); cv::imshow("vmapTest", vmap2);
+     cv::namedWindow("umapTest", cv::WINDOW_NORMAL ); cv::imshow("umapTest", umap2);
+     cv::namedWindow("vmapTest2", cv::WINDOW_NORMAL ); cv::imshow("vmapTest2", vmap3);
+     cv::namedWindow("umapTest2", cv::WINDOW_NORMAL ); cv::imshow("umapTest2", umap3);
      // cv::namedWindow("equal vmap", cv::WINDOW_NORMAL ); cv::imshow("equal vmap", vTmp);
      // cv::namedWindow("thresholded vmap", cv::WINDOW_NORMAL ); cv::imshow("thresholded vmap", vProcessed);
      // cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL ); cv::imshow("thresholded umap", uProcessed);
