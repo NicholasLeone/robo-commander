@@ -43,32 +43,44 @@ tmp.setTo(1, mask);
            0, 0, 1
      ]
 */
+// void create_umap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap);
 
-// struct ContourOperator{
-//      void operator ()(vector<cv::Point>& contour, const int * position) const {
-//           int nObs = 0;
-//           vector<int> xLims;
-//           vector<int> dLims;
-//           vector<int> yLims;
-//
-//           extract_contour_bounds(contour,&xLims, &dLims);
-//           int nWins = obstacle_search_disparity(vProcessed,dLims, &yLims, nullptr, nullptr, line_params);
-//           if(nWins == 0) continue;
-//           if((yLims.size() <= 2) && (gndPresent)){
-//                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
-//                continue;
-//           } else if(yLims.size() <= 1){
-//                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
-//                continue;
-//           } else if(yLims[0] == yLims.back()){
-//                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
-//                continue;
-//           }
-//           if(verbose) printf("[INFO] Adding Obstacle (%d y limits)...\r\n",yLims.size());
-//           nObs++;
-//           if(verbose) printf(" --------------------------- \r\n");
-//      }
-// };
+void create_umap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap){
+     cv::Range ws(0,image.cols);
+     cv::Range hs(0, image.rows);
+     double minVal, maxVal;
+     cv::minMaxLoc(image, &minVal, &maxVal);
+     int dmax = (int) maxVal + 1;
+
+     cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
+	cv::Mat vmapMat = cv::Mat::zeros(image.rows, dmax, CV_8UC1);
+
+     int channels[] = {0};
+     int histSize[] = {dmax};
+	float sranges[] = { 0, dmax };
+	const float* ranges[] = { sranges };
+     cv::MatND histU, histV;
+
+     cv::parallel_for_(cv::Range(0,image.cols), [&](const cv::Range& range){
+          for(int i = range.start; i < range.end; i++){
+     		cv::Mat uscan = image.col(i);
+     		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+     		histU.col(0).copyTo(umapMat.col(i));
+     	}
+     });
+
+     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
+          for(int j = range.start; j < range.end; j++){
+     		cv::Mat vscan = image.row(j);
+     		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+     		cv::Mat histrow = histV.t();
+               histrow.row(0).copyTo(vmapMat.row(j));
+     	}
+     });
+
+     if(umap) *umap = umapMat;
+     if(vmap) *vmap = vmapMat;
+}
 
 using namespace std;
 
@@ -225,8 +237,8 @@ int main(int argc, char *argv[]){
 #endif
 
 #ifdef TEST_UVMAP_FILTERING
+     double t, dt;
      VBOATS vboats;
-
      std::string dispF = imgDir + disparityPrefix + fp + ".png";
      std::string umapF = imgDir + umapPrefix + fp + ".png";
      std::string vmapF = imgDir + vmapPrefix + fp + ".png";
@@ -234,6 +246,17 @@ int main(int argc, char *argv[]){
      cv::Mat disparity = cv::imread(dispF, cv::IMREAD_GRAYSCALE);
      cv::Mat umapSaved = cv::imread(umapF, cv::IMREAD_GRAYSCALE);
      cv::Mat vmapSaved = cv::imread(vmapF, cv::IMREAD_GRAYSCALE);
+
+     cv::Mat umap,vmap, umap2,vmap2;
+     t = (double)cv::getTickCount();
+     vboats.get_uv_map(disparity,&umap,&vmap, false, "raw");
+     dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+     printf("[INFO] vboats.get_uv_map() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+
+     t = (double)cv::getTickCount();
+     create_umap(disparity,&umap2,&vmap2);
+     dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+     printf("[INFO] test() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 
      vector<Obstacle> obs;
      vboats.pipeline_disparity(disparity, umapSaved, vmapSaved, &obs);

@@ -105,18 +105,17 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      double t = 0.0, dt = 0.0;
      if(timing) t = (double)cv::getTickCount();
 
-     int w = image.cols;
-     int h = image.rows;
+     // int w = image.cols;
+     // int h = image.rows;
+     cv::Range ws(0,image.cols);
+     cv::Range hs(0, image.rows);
      double minVal, maxVal;
      cv::minMaxLoc(image, &minVal, &maxVal);
      int dmax = (int) maxVal + 1;
-     if(verbose) printf("dmax = %d, min, max = %.2f, %.2f, h = %d, w = %d\r\n",dmax,minVal, maxVal,h,w);
+     if(verbose) printf("dmax = %d, min, max = %.2f, %.2f, h = %d, w = %d\r\n",dmax,minVal, maxVal,image.rows,image.cols);
 
-	// int hu = dmax; int wu = w; int hv = h; int wv = dmax;
-	// cv::Mat _umap = cv::Mat::zeros(dmax, w, CV_8UC1);
-	// cv::Mat _vmap = cv::Mat::zeros(h, dmax, CV_8UC1);
-     cv::Mat umapMat = cv::Mat::zeros(dmax, w, CV_8UC1);
-	cv::Mat vmapMat = cv::Mat::zeros(h, dmax, CV_8UC1);
+     cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
+	cv::Mat vmapMat = cv::Mat::zeros(image.rows, dmax, CV_8UC1);
      if(debug) cvinfo(umapMat, "Initialized Umap");
 
      int channels[] = {0};
@@ -124,88 +123,85 @@ float VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
 	float sranges[] = { 0, dmax };
 	const float* ranges[] = { sranges };
      cv::MatND histU, histV;
-     // #pragma omp parallel for private(histU)
-	for(int i = 0; i < w; i++){
+
+     /** Non-parallized method */
+	for(int i = 0; i < image.cols; i++){
 		cv::Mat uscan = image.col(i);
 		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
 		if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
 		histU.col(0).copyTo(umapMat.col(i));
 	}
-     // printf("%s\r\n",cvStrSize("Genereated Umap",umapMat).c_str());
-     // #pragma omp parallel for private(histV)
-	for(int j = 0; j < h; j++){
+     /** Parallized method */
+     // cv::parallel_for_(ws, [&](const cv::Range& range){
+     //      for(int i = range.start; i < range.end; i++){
+     // 		cv::Mat uscan = image.col(i);
+     // 		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
+     // 		histU.col(0).copyTo(umapMat.col(i));
+     // 	}
+     // });
+
+     /** Non-parallized method */
+	for(int j = 0; j < image.rows; j++){
 		cv::Mat vscan = image.row(j);
 		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
 		cv::Mat histrow = histV.t();
 		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",j, histrow.rows, histrow.cols);
           histrow.row(0).copyTo(vmapMat.row(j));
-          // if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",i, histV.t().rows, histV.t().cols);
-		// histV.t().row(0).copyTo(vmapMat.row(i));
 	}
-     // printf("%s\r\n",cvStrSize("Genereated Vmap",vmapMat).c_str());
+     /** Parallized method */
+     // cv::parallel_for_(hs, [&](const cv::Range& range){
+     //      for(int j = range.start; j < range.end; j++){
+     // 		cv::Mat vscan = image.row(j);
+     // 		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+     // 		cv::Mat histrow = histV.t();
+     //           histrow.row(0).copyTo(vmapMat.row(j));
+     // 	}
+     // });
 
-     // #pragma omp parallel
-     // {
-     //      #pragma omp for private(histU)
-     //      for(int i = 0; i < w; i++){
-     //           cv::Mat uscan = image.col(i);
-     //           cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-     //           if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
-     //           histU.col(0).copyTo(_umap.col(i));
-     //      }
-     //
-     //      #pragma omp for private(histV)
-     //      for(int j = 0; j < h; j++){
-     //           cv::Mat vscan = image.row(j);
-     //           cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-     //           cv::Mat histrow = histV.t();
-     //           if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",j, histrow.rows, histrow.cols);
-     //           histrow.row(0).copyTo(_vmap.row(j));
-     //      }
+     // cv::Mat _umap, _vmap;
+     // if(dmax != 256){
+     //      printf("Adding uvmap buffers\r\n");
+     //      // yoffset = 256 - dmax;
+     //      // int xoffset = 0, yoffset = 0;
+     //      int offset = 256 - dmax;
+     //      cv::Mat umapBuf = cv::Mat::zeros(offset, image.cols, CV_8UC1);
+     // 	cv::Mat vmapBuf = cv::Mat::zeros(image.rows, offset, CV_8UC1);
+     //      // cv::vconcat(umapBuf, umapMat, _umap);
+     //      // cv::hconcat(vmapBuf, vmapMat, _vmap);
+     //      cv::vconcat(umapMat, umapBuf, _umap);
+     //      cv::hconcat(vmapMat, vmapBuf, _vmap);
+     // } else{
+     //      _umap = umapMat;
+     //      _vmap = vmapMat;
      // }
 
-     cv::Mat _umap, _vmap;
-     if(dmax != 256){
-          printf("Adding uvmap buffers\r\n");
-          // yoffset = 256 - dmax;
-          // int xoffset = 0, yoffset = 0;
-          int offset = 256 - dmax;
-          cv::Mat umapBuf = cv::Mat::zeros(offset, w, CV_8UC1);
-     	cv::Mat vmapBuf = cv::Mat::zeros(h, offset, CV_8UC1);
-          // cv::vconcat(umapBuf, umapMat, _umap);
-          // cv::hconcat(vmapBuf, vmapMat, _vmap);
-          cv::vconcat(umapMat, umapBuf, _umap);
-          cv::hconcat(vmapMat, vmapBuf, _vmap);
-     } else{
-          _umap = umapMat;
-          _vmap = vmapMat;
-     }
-
-     if(umap) *umap = _umap;
-     if(vmap) *vmap = _vmap;
+     if(umap) *umap = umapMat;
+     if(vmap) *vmap = vmapMat;
+     // if(umap) *umap = _umap;
+     // if(vmap) *vmap = _vmap;
 
      if(timing){
           dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
           printf("[INFO] VBOATS::get_uv_map() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
      }
-     if(visualize){
-          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
-          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
-          cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strU, _umap);
-          cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strV, _vmap);
-
-          // if(image.type() != CV_8UC1){
-          //      cv::Mat _umap8, _vmap8;
-          //      std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
-          //      std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
-          //      cv::namedWindow(strU8.c_str(), cv::WINDOW_NORMAL );
-          //      cv::namedWindow(strV8.c_str(), cv::WINDOW_NORMAL );
-          //      _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
-          //      _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
-          //      cv::imshow(strU8, _umap8);
-          //      cv::imshow(strV8, _vmap8);
-          // }
-     }
+     // if(visualize){
+     //      std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
+     //      std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
+     //      cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strU, _umap);
+     //      cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strV, _vmap);
+     //
+     //      // if(image.type() != CV_8UC1){
+     //      //      cv::Mat _umap8, _vmap8;
+     //      //      std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
+     //      //      std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
+     //      //      cv::namedWindow(strU8.c_str(), cv::WINDOW_NORMAL );
+     //      //      cv::namedWindow(strV8.c_str(), cv::WINDOW_NORMAL );
+     //      //      _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
+     //      //      _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
+     //      //      cv::imshow(strU8, _umap8);
+     //      //      cv::imshow(strV8, _vmap8);
+     //      // }
+     // }
      return dt;
 }
 

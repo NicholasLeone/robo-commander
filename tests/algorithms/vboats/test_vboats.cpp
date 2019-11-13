@@ -116,10 +116,10 @@ int main(int argc, char *argv[]){
 				// cvinfo(umap,"umap");
 				// cvinfo(vmap,"vmap");
 				// printf("%s --- %s\r\n", cvStrSize("Umap",umap).c_str(), cvStrSize("Vmap",vmap).c_str());
-	               // if(debug_timing){
-	               //      tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
-	               //      printf("[INFO] UV Map generation() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
-	               // }
+	               if(debug_timing){
+	                    tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
+	                    printf("[INFO] UV Map generation() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+	               }
 
 	               if(debug_timing) tmpT = (double)cv::getTickCount();
 				vector<Obstacle> obs;
