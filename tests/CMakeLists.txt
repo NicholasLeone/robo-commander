@@ -130,7 +130,7 @@ list(APPEND RoboCommander_TESTS test_ekf)
 
 # VBOATS - RGBD Obstacle Avoidance
 add_executable(test_vboats ${TEST_DIR}/algorithms/vboats/test_vboats.cpp)
-target_link_libraries(test_vboats PUBLIC vboats img_utils plot_utils cv_utils camera_d415 ${RoboCommander_EXTERNAL_LIBRARIES})
+target_link_libraries(test_vboats PUBLIC vboats img_utils plot_utils cv_utils uvmap_utils camera_d415 ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_vboats)
 
 # =========================================

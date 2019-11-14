@@ -121,20 +121,24 @@ cv::Mat genDisparity(const cv::Mat depth){
      double minDIn, maxDIn;
      cv::minMaxLoc(depth, &minDIn, &maxDIn);
      cvinfo(depth,"depth input");
-
      double maxDepthMeters = maxDIn*(double)dscale;
-     
-     depth.convertTo(dMeters, CV_64F);
-     tmp = tmp * dscale;
+
+     depth.convertTo(dMeters, CV_64F,dscale);
+     double maxMeter;
+     cv::minMaxLoc(dMeters, nullptr, &maxMeter);
+     printf("[INFO] maxDepthMeters = %.2lf | %.2lf\r\n", maxDepthMeters, maxMeter);
+
+     // tmp = tmp * dscale;
+     cv::Mat tmpMat = tmp * dscale;
      // cvinfo(tmp,"depth input to CV_64F");
 
-     cv::Mat disparity = cv::Mat((fxd * baseline) / tmp);
-     // cvinfo(disparity,"disparity");
+     cv::Mat disparity = cv::Mat((fxd * baseline) / dMeters);
+     cvinfo(disparity,"disparity");
      cv::minMaxLoc(disparity, &min, &maxDisparity);
      double gain = 256.0 / maxDepth;
      double ratio = trueMinDisparity / maxDisparity;
      double offset = ratio / gain;
-     double tmpgain = 256.0 / (double)(trueMinDisparity);
+     double tmpgain = 256.0 / (double)(maxDisparity);
      int tmpVal = (tmpgain*maxDisparity);
      double delta = 256.0 / (double)(tmpVal);
      // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
