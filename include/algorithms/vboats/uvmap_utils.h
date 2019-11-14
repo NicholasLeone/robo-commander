@@ -15,7 +15,7 @@ void genUVMapThreaded(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double nThrea
 void genUVMapScaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale, bool verbose = false);
 
 /** Visualization Helpers */
-void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, bool colorize = false);
+void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title = nullptr, bool colorize = false);
 /** TODO */void displayUVMapOverlay(const cv::Mat& image, const cv::Mat& umap, const cv::Mat& vmap);
 
 #endif // VBOATS_UVMAP_UTILS_H_

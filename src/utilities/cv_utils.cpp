@@ -53,6 +53,11 @@ std::string cvStrSize(const char* name, const cv::Mat& mat){
 void cvinfo(const cv::Mat& mat, const char* label){
      double min, max;
      cv::minMaxLoc(mat, &min, &max);
-     if(!label) printf("%s -- Limits = [%.3lf, %.3lf]\r\n",cvStrSize("Matrix",mat).c_str(), min, max);
-     else printf("%s -- Limits = [%.3lf, %.3lf]\r\n",cvStrSize(label,mat).c_str(), min, max);
+     cv::Scalar mean,stddev;
+     cv::meanStdDev(mat, mean, stddev);
+     float mn = (float)(mean.val[0]);
+     float sd = (float)(stddev.val[0]);
+
+     if(!label) printf("%s -- Limits = [%.3lf, %.3lf] w/ mean = %.2f, std = %.2f\r\n",cvStrSize("Matrix",mat).c_str(), min, max, mn, sd);
+     else printf("%s -- Limits = [%.3lf, %.3lf] w/ mean = %.2f, std = %.2f\r\n",cvStrSize(label,mat).c_str(), min, max, mn, sd);
 }

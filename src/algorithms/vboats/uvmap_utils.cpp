@@ -197,9 +197,10 @@ void genUVMapScaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale, b
 
 
 /** Visualization Helpers */
-void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, bool colorize){
+void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title, bool colorize){
      cv::Mat dispU, dispV;
      std::string lblU, lblV;
+     if(!title) title = "Title";
      if(colorize){
           /** Check uv maps for proper data type before colorizing */
           cv::Mat umap8, vmap8;
@@ -214,12 +215,12 @@ void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, bool colorize){
           cv::applyColorMap(umap8, dispU, cv::COLORMAP_JET);
           cv::applyColorMap(vmap8, dispV, cv::COLORMAP_JET);
 
-          lblU = "UMap[CV_8UC1] Colorized";
-          lblV = "VMap[CV_8UC1] Colorized";
+          lblU = format("UMap[CV_8UC1] %s",title);
+          lblV = format("VMap[CV_8UC1] %s",title);
      } else{
           dispU = umap; dispV = vmap;
-          lblU = format("UMap[%s] Raw", cvtype2str(dispU.type()).c_str());
-          lblV = format("VMap[%s] Raw", cvtype2str(dispV.type()).c_str());
+          lblU = format("UMap[%s] %s", cvtype2str(dispU.type()).c_str(),title);
+          lblV = format("VMap[%s] %s", cvtype2str(dispV.type()).c_str(),title);
      }
 
      cv::namedWindow(lblU.c_str(), cv::WINDOW_NORMAL);
