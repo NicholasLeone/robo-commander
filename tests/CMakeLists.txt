@@ -20,7 +20,7 @@ set(RoboCommander_TESTS test_utils)
 # list(APPEND RoboCommander_TESTS test_json)
 
 add_executable(test_img_utils ${TEST_DIR}/utilities/test_image_utils.cpp)
-target_link_libraries(test_img_utils img_utils plot_utils cv_utils vboats)
+target_link_libraries(test_img_utils img_utils plot_utils cv_utils vboats uvmap_utils)
 list(APPEND RoboCommander_TESTS test_img_utils)
 
 # =========================================

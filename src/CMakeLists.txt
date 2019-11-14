@@ -125,6 +125,10 @@ list(APPEND RoboCommander_LIBRARIES ekf)
 # target_link_libraries(isam PUBLIC ${LIBS})
 
 # VBOATS - RGBD Obstacle Avoidance
+add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
+target_link_libraries(uvmap_utils PUBLIC img_utils cv_utils ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
+list(APPEND RoboCommander_LIBRARIES uvmap_utils)
+
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
 target_link_libraries(vboats PUBLIC img_utils ${RoboCommander_EXTERNAL_LIBRARIES} ${EXTERNAL_PACKAGE_LIBRARIES})
 list(APPEND RoboCommander_LIBRARIES vboats)

@@ -188,30 +188,26 @@ void VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      */
 }
 
-void VBOATS::get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
-     double nThreads, bool verbose, bool timing)
-{
-     double t = 0.0, dt = 0.0;
-     if(timing) t = (double)cv::getTickCount();
+void VBOATS::get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double nThreads, bool verbose, bool timing){
+     // double t = 0.0, dt = 0.0;
+     // if(timing) t = (double)cv::getTickCount();
 
      double minVal, maxVal;
      cv::minMaxLoc(image, &minVal, &maxVal);
      int dmax = (int) maxVal + 1;
-     if(verbose) printf("dmax = %d, min, max = %.2f, %.2f, h = %d, w = %d\r\n",dmax,minVal, maxVal,image.rows,image.cols);
+     // if(verbose) printf("dmax = %d, min, max = %.2f, %.2f, h = %d, w = %d\r\n",dmax,minVal, maxVal,image.rows,image.cols);
 
      cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
      /** Size Temporarily transposed for ease of for-loop copying (Target size = h x dmax)*/
      cv::Mat vmapMat = cv::Mat::zeros(dmax, image.rows, CV_8UC1);
 
-     cv::Range ws(0,image.cols);
-     cv::Range hs(0, image.rows);
      int channels[] = {0};
      int histSize[] = {dmax};
      float sranges[] = { 0, dmax };
      const float* ranges[] = { sranges };
 
      /** Parallized Umap */
-     cv::parallel_for_(ws, [&](const cv::Range& range){
+     cv::parallel_for_(cv::Range(0,image.cols), [&](const cv::Range& range){
           cv::MatND histU;
           for(int i = range.start; i < range.end; i++){
                cv::Mat uscan = image.col(i);
@@ -221,7 +217,7 @@ void VBOATS::get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      },nThreads);
 
      /** Parallized Vmap */
-     cv::parallel_for_(hs, [&](const cv::Range& range){
+     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
           cv::MatND histV;
           for(int j = range.start; j < range.end; j++){
                cv::Mat vscan = image.row(j);
@@ -230,7 +226,8 @@ void VBOATS::get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
           }
      },nThreads);
      /** Correct generated vmap's dimensions */
-     vmapMat = vmapMat.t();
+     // vmapMat = vmapMat.t();
+     cv::Mat vmapTrans = vmapMat.t();
 
      // cv::Mat _umap, _vmap;
      // if(dmax != 256){
@@ -250,14 +247,14 @@ void VBOATS::get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
      // }
 
      if(umap) *umap = umapMat;
-     if(vmap) *vmap = vmapMat;
+     if(vmap) *vmap = vmapTrans;
      // if(umap) *umap = _umap;
      // if(vmap) *vmap = _vmap;
 
-     if(timing){
-          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-          printf("[INFO] VBOATS::get_uv_map_parallel() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
-     }
+     // if(timing){
+     //      dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+     //      printf("[INFO] VBOATS::get_uv_map_parallel() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
+     // }
      /** TODO: Move this section into an independent utility function
      if(visualize){
           std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());

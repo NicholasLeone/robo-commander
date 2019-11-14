@@ -78,10 +78,8 @@ find_library(RTIMULib libRTIMULib.so)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/external/pigpiod")
 find_package(pigpio REQUIRED)
 
-# Find GTSAM libraries
+# Find OpenMP libraries
 if(WITH_OPENMP)
-
-     # find_package(GTSAMCMakeTools)
      include(FindOpenMP)
      if(OPENMP_FOUND)
           set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -100,10 +98,9 @@ endif(WITH_GTSAM)
 
 # Find OpenCV libraries
 if(WITH_OPENCV)
-     # find_package(OpenCV REQUIRED)
      ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
      find_package(OpenCV 4.1.2 REQUIRED)
-     # find_package(OpenCV REQUIRED PATHS "/usr/local/lib/cmake/opencv4")
+     # find_package(OpenCV REQUIRED)
      list(APPEND EXTERNAL_PACKAGE_INCLUDES "${OpenCV_INCLUDE_DIRS}")
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${OpenCV_LIBS}")
 endif(WITH_OPENCV)

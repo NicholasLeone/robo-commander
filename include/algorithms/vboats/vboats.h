@@ -48,18 +48,27 @@ public:
 
      /** Startup - Shutdown - Initialization Functions */
      void init();
-
-     /**
-     * Updates the locally stored observations for use in next prediction step
-     *
-     *    @param todo: newest image
-     */
      void update();
 
+     /** IMPORTANT NOTES:
+     * ------------------
+     *      1. Found that using OpenCV's default backend threading library (pthreading)
+     * works best for get_uv_map_parallel() function when using OpenCV's parallel_for_
+     *
+     *      2. Found that when using OpenMP as OpenCV's backend threading library
+     * multithreaded (via opencv's parallel_for_) UV-Map generation took longer
+     * than non-threaded generation.
+     */
      void get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
-          bool verbose = true, bool debug = false, bool timing = false
+          bool verbose = false, bool debug = false, bool timing = false
      );
 
+     /** ----------------------------------------------------------------
+     *    NOTE: For faster multi-threaded UV-Map generation use function
+     * genUVMapThreaded() declared in vboats/uvmap_utils.h.
+     *
+     * see Developer's Note at the end of this file for further elaboration.
+     * ------------------------------------------------------------------ */
      void get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
           double nThreads = -1.0, bool verbose = false, bool timing = false
      );
@@ -135,5 +144,34 @@ public:
      // def generate_visualization(self, dists, angs, flip_ratio=False,use_rgb=True, alpha=0.35,font_scale = 0.35,verbose=False)
 
 };
+
+/** DEVELOPER'S NOTE:
+*
+*    The function VBOATS::get_uv_map() and variants were used originally intended
+* to be contained in the VBOATS class for self-contained UV-Map generation, however,
+* it was found that having the multithreaded variant VBOATS::get_uv_map_parallel()
+* in a C++ class somehow introduced a small execution slowdown when compared
+* to the execution of the same code defined as a standalone, regular
+* C++ function (approx. 2-3 ms, see below).
+*
+* ===========================================================================
+* Experimental Timing Results: for UV-Map Generation over 100 code executions
+* ===========================================================================
+* Function Name [file declaring function] ================= avg. time (ms):
+*    - brief description
+* -------------------------------------------------------------------------
+*
+* 1. VBOATS::get_uv_map() [vboats/vboats.h] ======================= 6.5 ms:
+*    - UV-Map generation defined in a C++ class, non-threaded.
+*
+* 2. VBOATS::get_uv_map_parallel() [vboats/vboats.h] ============== 4.8 ms:
+*    - UV-Map generation defined in a C++ class, multithreaded or parallized
+* execution of contained for-loops (via cv::parallel_for_) using the defined
+* backend multithreading library used by OpenCV (i.e. pthreading, OpenMP, TBB, etc.).
+*
+* 3. genUVMapThreaded() [vboats/uvmap_utils.h] ==================== 2.7 ms:
+*    - UV-Map generation defined in a regular, standalone C++ function, and
+*
+*/
 
 #endif // VBOATS_VBOATS_H_

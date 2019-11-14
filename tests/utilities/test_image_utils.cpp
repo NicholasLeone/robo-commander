@@ -2,6 +2,7 @@
 #include "utilities/plot_utils.h"
 #include "utilities/cv_utils.h"
 #include "algorithms/vboats/vboats.h"
+#include "algorithms/vboats/uvmap_utils.h"
 #include <opencv2/core/utility.hpp>
 
 /** NOTES:
@@ -31,73 +32,8 @@ tmp.setTo(1, mask);
 // #define TEST_IMG_STRIPPING
 // #define TEST_IMG_SPREADING
 #define TEST_UVMAP_FILTERING
+// #define TEST_UVMAP_GEN
 
-/**
-[INFO] CameraD415::get_depth_scale() --- Depth Scale = 0.001000
-[INFO] CameraD415::get_baseline() --- Baseline = 0.014732
-[INFO] CameraD415::get_intrinsics() --- Intrinsic Properties:
-	Size ---------- [w, h]: 848, 480
-	Focal Length -- [X, Y]: 596.39, 596.39
-	Principle Point [X, Y]: 423.74, 242.01
-     K = [596.391845703125, 0, 423.7422790527344;
-           0, 596.391845703125, 242.0074920654297;
-           0, 0, 1
-     ]
-*/
-// void create_umap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap);
-
-void create_umap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap){
-     cv::Range ws(0,image.cols);
-     cv::Range hs(0, image.rows);
-     double minVal, maxVal;
-     cv::minMaxLoc(image, &minVal, &maxVal);
-     int dmax = (int) maxVal + 1;
-
-     cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
-	cv::Mat vmapMat = cv::Mat::zeros(image.rows, dmax, CV_8UC1);
-
-     int channels[] = {0};
-     int histSize[] = {dmax};
-	float sranges[] = { 0, dmax };
-	const float* ranges[] = { sranges };
-     // cv::MatND histU, histV;
-
-     // cv::MatND histU;
-     double nthreads = 8.0;
-     cv::parallel_for_(cv::Range(0,image.cols), [&](const cv::Range& range){
-          cv::MatND histU;
-          for(int i = range.start; i < range.end; i++){
-     		cv::Mat uscan = image.col(i);
-     		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-     		// cv::calcHist(&(cv::Mat(image.col(i))), 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-               // cv::calcHist(cv::Mat(image.col(i)), 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-               // cv::calcHist(image.col(i), 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-     		histU.col(0).copyTo(umapMat.col(i));
-               // histU.release();
-     	}
-     },nthreads);
-
-     // cv::MatND histV;
-     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
-          cv::MatND histV;
-          for(int j = range.start; j < range.end; j++){
-     		cv::Mat vscan = image.row(j);
-     		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-               // cv::calcHist(&(cv::Mat(image.row(j))), 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-               // cv::calcHist(cv::Mat(image.row(j)), 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-               // cv::calcHist(image.row(j), 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-     		cv::Mat histrow = histV.t();
-               histrow.row(0).copyTo(vmapMat.row(j));
-               // cvinfo(histV.col(0),"histV.col(0)");
-               // cvinfo(histrow.row(0),"histrow.row(0)");
-               // histV.col(0).copyTo(vmapMat.row(j));
-               // histV.release();
-     	}
-     },nthreads);
-
-     if(umap) *umap = umapMat;
-     if(vmap) *vmap = vmapMat;
-}
 
 void create_umap2(cv::Mat image, cv::Mat* umap, cv::Mat* vmap){
      // cv::Range ws(0,image.cols);
@@ -166,8 +102,72 @@ using namespace std;
 // 	return I;
 // }
 
+cv::Mat genDisparity(const cv::Mat depth){
+     /** [INFO] CameraD415::get_depth_scale() --- Depth Scale = 0.001000
+         [INFO] CameraD415::get_baseline() --- Baseline = 0.014732
+         [INFO] CameraD415::get_intrinsics() --- Intrinsic Properties:
+     	    Size ---------- [w, h]: 848, 480
+     	    Focal Length -- [X, Y]: 596.39, 596.39
+     	    Principle Point [X, Y]: 423.74, 242.01
+     */
+     float fxd = 596.39;
+     float dscale = 0.001;
+     float baseline = 0.014732;
+     float trueMinDisparity = (fxd * baseline)/(0.1);
+     float trueMaxDisparity = (fxd * baseline)/(10.0);
+     // -----------------------
+     cv::Mat dMeters, tmp, disparity8;
+     double min, maxIn, maxDisparity, maxDepth;
+     double minDIn, maxDIn;
+     cv::minMaxLoc(depth, &minDIn, &maxDIn);
+     cvinfo(depth,"depth input");
+
+     double maxDepthMeters = maxDIn*(double)dscale;
+     
+     depth.convertTo(dMeters, CV_64F);
+     tmp = tmp * dscale;
+     // cvinfo(tmp,"depth input to CV_64F");
+
+     cv::Mat disparity = cv::Mat((fxd * baseline) / tmp);
+     // cvinfo(disparity,"disparity");
+     cv::minMaxLoc(disparity, &min, &maxDisparity);
+     double gain = 256.0 / maxDepth;
+     double ratio = trueMinDisparity / maxDisparity;
+     double offset = ratio / gain;
+     double tmpgain = 256.0 / (double)(trueMinDisparity);
+     int tmpVal = (tmpgain*maxDisparity);
+     double delta = 256.0 / (double)(tmpVal);
+     // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
+     // float tmpgain = 256.0 / maxDisparity;
+     disparity.convertTo(disparity8,CV_8UC1, tmpgain);
+     if(false){
+          cvinfo(disparity8,"disparity8 pregain");
+          printf(" --- tmpgain=%.2f | ratio=%.2f | maxDisparity=%.2f | delta=%.2f | tmpVal=%d --- \r\n",tmpgain, ratio, maxDisparity, delta,tmpVal);
+          // disparity8.convertTo(disparity8,CV_8UC1, ratio);
+          cv::Mat disparity88 = cv::Mat_<uchar>(disparity8 * delta);
+          cvinfo(disparity88,"disparity8 postgain");
+     }
+     // disparity.convertTo(disparity8,CV_8UC1, 255.0/this->_trueMinDisparity);
+     // cvinfo(tmpDisp,"tmpDisp");
+     // cvinfo(disparity8,"disparity8");
+
+     // cv::minMaxLoc(disparity8, &min, &maxIn);
+     // double dmaxHat = maxIn * offset;
+     // printf(" --- maxDisparity=%.2f | maxDepth=%.2f | trueMaxDisparity=%.2f | derivedMaxDepth=%.2f --- \r\n",maxDisparity, maxDepth, this->_trueMinDisparity, dmaxHat);
+
+     // cv::imshow("disparity", disparity);
+     // cv::imshow("tmpDisp", tmpDisp);
+     // cv::imshow("disparity8", disparity8);
+     return disparity8;
+}
 
 int main(int argc, char *argv[]){
+     printf("[INFO] OpenCV ---- Num of cv threads = %d\r\n", cv::getNumThreads());
+     printf("[INFO] OpenCV ---- Build Info:\r\n");
+     std::cout << cv::getBuildInformation() << std::endl;
+     printf(" ------------------------------------ \r\n");
+     // cv::setNumThreads(2);
+
      int err;
      std::string fp;
      // const std::string imgDir = "/home/hyoung/devel/robo-commander/extras/data/uvmaps/img_util_vboats_tests/";
@@ -180,7 +180,6 @@ int main(int argc, char *argv[]){
           fp = "spread_test";
           // fp = "/home/hunter/devel/robo-commander/extras/data/camera/pic.jpg";
      } else fp = argv[1];
-
 
 #ifdef TEST_IMG_STRIPPING
      printf("Reading in image \'%s\'...\r\n",fp.c_str());
@@ -320,29 +319,67 @@ int main(int argc, char *argv[]){
 #endif
 
 #ifdef TEST_UVMAP_FILTERING
-     double t, t1, t2, dt, dt1, dt2;
      VBOATS vboats;
-     std::string dispF = imgDir + disparityPrefix + fp + ".png";
-     std::string umapF = imgDir + umapPrefix + fp + ".png";
-     std::string vmapF = imgDir + vmapPrefix + fp + ".png";
+
+     std::string imgIdxStr;
+     if(argc == 1){
+          imgIdxStr = "2";
+     } else imgIdxStr = argv[1];
+
+     const std::string testDir = "../extras/data/uvmaps/processing_tests/";
+     const std::string rgbPrefix = "raw_color_frame_";
+     const std::string depPrefix = "raw_depth_frame_";
+     const std::string dispPrefix = "ref_disparity_frame_";
+     const std::string uPrefix = "ref_umap_frame_";
+     const std::string vPrefix = "ref_vmap_frame_";
+
+     std::string colorF = testDir + rgbPrefix + imgIdxStr + ".png";
+     std::string depthF = testDir + depPrefix + imgIdxStr + ".png";
+     std::string dispF = testDir + dispPrefix + imgIdxStr + ".png";
+     std::string umapF = testDir + uPrefix + imgIdxStr + ".png";
+     std::string vmapF = testDir + vPrefix + imgIdxStr + ".png";
      printf("Reading in image \'%s\'...\r\n",umapF.c_str());
-     cv::Mat disparity = cv::imread(dispF, cv::IMREAD_GRAYSCALE);
+     cv::Mat rgb = cv::imread(colorF);
+     cv::Mat raw_depth = cv::imread(depthF, cv::IMREAD_UNCHANGED);
+     cv::Mat refDisparity = cv::imread(dispF, cv::IMREAD_GRAYSCALE);
      cv::Mat umapSaved = cv::imread(umapF, cv::IMREAD_GRAYSCALE);
      cv::Mat vmapSaved = cv::imread(vmapF, cv::IMREAD_GRAYSCALE);
+     cvinfo(raw_depth,"raw_depth_input");
 
-     printf("[INFO] OpenCV ---- Num of cv threads = %d\r\n", cv::getNumThreads());
-     printf("[INFO] OpenCV ---- Build Info:\r\n");
-     std::cout << cv::getBuildInformation() << std::endl;
-     printf(" ------------------------------------ \r\n");
-     // cv::setNumThreads(2);
+     cv::Mat disparity;
+     if(raw_depth.empty()) disparity = refDisparity.clone();
+     else disparity = genDisparity(raw_depth);
 
-     int nLoops = 10;
-     double sum1 = 0.0, sum2 = 0.0, sum3 = 0.0;
-     cv::Mat umap,vmap, umap2,vmap2, umap3,vmap3;
+     cv::Mat umap,vmap;
+     genUVMapThreaded(disparity,&umap,&vmap);
+     cvinfo(refDisparity,"reference disparity");
+     cvinfo(disparity,"generated disparity");
+     cvinfo(umap,"generated umap");
+     cvinfo(vmap,"generated vmap");
+
+     vector<Obstacle> obs;
+     vboats.pipeline_disparity(disparity, umap, vmap, &obs);
+
+     cv::namedWindow("raw color input", cv::WINDOW_AUTOSIZE ); cv::imshow("raw color input", rgb);
+     cv::namedWindow("raw depth input", cv::WINDOW_AUTOSIZE ); cv::imshow("raw depth input", raw_depth);
+     cv::namedWindow("reference disparity", cv::WINDOW_AUTOSIZE ); cv::imshow("reference disparity", refDisparity);
+     cv::namedWindow("generated disparity", cv::WINDOW_AUTOSIZE ); cv::imshow("generated disparity", disparity);
+     cv::namedWindow("reference vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("reference vmap", vmapSaved);
+     cv::namedWindow("reference umap", cv::WINDOW_AUTOSIZE ); cv::imshow("reference umap", umapSaved);
+     cv::namedWindow("generated vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("generated vmap", vmap);
+     cv::namedWindow("generated umap", cv::WINDOW_AUTOSIZE ); cv::imshow("generated umap", umap);
+     if(cv::waitKey(0) == 27) return 1;
+#endif
+
+     int nLoops = 1;
+     double sum1 = 0.0, sum2 = 0.0, sum3 = 0.0, sum4 = 0.0;
+     cv::Mat umap2,vmap2, umap3,vmap3, umap4,vmap4;
+     double t, t1, t2, t3, dt, dt1, dt2, dt3;
+#ifdef TEST_UVMAP_GEN
      printf(" =========================================== \r\n");
      for(int i = 0;i<nLoops;i++){
           printf("[INFO] UV Map Generation Performance Run %d:\r\n", i+1);
-          printf(" ------------------------------------------- \r\n");
+          // printf(" ------------------------------------------- \r\n");
 
           t = (double)cv::getTickCount();
           vboats.get_uv_map(disparity,&umap,&vmap);
@@ -356,38 +393,39 @@ int main(int argc, char *argv[]){
           dt1 = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
           sum2 += dt1*1000.0;
           printf("[INFO] ----- get_uv_map_parallel() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
-          // printf("[INFO] create_umap() ---- took %.4lf ms (%.2lf Hz)\r\n", dt1*1000.0, (1.0/dt1));
 
           t2 = (double)cv::getTickCount();
           create_umap2(disparity,&umap3,&vmap3);
           dt2 = ((double)cv::getTickCount() - t2)/cv::getTickFrequency();
           sum3 += dt2*1000.0;
           printf("[INFO] ----- create_umap2() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2*1000.0, (1.0/dt2));
+
+          t3 = (double)cv::getTickCount();
+          genUVMapThreaded(disparity,&umap4,&vmap4);
+          dt3 = ((double)cv::getTickCount() - t3)/cv::getTickFrequency();
+          sum4 += dt3*1000.0;
+          printf("[INFO] ----- genUVMapThreaded() ---- took %.4lf ms (%.2lf Hz)\r\n", dt3*1000.0, (1.0/dt3));
           // printf("[INFO] create_umap2() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2*1000.0, (1.0/dt2));
-          // printf(" ------------------------------------------- \r\n");
-          printf(" =========================================== \r\n");
+          printf(" ------------------------------------------- \r\n");
+          // printf(" =========================================== \r\n");
      }
      double avg0 = sum1 / (double)nLoops;
      double avg1 = sum2 / (double)nLoops;
      double avg2 = sum3 / (double)nLoops;
-     printf("[INFO] UV Map Generation Avg Times ---- get_uv_map = %.4lf ms | get_uv_map_parallel = %.4lf ms | test2 = %.4lf ms\r\n", avg0,avg1,avg2);
+     double avg3 = sum4 / (double)nLoops;
+     printf("[INFO] UV Map Generation Avg Times ---- get_uv_map = %.4lf ms | get_uv_map_parallel = %.4lf ms | test2 = %.4lf ms | genUVMapThreaded = %.4lf ms\r\n", avg0,avg1,avg2, avg3);
 
-     vector<Obstacle> obs;
-     vboats.pipeline_disparity(disparity, umapSaved, vmapSaved, &obs);
-
-     cv::namedWindow("disparity", cv::WINDOW_NORMAL ); cv::imshow("disparity", disparity);
-     cv::namedWindow("vmap", cv::WINDOW_NORMAL ); cv::imshow("vmap", vmapSaved);
-     cv::namedWindow("umap", cv::WINDOW_NORMAL ); cv::imshow("umap", umapSaved);
-     cv::namedWindow("vmapTest", cv::WINDOW_NORMAL ); cv::imshow("vmapTest", vmap2);
-     cv::namedWindow("umapTest", cv::WINDOW_NORMAL ); cv::imshow("umapTest", umap2);
-     cv::namedWindow("vmapTest2", cv::WINDOW_NORMAL ); cv::imshow("vmapTest2", vmap3);
-     cv::namedWindow("umapTest2", cv::WINDOW_NORMAL ); cv::imshow("umapTest2", umap3);
-     // cv::namedWindow("equal vmap", cv::WINDOW_NORMAL ); cv::imshow("equal vmap", vTmp);
-     // cv::namedWindow("thresholded vmap", cv::WINDOW_NORMAL ); cv::imshow("thresholded vmap", vProcessed);
-     // cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL ); cv::imshow("thresholded umap", uProcessed);
-     // cv::namedWindow("obstacles", cv::WINDOW_NORMAL ); cv::imshow("obstacles", clone);
-
-     cv::waitKey(0);
+     // cvinfo(umapSaved,"reference umap");
+     // cvinfo(vmapSaved,"reference vmap");
+     // cv::namedWindow("vmapTest", cv::WINDOW_AUTOSIZE ); cv::imshow("vmapTest", vmap2);
+     // cv::namedWindow("umapTest", cv::WINDOW_AUTOSIZE ); cv::imshow("umapTest", umap2);
+     // cv::namedWindow("vmapTest2", cv::WINDOW_AUTOSIZE ); cv::imshow("vmapTest2", vmap3);
+     // cv::namedWindow("umapTest2", cv::WINDOW_AUTOSIZE ); cv::imshow("umapTest2", umap3);
+     // // cv::namedWindow("equal vmap", cv::WINDOW_NORMAL ); cv::imshow("equal vmap", vTmp);
+     // // cv::namedWindow("thresholded vmap", cv::WINDOW_NORMAL ); cv::imshow("thresholded vmap", vProcessed);
+     // // cv::namedWindow("thresholded umap", cv::WINDOW_NORMAL ); cv::imshow("thresholded umap", uProcessed);
+     // // cv::namedWindow("obstacles", cv::WINDOW_NORMAL ); cv::imshow("obstacles", clone);
+     // if(cv::waitKey(0) == 27) return 1;
 #endif
 
      return 1;
