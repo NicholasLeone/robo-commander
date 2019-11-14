@@ -84,8 +84,9 @@ int main(int argc, char *argv[]){
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
                if(debug_timing) tmpT = (double)cv::getTickCount();
 			cv::minMaxLoc(depth, &minVal, &dmax);
-			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
+			// disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			// disparity = cam->convert_to_disparity_alternative(depth,&cvtGain, &cvtRatio);
+			disparity = cam->convert_to_disparity_test(depth,&cvtGain, &cvtRatio);
 			// cv::minMaxLoc(disparity, &minVal, &maxVal);
 			// cvinfo(disparity,"disparity");
 			if(!disparity.empty()){

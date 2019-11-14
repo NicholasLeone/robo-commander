@@ -499,97 +499,56 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
 /** BASE FUNCTION */
 /** */
 cv::Mat CameraD415::convert_to_disparity_test(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
-     // float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
-     // float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
-     // bool use_test = true;
-     bool use_test = false;
-     bool debug = false;
-     cv::Mat tmp, disparity, disparity8;
-     double min, maxMeter, maxDisparity;
-     // double maxIn, maxDisparity2, maxScaled, maxOut;
-     double minVal, maxVal;
-     // cv::minMaxLoc(depth, &min, &maxIn);
-     depth.convertTo(tmp, CV_64F);
-     cv::Mat dMeters = tmp*(this->_dscale);
-     // cv::minMaxLoc(dMeters, &min, &maxMeter);
-     // cv::Mat dMetersNorm = dMeters*(1.0/->_dscale);
-     // cv::minMaxLoc(dMeters, &min, &maxMeter);
-     if(debug){
-          cv::Mat scaledDisparity, dispRaw, dispMeters;
-          double maxIn;
-          cv::convertScaleAbs(depth, dispRaw, 255 / maxIn);
-          cv::applyColorMap(dispRaw, dispRaw, cv::COLORMAP_JET); cv::imshow("DepthIn", dispRaw);
+     // int w = depth.cols, h = depth.rows;
+     cv::Mat zerosMask = cv::Mat(depth == 0.0);
+     // cv::Mat nonzerosMask = cv::Mat(depth != 0.0);
 
-          dMeters.convertTo(dispMeters, CV_32F);
-          cv::applyColorMap(dispMeters, dispMeters, cv::COLORMAP_JET); cv::imshow("MetersIn", dispMeters);
-          // printf("[INFO] CameraD415::convert_to_disparity() ---- Depth Limits Before: min = %.3f -- max = %.3f\r\n", min,max);
-     }
+     // // float fxd = 596.39;
+     // // float dscale = 0.001;
+     // // float baseline = 0.014732;
+     // // float trueMinDisparity = (fxd * baseline)/(0.1);
+     // // float trueMaxDisparity = (fxd * baseline)/(10.0);
+     // double fb = (double)(fxd * baseline);
+     // double fbd = fb/(double)(dscale);
+     // -----------------------
+     cv::Mat dMeters, disparity8;
+     // double min, maxIn, maxDepth;
+     // double minDIn, maxDIn;
+     // cv::minMaxLoc(depth, &minDIn, &maxDIn, nullptr, nullptr,nonzerosMask);
+     // // cvinfo(depth,"depth input");
+     // double maxDepthMeters = maxDIn*(double)dscale;
+     // double minDepthMeters = minDIn*(double)dscale;
 
-     cv::Mat zerosMask = cv::Mat(dMeters == 0);
-     dMeters.setTo(1, zerosMask);
-     disparity = (this->_fxd * this->_baseline) / dMeters;
-     disparity.setTo(0, zerosMask);
-     cv::minMaxLoc(disparity, &minVal, &maxDisparity);
-     float dDisparity = (maxDisparity - minVal);
-     // float dTrueDisp = (trueMaxDisparity - trueMinDisparity);
-     // float disparityRatio = dDisparity / dTrueDisp;
-     // float scale = (255.0*disparityRatio) / dDisparity;
-     float scale = (255.0) / dDisparity;
-     // disparity.convertTo(disparity8,CV_8UC1);
-     // disparity.convertTo(disparity8,CV_8UC1, scale, -minVal*scale);
-     disparity.convertTo(disparity8,CV_8UC1, scale);
+     depth.convertTo(dMeters, CV_64F,this->_dscale);
+     // double maxMeter, minMeter;
+     // cv::minMaxLoc(dMeters, &minMeter, &maxMeter, nullptr, nullptr,nonzerosMask);
+     // // cvinfo(dMeters,"dMeters before");
+     // printf("[INFO] maxDepthMeters = %.2lf | %.2lf\r\n", maxDepthMeters, maxMeter);
+     // printf("[INFO] minDepthMeters = %.2lf | %.2lf\r\n", minDepthMeters, minMeter);
+     dMeters.setTo(1.0, zerosMask);
+     // cvinfo(dMeters,"dMeters after");
+     cv::Mat disparity = cv::Mat((double)(this->_fxd * this->_baseline) / dMeters);
+     double minDisparity, maxDisparity;
+     cv::minMaxLoc(disparity, &minDisparity, &maxDisparity);
+     // cvinfo(disparity,"disparity before");
+     disparity.setTo(0.0, zerosMask);
+     // cvinfo(disparity,"disparity after");
 
-     // cvinfo(disparity8,"disparity8");
-     // double absRatio = ((double) trueMaxDisparity) / maxDisparity;
+     // double gainer = 255.0 / (trueMinDisparity - trueMaxDisparity);
+     double gainer = 255.0 / (maxDisparity);
+     disparity.convertTo(disparity8,CV_8UC1, gainer);
 
-     if(debug){
-          cv::Mat disp1;
-          cv::convertScaleAbs(disparity, disp1, 255 / maxDisparity);
-          cv::applyColorMap(disp1, disp1, cv::COLORMAP_JET); cv::imshow("Raw Disparity", disp1);
-
-          disparity.convertTo(tmp, CV_32F);
-          cv::normalize(tmp,tmp, 1);
-          tmp.convertTo(disp1, CV_8U);
-          cv::applyColorMap(disp1, disp1, cv::COLORMAP_JET); cv::imshow("Temp Display", disp1);
-     }
-
-     // printf("trueMinDisparity = %.2lf, trueMaxDisparity = %.2lf -- maxDisparity = %.2lf -- absRatio = %.2lf\r\n", trueMinDisparity, trueMaxDisparity,maxDisparity, absRatio);
-     // cv::Mat disparity2 = disparity*absRatio;
-     // cv::minMaxLoc(disparity2, &minVal, &maxDisparity2);
-     // if(debug){
-     // }
-
-     double gain = 255.0 / maxDisparity;
-     double offset = maxDisparity / 65535.0;
-     // double gain2 = 255.0 / maxDisparity2;
-     // double offset2 = maxDisparity2 / 65535.0;
-
-     // cv::Scalar avg,sdv;
-     // cv::meanStdDev(image, avg, sdv);
-     // sdv.val[0] = sqrt(image.cols*image.rows*sdv.val[0]*sdv.val[0]);
-     // cv::Mat image_32f;
-     // image.convertTo(image_32f,CV_32F,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
-
-     // cv::convertScaleAbs(disparity2, scaledDisparity, 255 / maxDisparity2);
-     // cv::minMaxLoc(scaledDisparity, &minVal, &maxScaled);
-     // double gainScaled = 255.0 / maxScaled;
-     // double offsetScaled = maxScaled / 65535.0;
-
-     // if(use_test) cv::convertScaleAbs(disparity, disparity8, 255 / maxDisparity);
-     // else scaledDisparity.convertTo(disparity8,CV_8U,gainScaled);
-     // disparity2.convertTo(scaledDisparity,CV_8U,gain2);
-     // else disparity.convertTo(disparity8,CV_8U,gain);
-     // cv::minMaxLoc(disparity8, &minVal, &maxOut);
-
-     // cv::applyColorMap(disparity, disp, cv::COLORMAP_JET); cv::imshow("Disparity", disp);
-     // cv::waitKey(0);
-
+     // double gain = 256.0 / maxDepth;
+     // double offset = ratio / gain;
+     // double ratio = this->_trueMinDisparity / maxDisparity;
+     // double tmpgain = 256.0 / (double)(this->_trueMinDisparity);
+     // int tmpVal = (tmpgain*maxDisparity);
+     // double delta = 256.0 / (double)(tmpVal);
 
      // printf("[INFO] CameraD415::convert_to_disparity() ---- Max Values: Input (%.2f) --> depth (%.3f) --> disparity (%.2f) --> disparity2 (%.2f) --> scaled disparity (%.2f) --> Output (%.2f)\r\n", maxIn, maxMeter, maxDisparity, maxDisparity2, maxScaled, maxOut);
-     if(*conversion_gain) *conversion_gain = gain;
-     if(*conversion_offset) *conversion_offset = offset;
+     if(*conversion_gain) *conversion_gain = gainer;
+     if(*conversion_offset) *conversion_offset = 0.0;
      return disparity8;
-     // return scaledDisparity;
 }
 int CameraD415::get_pointcloud(){
      // rs2::pointcloud pc;

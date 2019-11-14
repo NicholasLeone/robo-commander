@@ -197,7 +197,7 @@ void genUVMapScaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale, b
 
 
 /** Visualization Helpers */
-void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title, bool colorize){
+void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title, bool colorize, bool autoSize){
      cv::Mat dispU, dispV;
      std::string lblU, lblV;
      if(!title) title = "Title";
@@ -223,8 +223,14 @@ void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title, bool c
           lblV = format("VMap[%s] %s", cvtype2str(dispV.type()).c_str(),title);
      }
 
-     cv::namedWindow(lblU.c_str(), cv::WINDOW_NORMAL);
-     cv::namedWindow(lblV.c_str(), cv::WINDOW_NORMAL);
+     if(autoSize){
+          cv::namedWindow(lblU.c_str(), cv::WINDOW_AUTOSIZE);
+          cv::namedWindow(lblV.c_str(), cv::WINDOW_AUTOSIZE);
+     } else{
+          cv::namedWindow(lblU.c_str(), cv::WINDOW_NORMAL);
+          cv::namedWindow(lblV.c_str(), cv::WINDOW_NORMAL);
+     }
+
      cv::imshow(lblU, dispU);
      cv::imshow(lblV, dispV);
 }

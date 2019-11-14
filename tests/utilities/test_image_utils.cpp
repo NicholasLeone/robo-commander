@@ -102,7 +102,62 @@ using namespace std;
 // 	return I;
 // }
 
-cv::Mat genDisparity(const cv::Mat depth){
+
+cv::Mat genDisparityBase(const cv::Mat depth){
+     int w = depth.cols, h = depth.rows;
+     cv::Mat zerosMask = cv::Mat(depth == 0.0);
+     cv::Mat nonzerosMask = cv::Mat(depth != 0.0);
+     /** [INFO] CameraD415::get_depth_scale() --- Depth Scale = 0.001000
+         [INFO] CameraD415::get_baseline() --- Baseline = 0.014732
+         [INFO] CameraD415::get_intrinsics() --- Intrinsic Properties:
+     	    Size ---------- [w, h]: 848, 480
+     	    Focal Length -- [X, Y]: 596.39, 596.39
+     	    Principle Point [X, Y]: 423.74, 242.01
+     */
+     float fxd = 596.39;
+     float dscale = 0.001;
+     float baseline = 0.014732;
+     float trueMinDisparity = (fxd * baseline)/(0.1);
+     float trueMaxDisparity = (fxd * baseline)/(10.0);
+     double fb = (double)(fxd * baseline);
+     double fbd = fb/(double)(dscale);
+     // -----------------------
+     cv::Mat dMeters, tmp, disparity8;
+     double min, minDisparity, maxIn, maxDisparity, maxDepth;
+     double minDIn, maxDIn;
+     cv::minMaxLoc(depth, &minDIn, &maxDIn, nullptr, nullptr,nonzerosMask);
+     // cvinfo(depth,"depth input");
+     double maxDepthMeters = maxDIn*(double)dscale;
+     double minDepthMeters = minDIn*(double)dscale;
+
+     double maxMeter, minMeter;
+     depth.convertTo(dMeters, CV_64F,dscale);
+     cv::minMaxLoc(dMeters, &minMeter, &maxMeter, nullptr, nullptr,nonzerosMask);
+     // cvinfo(dMeters,"dMeters before");
+     printf("[INFO] maxDepthMeters = %.2lf | %.2lf\r\n", maxDepthMeters, maxMeter);
+     printf("[INFO] minDepthMeters = %.2lf | %.2lf\r\n", minDepthMeters, minMeter);
+     dMeters.setTo(1.0, zerosMask);
+     // cvinfo(dMeters,"dMeters after");
+     cv::Mat disparity = cv::Mat(fb / dMeters);
+     cv::minMaxLoc(disparity, &minDisparity, &maxDisparity);
+     cvinfo(disparity,"disparity before");
+     disparity.setTo(0.0, zerosMask);
+     cvinfo(disparity,"disparity after");
+
+     // double gainer = 255.0 / (trueMinDisparity - trueMaxDisparity);
+     double gainer = 255.0 / (maxDisparity);
+     disparity.convertTo(disparity8,CV_8UC1, gainer);
+
+     // double gain = 256.0 / maxDepth;
+     // double offset = ratio / gain;
+     // double ratio = this->_trueMinDisparity / maxDisparity;
+     // double tmpgain = 256.0 / (double)(this->_trueMinDisparity);
+     // int tmpVal = (tmpgain*maxDisparity);
+     // double delta = 256.0 / (double)(tmpVal);
+     return disparity8;
+}
+
+cv::Mat genDisparity(const cv::Mat depth, VBOATS* vb){
      int w = depth.cols, h = depth.rows;
      cv::Mat zerosMask = cv::Mat(depth == 0.0);
      /** [INFO] CameraD415::get_depth_scale() --- Depth Scale = 0.001000
@@ -145,50 +200,99 @@ cv::Mat genDisparity(const cv::Mat depth){
      double mn = (double)(avg.val[0]);
      double sd = (double)(sdv.val[0]);
      double sqrtStd = (double)(sqrt(w*h*sdv.val[0]*sdv.val[0]));
-     cv::Mat testD;
+     cv::Mat testD, test01, test11;
      disparity.convertTo(testD,CV_8UC1, 255.0/(maxDisparity-minDisparity));
      cv::Mat test0 = cv::Mat(disparity - mn) / sd;
-     cv::Mat test1 = cv::Mat(disparity - mn) / sqrtStd;
      cvinfo(test0,"test0");
-     cvinfo(test1,"test1");
-     cv::Mat test01, test11;
-     double Max0,Max1, Min0,Min1;
+     double Max0,Min0;
      cv::minMaxLoc(test0, &Min0, &Max0);
-     cv::minMaxLoc(test1, &Min1, &Max1);
      test0.convertTo(test01,CV_8UC1, 255.0/(Max0-Min0), -255.0*Min0/(Max0-Min0));
-     test1.convertTo(test11,CV_8UC1, 255.0/(Max1-Min1), -255.0*Min1/(Max1-Min1));
+     // test0.convertTo(test01,CV_8UC1, 255.0/(Max0-Min0), -255.0*mn/(Max0-Min0));
+     cvinfo(test01,"test01 w/o standardization");
+     cv::imshow("test mat 0", test01);
 
-     // cv::Scalar avg,sdv;
-     // cv::meanStdDev(disparity, avg, sdv);
-     // double mn = (double)(avg.val[0]);
-     // double sd = (double)(sdv.val[0]);
-     // double sqrtStd = (double)(sqrt(w*h*sdv.val[0]*sdv.val[0]));
-
-     cvinfo(testD,"testD");
-     cvinfo(test01,"test01");
-     cvinfo(test11,"test11");
-     // disparity.convertTo(test0,CV_8UC1, 255.0/sd, -avg.val[0]/sd);
-     // disparity.convertTo(test1,CV_8UC1, 255.0/sdv.val[0], -avg.val[0]/sdv.val[0]);
-     // disparity.convertTo(test0,CV_8UC1, 255.0/sd, -avg.val[0]/sd);
-     // cvinfo(test0,"test0");
-     // disparity.convertTo(test1,CV_8UC1, 255.0/sdv.val[0], -avg.val[0]/sdv.val[0]);
+     // cv::Mat test1 = cv::Mat(disparity - mn) / sqrtStd;
      // cvinfo(test1,"test1");
-     cv::Mat umapD, umap0, umap1,vmapD, vmap0, vmap1;
+     // double Max1,Min1;
+     // cv::minMaxLoc(test1, &Min1, &Max1);
+     // test1.convertTo(test11,CV_8UC1, 255.0/(Max1-Min1), -255.0*Min1/(Max1-Min1));
+     // test1.convertTo(test11,CV_8UC1, 255.0/(Max1-Min1), -255.0*mn/(Max1-Min1));
+     // cvinfo(test11,"test11 w/o standardization");
+     // cv::imshow("test mat 1", test11);
+
+     cvinfo(testD,"testD w/o standardization");
+     cv::imshow("test disparity", testD);
+
+     cv::Mat umapD, umap0, umap1;
+     cv::Mat vmapD, vmap0, vmap1;
+
      genUVMapThreaded(testD,&umapD,&vmapD);
      genUVMapThreaded(test01,&umap0,&vmap0);
-     genUVMapThreaded(test11,&umap1,&vmap1);
+     // genUVMapThreaded(test11,&umap1,&vmap1);
      cvinfo(umapD,"umapD");
      cvinfo(umap0,"umap0");
-     cvinfo(umap1,"umap1");
+     // cvinfo(umap1,"umap1");
 
-     cv::imshow("test disparity", testD);
-     cv::imshow("test mat 0", test01);
-     cv::imshow("test mat 1", test11);
-     // cv::imshow("test mat 0", test0);
-     // cv::imshow("test mat 1", test1);
+     cv::Scalar mean0, mean1, mean2;
+     cv::Scalar stdv0, stdv1, stdv2;
+     cv::meanStdDev(testD, mean0, stdv0);
+     cv::meanStdDev(test01, mean1, stdv1);
+     // cv::meanStdDev(test11, mean2, stdv2);
+
+     double mn0 = (double)(mean0.val[0]);
+     double std0 = (double)(stdv0.val[0]);
+     double sqrtStd0 = (double)(sqrt(w*h*stdv0.val[0]*stdv0.val[0]));
+
+     double mn1 = (double)(mean1.val[0]);
+     double std1 = (double)(stdv1.val[0]);
+     double sqrtStd1 = (double)(sqrt(w*h*stdv1.val[0]*stdv1.val[0]));
+
+     // double mn2 = (double)(mean2.val[0]);
+     // double std2 = (double)(stdv2.val[0]);
+     // double sqrtStd2 = (double)(sqrt(w*h*stdv2.val[0]*stdv2.val[0]));
+
+     cv::Mat testDs = cv::Mat(testD - mn0);
+     testDs.convertTo(testDs, CV_8UC1, 255.0 / std0);
+     // testDs.convertTo(testDs, CV_8UC1, 255.0 / sqrtStd0);
+     cv::Mat test01s = cv::Mat(test01 - mn1);
+     test01s.convertTo(test01s, CV_8UC1, 255.0 / std1);
+     // test01s.convertTo(test01s, CV_8UC1, 255.0 / sqrtStd1);
+
+     // cv::Mat test11s = cv::Mat(test11 - mn2);
+     // test11s.convertTo(test11s, CV_8UC1, 255.0 / std2);
+     // // test11s.convertTo(test11s, CV_8UC1, 255.0 / sqrtStd2);
+
+     cv::equalizeHist(testD, testDs);
+     cv::equalizeHist(test01, test01s);
+     // cv::equalizeHist(test11, test11s);
+
+     cvinfo(testDs,"testD w/ standardization");
+     cvinfo(test01s,"test01 w/ standardization");
+     // cvinfo(test11s,"test11 w/ standardization");
+     cv::imshow("test disparity std", testDs);
+     cv::imshow("test mat 0 std", test01s);
+     // cv::imshow("test mat 1 std", test11s);
+
+     cv::Mat umapDs, umap0s, umap1s,vmapDs, vmap0s, vmap1s;
+     genUVMapThreaded(testDs,&umapDs,&vmapDs);
+     genUVMapThreaded(test01s,&umap0s,&vmap0s);
+     // genUVMapThreaded(test11s,&umap1s,&vmap1s);
+     cvinfo(umapDs,"umapDs");
+     cvinfo(umap0s,"umap0s");
+     // cvinfo(umap1s,"umap1s");
      displayUVMaps(umapD,vmapD, "testD",true);
      displayUVMaps(umap0,vmap0, "test01",true);
-     displayUVMaps(umap1,vmap1, "test11",true);
+     // displayUVMaps(umap1,vmap1, "test11",true);
+
+     // cv::equalizeHist(umapD, umapDs);              cv::equalizeHist(vmapD, vmapDs);
+     // cv::equalizeHist(umap0, umap0s);              cv::equalizeHist(vmap0, vmap0s);
+     // cv::equalizeHist(umap1, umap1s);              cv::equalizeHist(vmap1, vmap1s);
+     cv::equalizeHist(umapDs, umapDs);              cv::equalizeHist(vmapDs, vmapDs);
+     cv::equalizeHist(umap0s, umap0s);              cv::equalizeHist(vmap0s, vmap0s);
+     // cv::equalizeHist(umap1, umap1s);              cv::equalizeHist(vmap1, vmap1s);
+     displayUVMaps(umapDs,vmapDs, "testDs",true);
+     displayUVMaps(umap0s,vmap0s, "test01s",true);
+     // displayUVMaps(umap1s,vmap1s, "test11s",true);
      cv::waitKey(0);
 
      // tmp = tmp * dscale;
@@ -205,24 +309,152 @@ cv::Mat genDisparity(const cv::Mat depth){
      // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
      // float tmpgain = 256.0 / maxDisparity;
      disparity.convertTo(disparity8,CV_8UC1, tmpgain);
-     if(false){
-          cvinfo(disparity8,"disparity8 pregain");
-          printf(" --- tmpgain=%.2f | ratio=%.2f | maxDisparity=%.2f | delta=%.2f | tmpVal=%d --- \r\n",tmpgain, ratio, maxDisparity, delta,tmpVal);
-          // disparity8.convertTo(disparity8,CV_8UC1, ratio);
-          cv::Mat disparity88 = cv::Mat_<uchar>(disparity8 * delta);
-          cvinfo(disparity88,"disparity8 postgain");
-     }
-     // disparity.convertTo(disparity8,CV_8UC1, 255.0/this->_trueMinDisparity);
-     // cvinfo(tmpDisp,"tmpDisp");
-     // cvinfo(disparity8,"disparity8");
+     return disparity8;
+}
 
-     // cv::minMaxLoc(disparity8, &min, &maxIn);
-     // double dmaxHat = maxIn * offset;
-     // printf(" --- maxDisparity=%.2f | maxDepth=%.2f | trueMaxDisparity=%.2f | derivedMaxDepth=%.2f --- \r\n",maxDisparity, maxDepth, this->_trueMinDisparity, dmaxHat);
+cv::Mat genDisparityTester(const cv::Mat depth, VBOATS* vb){
+     int w = depth.cols, h = depth.rows;
+     cv::Mat zerosMask = cv::Mat(depth == 0.0);
+     /** [INFO] CameraD415::get_depth_scale() --- Depth Scale = 0.001000
+         [INFO] CameraD415::get_baseline() --- Baseline = 0.014732
+         [INFO] CameraD415::get_intrinsics() --- Intrinsic Properties:
+     	    Size ---------- [w, h]: 848, 480
+     	    Focal Length -- [X, Y]: 596.39, 596.39
+     	    Principle Point [X, Y]: 423.74, 242.01
+     */
+     float fxd = 596.39;
+     float dscale = 0.001;
+     float baseline = 0.014732;
+     float trueMinDisparity = (fxd * baseline)/(0.1);
+     float trueMaxDisparity = (fxd * baseline)/(10.0);
+     double fb = (double)(fxd * baseline);
+     double fbd = fb/(double)(dscale);
+     // -----------------------
+     cv::Mat dMeters, tmp, disparity8;
+     double min, minDisparity, maxIn, maxDisparity, maxDepth;
+     double minDIn, maxDIn;
+     cv::minMaxLoc(depth, &minDIn, &maxDIn);
+     cvinfo(depth,"depth input");
+     double maxDepthMeters = maxDIn*(double)dscale;
 
-     // cv::imshow("disparity", disparity);
-     // cv::imshow("tmpDisp", tmpDisp);
-     // cv::imshow("disparity8", disparity8);
+     double maxMeter;
+     depth.convertTo(dMeters, CV_64F,dscale);
+     cv::minMaxLoc(dMeters, nullptr, &maxMeter);
+     cvinfo(dMeters,"dMeters before");
+     printf("[INFO] maxDepthMeters = %.2lf | %.2lf\r\n", maxDepthMeters, maxMeter);
+     dMeters.setTo(1.0, zerosMask);
+     cvinfo(dMeters,"dMeters after");
+     cv::Mat disparity = cv::Mat(fb / dMeters);
+     cv::minMaxLoc(disparity, &minDisparity, &maxDisparity);
+     cvinfo(disparity,"disparity before");
+     disparity.setTo(0.0, zerosMask);
+     cvinfo(disparity,"disparity after");
+
+     cv::Scalar avg,sdv;
+     cv::meanStdDev(disparity, avg, sdv);
+     double mn = (double)(avg.val[0]);
+     double sd = (double)(sdv.val[0]);
+     double sqrtStd = (double)(sqrt(w*h*sdv.val[0]*sdv.val[0]));
+     cv::Mat testD, test01, test11;
+     disparity.convertTo(testD,CV_8UC1, 255.0/(maxDisparity-minDisparity));
+     cv::Mat test0 = cv::Mat(disparity - mn) / sd;
+     cv::Mat test1 = cv::Mat(disparity - mn) / sqrtStd;
+     cvinfo(test0,"test0");
+     cvinfo(test1,"test1");
+     double Max0,Max1, Min0,Min1;
+     cv::minMaxLoc(test0, &Min0, &Max0);
+     cv::minMaxLoc(test1, &Min1, &Max1);
+     test0.convertTo(test01,CV_8UC1, 255.0/(Max0-Min0), -255.0*Min0/(Max0-Min0));
+     test1.convertTo(test11,CV_8UC1, 255.0/(Max1-Min1), -255.0*Min1/(Max1-Min1));
+     // test0.convertTo(test01,CV_8UC1, 255.0/(Max0-Min0), -255.0*mn/(Max0-Min0));
+     // test1.convertTo(test11,CV_8UC1, 255.0/(Max1-Min1), -255.0*mn/(Max1-Min1));
+     cvinfo(testD,"testD w/o standardization");
+     cvinfo(test01,"test01 w/o standardization");
+     cvinfo(test11,"test11 w/o standardization");
+
+     cv::imshow("test disparity", testD);
+     cv::imshow("test mat 0", test01);
+     cv::imshow("test mat 1", test11);
+
+     cv::Mat umapD, umap0, umap1,vmapD, vmap0, vmap1;
+     genUVMapThreaded(testD,&umapD,&vmapD);
+     genUVMapThreaded(test01,&umap0,&vmap0);
+     genUVMapThreaded(test11,&umap1,&vmap1);
+     cvinfo(umapD,"umapD");
+     cvinfo(umap0,"umap0");
+     cvinfo(umap1,"umap1");
+
+     cv::Scalar mean0, mean1, mean2, stdv0, stdv1, stdv2;
+     cv::meanStdDev(testD, mean0, stdv0);
+     cv::meanStdDev(test01, mean1, stdv1);
+     cv::meanStdDev(test11, mean2, stdv2);
+
+     double mn0 = (double)(mean0.val[0]);
+     double std0 = (double)(stdv0.val[0]);
+     double sqrtStd0 = (double)(sqrt(w*h*stdv0.val[0]*stdv0.val[0]));
+
+     double mn1 = (double)(mean1.val[0]);
+     double std1 = (double)(stdv1.val[0]);
+     double sqrtStd1 = (double)(sqrt(w*h*stdv1.val[0]*stdv1.val[0]));
+
+     double mn2 = (double)(mean2.val[0]);
+     double std2 = (double)(stdv2.val[0]);
+     double sqrtStd2 = (double)(sqrt(w*h*stdv2.val[0]*stdv2.val[0]));
+
+     cv::Mat testDs = cv::Mat(testD - mn0);
+     testDs.convertTo(testDs, CV_8UC1, 255.0 / std0);
+     // testDs.convertTo(testDs, CV_8UC1, 255.0 / sqrtStd0);
+     cv::Mat test01s = cv::Mat(test01 - mn1);
+     test01s.convertTo(test01s, CV_8UC1, 255.0 / std1);
+     // test01s.convertTo(test01s, CV_8UC1, 255.0 / sqrtStd1);
+     cv::Mat test11s = cv::Mat(test11 - mn2);
+     test11s.convertTo(test11s, CV_8UC1, 255.0 / std2);
+     // test11s.convertTo(test11s, CV_8UC1, 255.0 / sqrtStd2);
+
+     // cv::equalizeHist(testD, testDs);
+     // cv::equalizeHist(test01, test01s);
+     // cv::equalizeHist(test11, test11s);
+
+     cvinfo(testDs,"testD w/ standardization");
+     cvinfo(test01s,"test01 w/ standardization");
+     cvinfo(test11s,"test11 w/ standardization");
+     cv::imshow("test disparity std", testDs);
+     cv::imshow("test mat 0 std", test01s);
+     cv::imshow("test mat 1 std", test11s);
+
+     cv::Mat umapDs, umap0s, umap1s,vmapDs, vmap0s, vmap1s;
+     genUVMapThreaded(testDs,&umapDs,&vmapDs);
+     genUVMapThreaded(test01s,&umap0s,&vmap0s);
+     genUVMapThreaded(test11s,&umap1s,&vmap1s);
+     cvinfo(umapDs,"umapDs");
+     cvinfo(umap0s,"umap0s");
+     cvinfo(umap1s,"umap1s");
+     displayUVMaps(umapD,vmapD, "testD",true);
+     displayUVMaps(umap0,vmap0, "test01",true);
+     displayUVMaps(umap1,vmap1, "test11",true);
+
+     cv::equalizeHist(umapD, umapDs);              cv::equalizeHist(vmapD, vmapDs);
+     cv::equalizeHist(umap0, umap0s);              cv::equalizeHist(vmap0, vmap0s);
+     cv::equalizeHist(umap1, umap1s);              cv::equalizeHist(vmap1, vmap1s);
+     displayUVMaps(umapDs,vmapDs, "testDs",true);
+     displayUVMaps(umap0s,vmap0s, "test01s",true);
+     displayUVMaps(umap1s,vmap1s, "test11s",true);
+     cv::waitKey(0);
+
+     // tmp = tmp * dscale;
+     // dMeters.setTo(1, zerosMask);
+     // cv::Mat tmpMat = tmp * dscale;
+     // cvinfo(tmp,"depth input to CV_64F");
+
+     double gain = 256.0 / maxDepth;
+     double ratio = trueMinDisparity / maxDisparity;
+     double offset = ratio / gain;
+     double tmpgain = 256.0 / (double)(maxDisparity);
+     int tmpVal = (tmpgain*maxDisparity);
+     double delta = 256.0 / (double)(tmpVal);
+     // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
+     // float tmpgain = 256.0 / maxDisparity;
+     disparity.convertTo(disparity8,CV_8UC1, tmpgain);
      return disparity8;
 }
 
@@ -413,8 +645,10 @@ int main(int argc, char *argv[]){
 
      cv::Mat disparity;
      if(raw_depth.empty()) disparity = refDisparity.clone();
-     else disparity = genDisparity(raw_depth);
-
+     else{
+          disparity = genDisparityBase(raw_depth);
+          // disparity = genDisparity(raw_depth, &vboats);
+     }
      cv::Mat umap,vmap;
      genUVMapThreaded(disparity,&umap,&vmap);
      cvinfo(refDisparity,"reference disparity");
