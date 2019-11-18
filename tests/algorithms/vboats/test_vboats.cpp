@@ -7,13 +7,15 @@
 
 #include <iostream>
 #include <chrono>
+#include <mutex>
 
 using namespace chrono;
 using namespace std;
 
 int main(int argc, char *argv[]){
-	int count = 0;
+	std::mutex _lock;
 	int err;
+	int count = 0;
 	int fps = 90;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
@@ -39,7 +41,9 @@ int main(int argc, char *argv[]){
 	cam->start_thread();
 	float dt;
 	double tmpT, tmpDt;
-	double cvtGain, cvtRatio;
+	// double cvtGain, cvtRatio;
+	// double* cvtGain = new double();
+	// double* cvtRatio = new double();
 	duration<float> time_span;
 	high_resolution_clock::time_point now;
 	high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
@@ -84,12 +88,15 @@ int main(int argc, char *argv[]){
 			// } catch(cv::Exception& e){ printf("A standard exception was caught, with message \'%s\'.\r\n", e.what()); }
                if(debug_timing) tmpT = (double)cv::getTickCount();
 			cv::minMaxLoc(depth, &minVal, &dmax);
+			// _lock.lock();
 			// disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
 			// disparity = cam->convert_to_disparity_alternative(depth,&cvtGain, &cvtRatio);
+			double cvtGain, cvtRatio;
 			disparity = cam->convert_to_disparity_test(depth,&cvtGain, &cvtRatio);
+			// _lock.unlock();
 			// cv::minMaxLoc(disparity, &minVal, &maxVal);
-			// cvinfo(disparity,"disparity");
 			if(!disparity.empty()){
+				// cvinfo(disparity,"disparity");
 				// if(debug_timing){
 	               //      tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
 	               //      printf("[INFO] disparity conversion() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
@@ -135,11 +142,16 @@ int main(int argc, char *argv[]){
 	               //      printf("[INFO] pipeline_disparity() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
 	               // }
 				int n = 0;
-				double disp2meter = cvtGain*cvtRatio;
+				// double disp2meter = (*cvtGain)*(*cvtRatio);
+				float gain1 = (float)(cvtGain);
+				float gain2 = (float)(cvtRatio);
+				// float gain1 = (float)(*cvtGain);
+				// float gain2 = (float)(*cvtRatio);
+				printf("[INFO] test_vboats.cpp --- cvtGain = %.2f\r\n",gain1);
 				for(Obstacle ob : obs){
 					n++;
 			          printf("Obstacle [%d]: ", n);
-			          ob.update(false,0,0,nullptr,nullptr,(float)cvtGain,(float)cvtRatio);
+			          ob.update(false,0,0,nullptr,nullptr,gain1,gain2);
 			          // ob.update(false,0,0,nullptr,nullptr,(float)disp2meter);
 			          // ob.update(false);
 			     }
@@ -177,7 +189,8 @@ int main(int argc, char *argv[]){
 		}
 		count++;
 	}
-
+	// delete cvtGain;
+	// delete cvtRatio;
 	delete cam;
      return 0;
 }

@@ -547,8 +547,9 @@ cv::Mat CameraD415::convert_to_disparity_test(const cv::Mat depth, double* conve
      // double delta = 256.0 / (double)(tmpVal);
 
      // printf("[INFO] CameraD415::convert_to_disparity() ---- Max Values: Input (%.2f) --> depth (%.3f) --> disparity (%.2f) --> disparity2 (%.2f) --> scaled disparity (%.2f) --> Output (%.2f)\r\n", maxIn, maxMeter, maxDisparity, maxDisparity2, maxScaled, maxOut);
-     if(*conversion_gain) *conversion_gain = gainer;
-     if(*conversion_offset) *conversion_offset = 0.0;
+     if(conversion_gain) *conversion_gain = gainer;
+     if(conversion_offset) *conversion_offset = maxDisparity;
+     // printf("[INFO] CameraD415::convert_to_disparity_test() ---- gainer = %.2lf | maxDisparity = %.2lf\r\n", gainer, maxDisparity);
      return disparity8;
 }
 int CameraD415::get_pointcloud(){
