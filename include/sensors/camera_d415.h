@@ -16,7 +16,10 @@
 #include <librealsense2/hpp/rs_processing.hpp>
 #include <librealsense2/rs_advanced_mode.hpp>
 
-#define MAX_QUEUE 5
+#define MAX_QUEUE 10
+#define STARTUP_DELAY_SEC 3.0
+#define D415_MAX_DEPTH_M 10.0
+#define D415_MIN_DEPTH_M 0.1
 
 using namespace std;
 

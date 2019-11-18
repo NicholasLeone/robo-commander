@@ -7,10 +7,6 @@
 #include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 
-#define STARTUP_DELAY_SEC 3.0
-#define D415_MAX_DEPTH_M 10.0
-#define D415_MIN_DEPTH_M 0.1
-
 using namespace std;
 using namespace chrono;
 
