@@ -17,9 +17,7 @@ using namespace chrono;
 
 Obstacle::Obstacle(vector<cv::Point> pts, vector<int> dBounds) :
      minXY(pts[0]), maxXY(pts[1]), dMin(dBounds[0]), dMax(dBounds[1])
-{
-
-}
+{}
 
 void Obstacle::update(bool depth_based, float cam_baseline, float cam_dscale, float* cam_focal,
      float* cam_principal_point, float dtype_gain, float aux_dist_factor, bool verbose)
@@ -47,7 +45,8 @@ void Obstacle::update(bool depth_based, float cam_baseline, float cam_dscale, fl
      if(cam_baseline != 0) baseline = cam_baseline;
 
      float cvt_gain = 1.0;
-     float aux_gain = 1.35;
+     float aux_gain = 1.0;
+     // float aux_gain = 1.35;
      if(dtype_gain != 0) cvt_gain = dtype_gain;
      if(aux_dist_factor != 0) aux_gain = aux_dist_factor;
 
@@ -75,15 +74,16 @@ void Obstacle::update(bool depth_based, float cam_baseline, float cam_dscale, fl
           zgain = (65535.0 / 255.0)*dscale;
           pz = dmean * zgain;
      } else{
-          zgain = 1.0 / (cvt_gain*dscale*aux_gain);
-          pz = zgain / dmean;
+          float tmpDmean = dmean / cvt_gain;
+          zgain = fx*baseline;
+          pz = zgain / tmpDmean;
      }
 
      float x = ((xmean - ppx) * pz) / fx;
      float y = ((ymean - ppy) * pz) / fy;
      float dist = sqrt(x*x + pz*pz);
      double theta = atan2(x,pz);
-     if(verbose) printf("Obstacle Relative Distance =  %.2fm --- Angle = %.2lf deg --- Position (X,Y,Z) = (%.2f, %.2f, %.2f) m \r\n", dist, theta*M_RAD2DEG, x,y, pz);
+     if(verbose) printf("Obstacle Relative Distance =  %.2fm --- Angle = %.2lf deg --- Position (X,Y,Z) = (%.2f, %.2f, %.2f) m \r\n", dist, theta*M_RAD2DEG, x,y, dmean);
      this->location.x = x;
      this->location.y = y;
      this->location.z = pz;
@@ -727,7 +727,7 @@ int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slo
      return num;
 }
 
-bool VBOATS::is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
+bool VBOATS::find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
      int hough_thresh, double gnd_deadzone, double minDeg, double maxDeg, bool verbose, bool debug_timing, bool visualize)
 {
      cv::Mat rs, angs;
@@ -744,7 +744,7 @@ bool VBOATS::is_ground_present(const cv::Mat& vmap, float* best_slope, int* best
      if(nUsed <= 0) return false;
      if(debug_timing){
           t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-          printf("[INFO] is_ground_present() ---- took %.4lf ms (%.2lf Hz)\r\n", t*1000.0, (1.0/t));
+          printf("[INFO] find_ground_line() ---- took %.4lf ms (%.2lf Hz)\r\n", t*1000.0, (1.0/t));
      }
 
      if(best_slope) *best_slope = m;
@@ -763,6 +763,8 @@ bool VBOATS::is_ground_present(const cv::Mat& vmap, float* best_slope, int* best
      }
      return true;
 }
+
+bool VBOATS::is_ground_present(){return this->_is_ground_present;}
 
 void VBOATS::find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
      int filter_method, float min_threshold, int* offsets, float max_threshold,
@@ -1042,8 +1044,7 @@ int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv
      return nObs;
 }
 
-void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles, cv::Mat* uMorphElement, bool verbose, bool debug_timing){
-     bool visualize = true;
+int VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles, cv::Mat* uMorphElement, bool verbose, bool debug_timing, bool visualize){
      double t0, tmpT,tmpT1, tmpDt, dt1, dt2, dt3;
      if(debug_timing) t0 = (double)cv::getTickCount();
      // vector<float> vthreshs = {0.15,0.15,0.01,0.01};
@@ -1108,12 +1109,13 @@ void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, c
      if(debug_timing) tmpT = (double)cv::getTickCount();
      float* line_params;
      float gndM; int gndB;
-     bool gndPresent = is_ground_present(sobelV, &gndM,&gndB);
-     // bool gndPresent = is_ground_present(vProcessed, &gndM,&gndB);
+     bool gndPresent = find_ground_line(sobelV, &gndM,&gndB);
+     // bool gndPresent = find_ground_line(vProcessed, &gndM,&gndB);
      if(gndPresent){
           float tmpParams[] = {gndM, (float) gndB};
           line_params = &tmpParams[0];
      }else line_params = nullptr;
+     this->_is_ground_present = gndPresent;
 
      if(debug_timing){
           dt2 = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
@@ -1134,20 +1136,14 @@ void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, c
           printf("[INFO] obstacle finding() ---- took %.4lf ms (%.2lf Hz)\r\n", dt2a*1000.0, (1.0/dt2a));
      }
 
-     if(debug_timing) tmpT = (double)cv::getTickCount();
-     for(Obstacle ob : _obstacles){
-          n++;
-          // printf("Obstacle [%d]: \r\n", n);
-          ob.update(false);
-          if(visualize) cv::rectangle(clone, ob.minXY, ob.maxXY, cv::Scalar(255, 0, 255), 1);
-     }
      if(debug_timing){
+          tmpT = (double)cv::getTickCount();
           dt3 = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
           printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt3*1000.0, (1.0/dt3));
      }
      if(obstacles) *obstacles = _obstacles;
      if(visualize){
-          cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
+          // cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
           // cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
           // cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
           // // cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
@@ -1157,4 +1153,5 @@ void VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, c
           // // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
           // // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
      }
+     return nObs;
 }

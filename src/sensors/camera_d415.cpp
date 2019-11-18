@@ -362,12 +362,13 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      cv::Mat disparity = cv::Mat((this->_fxd * this->_baseline) / tmp);
      // cvinfo(disparity,"disparity");
      cv::minMaxLoc(disparity, &min, &maxDisparity);
-     double gain = 256.0 / maxDepth;
+     double gain = 255.0 / maxDepth;
      double ratio = this->_trueMinDisparity / maxDisparity;
+     double ratiodepth = this->_trueMinDisparity / maxDepth;
      double offset = ratio / gain;
-     double tmpgain = 256.0 / (double)(this->_trueMinDisparity);
+     double tmpgain = 255.0 / (double)(this->_trueMinDisparity);
      int tmpVal = (tmpgain*maxDisparity);
-     double delta = 256.0 / (double)(tmpVal);
+     double delta = 255.0 / (double)(tmpVal);
      // float tmpgain = (float)(ratio*256.0) / this->_trueMinDisparity;
      // float tmpgain = 256.0 / maxDisparity;
      disparity.convertTo(disparity8,CV_8UC1, tmpgain);
@@ -390,8 +391,8 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      // cv::imshow("tmpDisp", tmpDisp);
      // cv::imshow("disparity8", disparity8);
 
-     if(*conversion_gain) *conversion_gain = offset;
-     if(*conversion_offset) *conversion_offset = delta;
+     if(*conversion_gain) *conversion_gain = tmpgain*ratio;
+     if(*conversion_offset) *conversion_offset = maxDepth;
      return disparity8;
      // return disparity88;
 }

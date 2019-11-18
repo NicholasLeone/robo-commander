@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
      double t0, t1;
      bool verbose = false;
 	bool try_thresholding = false;
-	bool debug_timing = true;
+	bool debug_timing = false;
 
      int morph_size = 10;
      int morph_size2 = 3;
@@ -134,6 +134,15 @@ int main(int argc, char *argv[]){
 	               //      tmpDt = ((double)cv::getTickCount() - tmpT)/cv::getTickFrequency();
 	               //      printf("[INFO] pipeline_disparity() ---------------- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
 	               // }
+				int n = 0;
+				double disp2meter = cvtGain*cvtRatio;
+				for(Obstacle ob : obs){
+					n++;
+			          printf("Obstacle [%d]: ", n);
+			          ob.update(false,0,0,nullptr,nullptr,(float)cvtGain,(float)cvtRatio);
+			          // ob.update(false,0,0,nullptr,nullptr,(float)disp2meter);
+			          // ob.update(false);
+			     }
 
 				// cv::Scalar mean, stddev;
 			     // cv::meanStdDev(disparity,mean, stddev);
@@ -143,7 +152,7 @@ int main(int argc, char *argv[]){
 	               // _prev_time = now;
 				// dt = time_span.count();
 	               tmpDt = ((double)cv::getTickCount() - t1)/cv::getTickFrequency();
-	               printf("[INFO] Vboats pipeline() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
+	               if(debug_timing) printf("[INFO] Vboats pipeline() ---- took %.4lf ms (%.2lf Hz)\r\n", tmpDt*1000.0, (1.0/tmpDt));
 				// printf("[INFO] Vboats pipeline --- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
 				// printf(" -------------------------------- \r\n");
 			}

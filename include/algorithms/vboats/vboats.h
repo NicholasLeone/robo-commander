@@ -24,7 +24,7 @@ public:
     cv::Point3f location;
     void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0,
          float* cam_focal = nullptr, float* cam_principal_point = nullptr,
-         float dtype_gain = 0, float aux_dist_factor = 0, bool verbose = false
+         float dtype_gain = 0, float aux_dist_factor = 0, bool verbose = true
     );
 };
 
@@ -91,10 +91,11 @@ public:
      int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept, float* worst_slope, int* worst_intercept,
           double gnd_deadzone = 2.0, double minDeg = 26.0, double maxDeg = 89.0, bool verbose = false, bool debug_timing = false
      );
-     bool is_ground_present(const cv::Mat& vmap, float* best_slope, int* best_intercept,
+     bool find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
           int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = 26.0,
           double maxDeg = 89.0, bool verbose = false, bool debug_timing = false, bool visualize = false
      );
+     bool is_ground_present();
 
      void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
           int filter_method = 1, float min_threshold = 30.0, int* offsets = nullptr,
@@ -113,8 +114,9 @@ public:
            vector<Obstacle>* found_obstacles, float* line_params, bool verbose = false, bool debug_timing = false
      );
 
-     void pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap,
-          vector<Obstacle>* obstacles, cv::Mat* uMorphElement = nullptr, bool verbose = false, bool debug_timing = false
+     int pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap,
+          vector<Obstacle>* obstacles, cv::Mat* uMorphElement = nullptr,
+          bool verbose = false, bool debug_timing = false, bool visualize = false
      );
 
      /** TODO: Convert these python functions to C++ */
