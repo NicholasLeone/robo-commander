@@ -63,7 +63,10 @@ endforeach()
 # Find Boost Libraries
 find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Threads)
-find_package(yaml-cpp REQUIRED)
+# find_package(yaml-cpp REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
+
 # Find Armadillo
 find_package(LAPACK REQUIRED)
 find_package(BLAS REQUIRED)
@@ -80,7 +83,8 @@ find_package(pigpio REQUIRED)
 
 # Find OpenMP libraries
 if(WITH_OPENMP)
-     include(FindOpenMP)
+     # include(FindOpenMP)
+     find_package(OpenMP)
      if(OPENMP_FOUND)
           set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")

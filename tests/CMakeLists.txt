@@ -96,9 +96,11 @@ target_link_libraries(test_bno055_mux PUBLIC bno055_i2c ${RoboCommander_EXTERNAL
 list(APPEND RoboCommander_TESTS test_bno055_mux)
 
 # Camera - D415
-add_executable(test_camera_d415 ${TEST_DIR}/sensors/test_camera_d415.cpp)
-target_link_libraries(test_camera_d415 camera_d415)
-list(APPEND RoboCommander_TESTS test_camera_d415)
+if(WITH_LIBREALSENSE)
+     add_executable(test_camera_d415 ${TEST_DIR}/sensors/test_camera_d415.cpp)
+     target_link_libraries(test_camera_d415 camera_d415)
+     list(APPEND RoboCommander_TESTS test_camera_d415)
+endif(WITH_LIBREALSENSE)
 
 # =========================================
 #         Build Controller Tests
@@ -129,9 +131,11 @@ list(APPEND RoboCommander_TESTS test_ekf)
 # list(APPEND RoboCommander_TESTS test_isam)
 
 # VBOATS - RGBD Obstacle Avoidance
-add_executable(test_vboats ${TEST_DIR}/algorithms/vboats/test_vboats.cpp)
-target_link_libraries(test_vboats PUBLIC vboats img_utils plot_utils cv_utils uvmap_utils camera_d415 ${RoboCommander_EXTERNAL_LIBRARIES})
-list(APPEND RoboCommander_TESTS test_vboats)
+if(WITH_LIBREALSENSE)
+     add_executable(test_vboats ${TEST_DIR}/algorithms/vboats/test_vboats.cpp)
+     target_link_libraries(test_vboats PUBLIC vboats img_utils plot_utils cv_utils uvmap_utils camera_d415 ${RoboCommander_EXTERNAL_LIBRARIES})
+     list(APPEND RoboCommander_TESTS test_vboats)
+endif(WITH_LIBREALSENSE)
 
 # =========================================
 #         Build Device Tests
