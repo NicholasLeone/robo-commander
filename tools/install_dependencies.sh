@@ -77,8 +77,9 @@ if [[ $doit == "Y" || $doit == "y" ]]; then
      sudo ./scripts/setup_udev_rules.sh
      mkdir build
      cd build
-     cmake -DBUILD_PYTHON_BINDING=bool:true -DPYTHON_EXECUTABLE=/usr/bin/python2 -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_OPENMP=bool:true ..
+     cmake -DBUILD_PYTHON_BINDINGS=bool:true -DPYTHON_EXECUTABLE=/usr/bin/python2 -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_OPENMP=bool:true ..
      make -j4
+     cd $libs_root/librealsense/build
      sudo make install
 fi
 
