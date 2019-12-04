@@ -2,9 +2,11 @@
 #define DUAL_ROBOCLAW_H_
 
 #include <vector>
+#include <chrono>
 #include "devices/roboclaw.h"
 
 using namespace std;
+using namespace chrono;
 
 class DualClaw {
 
@@ -26,10 +28,13 @@ private:
      int16_t _currents[4] = {0,0,0,0};
      uint32_t _positions[4] = {0,0,0,0};
      uint32_t _speeds[4] = {0,0,0,0};
-
      uint32_t _last_positions[4] = {0,0,0,0};
 
+     // Pose and velocities in the body frame (for odometry)
      float _current_pose[3] = {0,0,0};
+     float _linear_vel;
+     float _angular_vel;
+     high_resolution_clock::time_point _prev_time;
 
 public:
      RoboClaw* leftclaw;
@@ -90,8 +95,10 @@ public:
      vector<float> get_encoder_speeds();
      vector<float> get_odom_deltas();
      vector<float> get_pose();
+     vector<float> get_velocities();
 
      void reset_encoders();
+     float normalize_heading(const float& angle);
 
      // TODO: develop
      // void keep_alive();

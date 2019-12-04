@@ -102,7 +102,7 @@ endif(WITH_GTSAM)
 # Find OpenCV libraries
 if(WITH_OPENCV)
      ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
-     find_package(OpenCV 4.1.2 REQUIRED)
+     find_package(OpenCV 4.1.1 REQUIRED)
      # find_package(OpenCV 3.4.0 REQUIRED)
      list(APPEND EXTERNAL_PACKAGE_INCLUDES "${OpenCV_INCLUDE_DIRS}")
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${OpenCV_LIBS}")

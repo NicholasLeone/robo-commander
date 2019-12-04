@@ -682,7 +682,6 @@ bool RoboClaw::ReadM1VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t
 	Kd_fp = ((float)Kd)/65536;
 	return valid;
 }
-
 bool RoboClaw::ReadM2VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t &qpps){
 	uint32_t Kp,Ki,Kd;
 	bool valid = read_n(4,_add,READM2PID,&Kp,&Ki,&Kd,&qpps);
@@ -691,6 +690,31 @@ bool RoboClaw::ReadM2VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t
 	Kd_fp = ((float)Kd)/65536;
 	return valid;
 }
+
+// bool RoboClaw::ReadM1VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps){
+// 	uint32_t Kp,Ki,Kd;
+// 	uint32_t _qpps;
+// 	bool valid = read_n(4,_add,READM1PID,&Kp,&Ki,&Kd,&_qpps);
+// 	float _Kp_fp = ((float)Kp)/65536;
+// 	float _Ki_fp = ((float)Ki)/65536;
+// 	float _Kd_fp = ((float)Kd)/65536;
+// 	if(*Kp_fp) *Kp_fp = _Kp_fp;
+// 	if(*Ki_fp) *Ki_fp = _Ki_fp;
+// 	if(*Kd_fp) *Kd_fp = _Kd_fp;
+// 	return valid;
+// }
+// bool RoboClaw::ReadM2VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps){
+// 	uint32_t Kp,Ki,Kd;
+// 	uint32_t _qpps;
+// 	bool valid = read_n(4,_add,READM2PID,&Kp,&Ki,&Kd,&_qpps);
+// 	float _Kp_fp = ((float)Kp)/65536;
+// 	float _Ki_fp = ((float)Ki)/65536;
+// 	float _Kd_fp = ((float)Kd)/65536;
+// 	if(*Kp_fp) *Kp_fp = _Kp_fp;
+// 	if(*Ki_fp) *Ki_fp = _Ki_fp;
+// 	if(*Kd_fp) *Kd_fp = _Kd_fp;
+// 	return valid;
+// }
 
 bool RoboClaw::SetMainVoltages(uint16_t min,uint16_t max){
 	return write_n(6,_add,SETMAINVOLTAGES,SetWORDval(min),SetWORDval(max));

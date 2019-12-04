@@ -1,8 +1,9 @@
 #ifndef UTILITIES_UTILS_H_
 #define UTILITIES_UTILS_H_
 
-#include <vector>
 #include <map>
+#include <assert.h>
+#include <vector>
 #include <armadillo>
 #include "base/definitions.h"
 #include "yaml-cpp/yaml.h"

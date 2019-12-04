@@ -192,6 +192,8 @@ public:
 	uint32_t ReadISpeedM2(uint8_t *status=NULL,bool *valid=NULL);
 	bool ReadM1VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t &qpps);
 	bool ReadM2VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t &qpps);
+	// bool ReadM1VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps);
+	// bool ReadM2VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps);
 	bool ReadBuffers(uint8_t &depth1, uint8_t &depth2);
 	bool ReadM1PositionPID(float &Kp,float &Ki,float &Kd,uint32_t &KiMax,uint32_t &DeadZone,uint32_t &Min,uint32_t &Max);
 	bool ReadM2PositionPID(float &Kp,float &Ki,float &Kd,uint32_t &KiMax,uint32_t &DeadZone,uint32_t &Min,uint32_t &Max);
