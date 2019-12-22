@@ -97,6 +97,10 @@ list(APPEND RoboCommander_TESTS test_bno055_mux)
 
 # Camera - D415
 if(WITH_LIBREALSENSE)
+     add_executable(test_minimal_d415 ${TEST_DIR}/sensors/test_minimal_d415.cpp)
+     target_link_libraries(test_minimal_d415 camera_d415)
+     list(APPEND RoboCommander_TESTS test_minimal_d415)
+
      add_executable(test_camera_d415 ${TEST_DIR}/sensors/test_camera_d415.cpp)
      target_link_libraries(test_camera_d415 camera_d415)
      list(APPEND RoboCommander_TESTS test_camera_d415)

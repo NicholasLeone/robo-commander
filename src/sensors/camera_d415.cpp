@@ -19,7 +19,7 @@ filter_options::filter_options(filter_options&& other) :
 
 CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
      _do_align(false), _do_processing(false), _thread_started(false), _debug_timings(false), _depth2disparity(true), _disparity2depth(false),
-     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE)
+     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH)
 {
      int err;
      bool verbose = true;
@@ -35,7 +35,7 @@ CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
      if(this->start_streams(cfgs)) printf("SUCCESS: D415 camera streams initialized!\r\n");
      else exit(0);
 
-     this->_align = new rs2::align(RS2_STREAM_COLOR);
+     // this->_align = new rs2::align(RS2_STREAM_COLOR);
      this->_Dmat = cv::Mat::zeros(5, 1, CV_64F);
 
      err = this->get_intrinsics(RS2_STREAM_DEPTH,&this->_Kdepth, &this->_Pdepth,true);
@@ -61,7 +61,7 @@ CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
 CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2],
      bool show_options) : _cam_thread(), _stopped(false), _do_align(false), _debug_timings(false),
      _do_processing(false), _thread_started(false), _depth2disparity(true), _disparity2depth(false),
-     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE)
+     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH)
 {
      int err;
      bool verbose = true;
@@ -84,7 +84,8 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
      if(this->start_streams(cfgs)) printf("SUCCESS: D415 camera streams initialized!\r\n");
      else exit(0);
 
-     this->_align = new rs2::align(RS2_STREAM_COLOR);
+     // this->_align = new rs2::align(RS2_STREAM_COLOR);
+     // this->_align = new rs2::align(RS2_STREAM_DEPTH);
      this->_Dmat = cv::Mat::zeros(5, 1, CV_64F);
 
      err = this->get_intrinsics(RS2_STREAM_DEPTH,&this->_Kdepth, &this->_Pdepth, true);
@@ -109,7 +110,7 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
 
 CameraD415::~CameraD415(){
      this->stop();
-     delete this->_align;
+     // delete this->_align;
 }
 
 /*
@@ -281,7 +282,8 @@ int CameraD415::read(cv::Mat* rgb, cv::Mat* depth, cv::Mat* processed, bool flag
      cv::Mat _rgb, _depth, _processed;
      // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
      this->_frames = this->_pipe.wait_for_frames();
-     if(flag_aligned) this->_aligned_frames = this->_align->process(this->_frames);
+     if(flag_aligned) this->_aligned_frames = this->_align.process(this->_frames);
+     // if(flag_aligned) this->_aligned_frames = this->_align->process(this->_frames);
 
      int errRgb = this->get_rgb_image(&_rgb, flag_aligned);
      if(errRgb >= 0) this->_nRgbFrames++;
@@ -855,7 +857,7 @@ void CameraD415::processingThread(){
      rs2::frameset data;
      rs2::frameset processed;
 
-     float sleep_dt = 1.0 / float(this->_cfps);
+     float sleep_dt = 1.0 / 90.0;
 
      duration<float> time_span;
 	high_resolution_clock::time_point now;
@@ -872,9 +874,11 @@ void CameraD415::processingThread(){
 
           // rs2::frameset data;
           if(this->_pipe.poll_for_frames(&data)){
-               if(this->_do_align) data = data.apply_filter(*this->_align);
-               rs2::frameset raw = data;
-               this->_raw_queue.enqueue(raw);
+               if(this->_do_align) data = this->_align.process(data);
+               // if(this->_do_align) data = data.apply_filter(*this->_align);
+
+               // rs2::frameset raw = data;
+               // this->_raw_queue.enqueue(raw);
 
                // rs2::frameset processed;
                if(this->_do_processing) this->process_frames(data,&processed);
@@ -886,8 +890,9 @@ void CameraD415::processingThread(){
                     printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
                }
                step++;
+          } else{
+               usleep(sleep_dt * 1000000);
           }
-          // usleep(sleep_dt * 1000000);
      }
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;

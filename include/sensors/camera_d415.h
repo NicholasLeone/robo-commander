@@ -16,10 +16,10 @@
 #include <librealsense2/hpp/rs_processing.hpp>
 #include <librealsense2/rs_advanced_mode.hpp>
 
-#define MAX_QUEUE 10
 #define STARTUP_DELAY_SEC 3.0
 #define D415_MAX_DEPTH_M 10.0
 #define D415_MIN_DEPTH_M 0.1
+#define MAX_QUEUE 5
 
 using namespace std;
 
@@ -72,7 +72,8 @@ private:
      rs2::pipeline _pipe;
      rs2::config _cfg;
      rs2::pipeline_profile _profile;
-     rs2::align* _align;
+     rs2::align _align;
+     // rs2::align* _align;
      rs2::frameset _frames;
      rs2::frameset _aligned_frames;
      rs2::frame _depth_frame;
