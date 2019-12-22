@@ -397,6 +397,10 @@ void DualClaw::reset_encoders(){
      this->leftclaw->ReadEncoders(this->_positions[0],this->_positions[1]);
      this->rightclaw->ReadEncoders(this->_positions[2],this->_positions[3]);
 
+     this->_current_pose[0] = 0.0;
+     this->_current_pose[1] = 0.0;
+     this->_current_pose[2] = 0.0;
+
      printf("Encoders Reset (qpps): %d | %d | %d | %d\r\n",this->_positions[0],this->_positions[1],this->_positions[2],this->_positions[3]);
 }
 
