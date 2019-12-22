@@ -855,6 +855,8 @@ void CameraD415::processingThread(){
      rs2::frameset data;
      rs2::frameset processed;
 
+     float sleep_dt = 1.0 / float(this->_cfps);
+
      duration<float> time_span;
 	high_resolution_clock::time_point now;
      high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
@@ -885,6 +887,7 @@ void CameraD415::processingThread(){
                }
                step++;
           }
+          // usleep(sleep_dt * 1000000);
      }
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;
