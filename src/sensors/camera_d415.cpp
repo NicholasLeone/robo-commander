@@ -326,11 +326,10 @@ int CameraD415::process_depth_frame(rs2::frame frame, rs2::frame* processed){
      *processed = _processed;
      return err;
 }
-int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed){
+int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed, bool use_filters){
      int err = 0;
      rs2::frameset _processed = frames;
-     if(this->_filters.size() > 0){
-          int i = 0;
+     if((this->_filters.size() > 0) && (use_filters)){
           for(std::vector<rs2::filter>::iterator it = this->_filters.begin(); it != this->_filters.end(); ++it){
                _processed = _processed.apply_filter((*it));
           }
@@ -550,15 +549,17 @@ cv::Mat CameraD415::convert_to_disparity_test(const cv::Mat depth, double* conve
      // printf("[INFO] CameraD415::convert_to_disparity_test() ---- gainer = %.2lf | maxDisparity = %.2lf\r\n", gainer, maxDisparity);
      return disparity8;
 }
-int CameraD415::get_pointcloud(){
-     // rs2::pointcloud pc;
-     // // We want the points object to be persistent so we can display the last cloud when a frame drops
-     // rs2::points points;
-     // pc.map_to(color);
-     // auto depth = frames.get_depth_frame();
-     //
-     // // Generate the pointcloud and texture mappings
-     // points = pc.calculate(depth);
+int CameraD415::get_pointcloud(const rs2::frame& depth, rs2::points* cloud){
+     // Generate the pointcloud and texture mappings
+     rs2::points points = this->pc_.calculate(depth);
+     if(*cloud) *cloud = points;
+     return 0;
+}
+int CameraD415::get_pointcloud(const rs2::frame& depth, const rs2::frame& color, rs2::points* cloud){
+     this->pc_.map_to(color);
+     // Generate the pointcloud and texture mappings
+     rs2::points points = this->pc_.calculate(depth);
+     if(*cloud) *cloud = points;
      return 0;
 }
 
@@ -808,6 +809,37 @@ int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth){
      return -2;
 }
 
+int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth, rs2::points* cloud){
+     int err = 0;
+     int errFrames = 0;
+     rs2::frameset tmpSet;
+     rs2::points points;
+     cv::Mat _rgb, _depth, _disparity;
+
+     this->_proc_queue.poll_for_frame(&tmpSet);
+     if(tmpSet){
+          rs2::frame _frgb = tmpSet.get_color_frame();
+          rs2::frame _fdepth = tmpSet.get_depth_frame();
+          if(_frgb) *rgb = cv::Mat(cv::Size(_cwidth, _cheight), CV_8UC3, (void*)_frgb.get_data(), cv::Mat::AUTO_STEP);
+          else *rgb = cv::Mat::zeros(_cwidth, _cheight, CV_8UC3);
+
+          if(_fdepth) *depth = cv::Mat(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)_fdepth.get_data(), cv::Mat::AUTO_STEP);
+          else *depth = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
+
+          if(_fdepth && _frgb){
+               // std::cout << "[INFO] Getting XYZRGB pointcloud" << std::endl;
+               this->get_pointcloud(_fdepth,_frgb, &points);
+               *cloud = points;
+          } else if(_fdepth){
+               // std::cout << "[INFO] Getting XYZ pointcloud" << std::endl;
+               this->get_pointcloud(_fdepth, &points);
+               *cloud = points;
+          }
+          return 0;
+     } else return -1;
+     return -2;
+}
+
 // int CameraD415::get_queued_images(cv::Mat* rgb, cv::Mat* depth, cv::Mat* disparity, bool get_disparity){
 //      int err = 0;
 //      int errFrames = 0;
@@ -857,7 +889,7 @@ void CameraD415::processingThread(){
      rs2::frameset data;
      rs2::frameset processed;
 
-     float sleep_dt = 1.0 / 90.0;
+     float sleep_dt = 1.0 / 1000.0;
 
      duration<float> time_span;
 	high_resolution_clock::time_point now;
@@ -881,7 +913,9 @@ void CameraD415::processingThread(){
                // this->_raw_queue.enqueue(raw);
 
                // rs2::frameset processed;
-               if(this->_do_processing) this->process_frames(data,&processed);
+               // if(this->_do_processing) this->process_frames(data,&processed);
+               // else processed = data;
+               this->process_frames(data,&processed, this->_do_processing);
                this->_proc_queue.enqueue(processed);
                if(this->_debug_timings){
                     _prev_time = now;
@@ -891,7 +925,8 @@ void CameraD415::processingThread(){
                }
                step++;
           } else{
-               usleep(sleep_dt * 1000000);
+               usleep(10.0);
+               // usleep(1.0 * 1000);
           }
      }
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");

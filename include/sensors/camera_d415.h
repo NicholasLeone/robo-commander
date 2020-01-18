@@ -19,7 +19,7 @@
 #define STARTUP_DELAY_SEC 3.0
 #define D415_MAX_DEPTH_M 10.0
 #define D415_MIN_DEPTH_M 0.1
-#define MAX_QUEUE 5
+#define MAX_QUEUE 4
 
 using namespace std;
 
@@ -71,8 +71,8 @@ private:
      rs2::context _ctx;
      rs2::pipeline _pipe;
      rs2::config _cfg;
-     rs2::pipeline_profile _profile;
      rs2::align _align;
+     rs2::pipeline_profile _profile;
      // rs2::align* _align;
      rs2::frameset _frames;
      rs2::frameset _aligned_frames;
@@ -88,6 +88,7 @@ private:
      rs2::colorizer _cmap;
      rs2::disparity_transform _depth2disparity;
      rs2::disparity_transform _disparity2depth;
+     rs2::pointcloud pc_;
 
      /** Depth Stream Settings */
      int _dwidth = 848;            // width
@@ -157,13 +158,14 @@ public:
 
      /** Frame Post-Processing Functions */
      int process_depth_frame(rs2::frame frame, rs2::frame* processed);
-     int process_frames(rs2::frameset frame, rs2::frameset* processed);
+     int process_frames(rs2::frameset frame, rs2::frameset* processed, bool use_filters = false);
 
      /** Camera Data Conversions */
      cv::Mat convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
      /** Experimental */cv::Mat convert_to_disparity_alternative(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
      /** Experimental */cv::Mat convert_to_disparity_test(const cv::Mat depth, double* conversion_gain, double* conversion_offset);
-     /**TODO*/int get_pointcloud();
+     /**TODO*/int get_pointcloud(const rs2::frame& depth, rs2::points* cloud);
+     /**TODO*/int get_pointcloud(const rs2::frame& depth, const rs2::frame& color, rs2::points* cloud);
 
      /** Device Getters */
      vector<rs2::device> get_available_devices(bool show_features = false, bool verbose = false);
@@ -190,6 +192,7 @@ public:
      /** Misc Functions */
      int get_raw_queued_images(cv::Mat* rgb, cv::Mat* depth);
      int get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth);
+     int get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth, rs2::points* cloud);
      // int get_queued_images(cv::Mat* rgb, cv::Mat* depth, cv::Mat* disparity, bool get_disparity = true);
 
      void processingThread();

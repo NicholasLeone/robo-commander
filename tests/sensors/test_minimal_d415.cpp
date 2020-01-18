@@ -5,6 +5,7 @@
 
 #include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
+// #include <pcl/point_types.h>
 
 using namespace chrono;
 using namespace std;
@@ -12,7 +13,7 @@ using namespace std;
 int main(int argc, char *argv[]){
 	bool threading = true;
 	bool debug_timing = true;
-	bool do_processing = true;
+	bool do_processing = false;
 	bool visualize = false;
 
 	int fps = 60;
@@ -31,6 +32,7 @@ int main(int argc, char *argv[]){
 	int count = 0;
 	int errThread = 0;
 	cv::Mat depth, rgb;
+	rs2::points pcloud;
 	float dt_sleep = 1.0 / float(fps);
 	printf("[INFO] TestMinimalD415() ---- Sleeping %.2f secs [%d Hz] every loop\r\n", dt_sleep, fps);
 
@@ -38,6 +40,7 @@ int main(int argc, char *argv[]){
 	double t = (double)cv::getTickCount();
 	while(1){
 		errThread = cam->get_processed_queued_images(&rgb, &depth);
+		// errThread = cam->get_processed_queued_images(&rgb, &depth, &pcloud);
 		// std::cout << "errThread = " << errThread << std::endl;
 		if(errThread >= 0){
 			// if(debug_timing) t = (double)cv::getTickCount();
