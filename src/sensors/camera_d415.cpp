@@ -30,9 +30,9 @@ filter_options::filter_options(filter_options&& other) :
     filter_name(std::move(other.filter_name)), filter(other.filter),
     is_enabled(other.is_enabled.load()){}
 
-CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
+CameraD415::CameraD415(bool use_callback, bool show_options) : _cam_thread(), _stopped(false),
      _do_align(false), _do_processing(false), _thread_started(false), _debug_timings(false), _depth2disparity(true), _disparity2depth(false),
-     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH)
+     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH), _use_callback(use_callback)
 {
      int err;
      bool verbose = true;
@@ -45,7 +45,7 @@ CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
      RS_STREAM_CFG depth_cfg = {RS2_STREAM_DEPTH, _dwidth, _dheight, RS2_FORMAT_Z16, _dfps};
      std::vector<RS_STREAM_CFG> cfgs = {rgb_cfg, depth_cfg};
 
-     if(this->start_streams(cfgs)) printf("SUCCESS: D415 camera streams initialized!\r\n");
+     if(this->start_streams(cfgs, use_callback)) printf("SUCCESS: D415 camera streams initialized!\r\n");
      else exit(0);
 
      // this->_align = new rs2::align(RS2_STREAM_COLOR);
@@ -72,9 +72,9 @@ CameraD415::CameraD415(bool show_options) : _cam_thread(), _stopped(false),
 }
 
 CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2],
-     bool show_options) : _cam_thread(), _stopped(false), _do_align(false), _debug_timings(false),
+     bool use_callback, bool show_options) : _cam_thread(), _stopped(false), _do_align(false), _debug_timings(false),
      _do_processing(false), _thread_started(false), _depth2disparity(true), _disparity2depth(false),
-     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH)
+     _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH), _use_callback(use_callback)
 {
      int err;
      bool verbose = true;
@@ -94,7 +94,7 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
      RS_STREAM_CFG depth_cfg = {RS2_STREAM_DEPTH, _dwidth, _dheight, RS2_FORMAT_Z16, _dfps};
      std::vector<RS_STREAM_CFG> cfgs = {rgb_cfg, depth_cfg};
 
-     if(this->start_streams(cfgs)) printf("SUCCESS: D415 camera streams initialized!\r\n");
+     if(this->start_streams(cfgs, use_callback)) printf("SUCCESS: D415 camera streams initialized!\r\n");
      else exit(0);
 
      // this->_align = new rs2::align(RS2_STREAM_COLOR);
@@ -146,15 +146,15 @@ void CameraD415::start_thread(){
      this->_thread_started = true;
      _cam_thread = std::thread(&CameraD415::processingThread,this);
 }
-bool CameraD415::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs){
-     bool err = this->reset(stream_cfgs, false);
+bool CameraD415::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback){
+     bool err = this->reset(stream_cfgs, false, use_callback);
      usleep(STARTUP_DELAY_SEC * 1000000);
      // Try initializing camera hardware
-     if(!this->hardware_startup(stream_cfgs)){
+     if(!this->hardware_startup(stream_cfgs, use_callback)){
           // Attempt to initialize hardware with a reset, if unsuccessful initialization
-          if(!this->reset(stream_cfgs, true)){
+          if(!this->reset(stream_cfgs, true, use_callback)){
                // if unsuccessful initialization after two reset attempts give up
-               if(!this->reset(stream_cfgs, true)){
+               if(!this->reset(stream_cfgs, true, use_callback)){
                     printf("[ERROR] Could not initialize CameraD415 object!\r\n");
                     return false;
                }
@@ -175,7 +175,7 @@ bool CameraD415::sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
      }
      return true;
 }
-bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
+bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback){
      bool success = this->sensors_startup(stream_cfgs);
      if(!success) return false;
 
@@ -188,7 +188,26 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
      }
 
      try{
-          rs2::pipeline_profile profile = this->_pipe.start(this->_cfg);
+          rs2::pipeline_profile profile;
+          if(use_callback){
+               auto callback = [&](const rs2::frame& frame){
+                    rs2::frameset processed;
+                    std::lock_guard<std::mutex> lock(this->_lock);
+                    double t = (double)cv::getTickCount();
+                    if( rs2::frameset data = frame.as<rs2::frameset>() ){
+                       if(this->_do_align) data = this->_align.process(data);
+                       this->process_frames(data,&processed, this->_do_processing);
+                       this->_proc_queue.enqueue(processed);
+                       if(this->_debug_timings){
+                            double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+                            t = (double)cv::getTickCount();
+                            printf("[INFO] CameraD415::processingCallback() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", this->_callback_counter,dt, (1/dt));
+                       }
+                       this->_callback_counter++;
+                   }
+              };
+               profile = this->_pipe.start(this->_cfg, callback);
+          } else profile = this->_pipe.start(this->_cfg);
           this->_profile = profile;
      } catch(const rs2::error & e){
           std::cerr << "[ERROR] CameraD415::hardware_startup() --- Could not initialize rs2::pipeline_profile. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
@@ -196,13 +215,13 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
      }
      return true;
 }
-bool CameraD415::reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup){
+bool CameraD415::reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup, bool use_callback){
      if(this->_dev) this->_dev.hardware_reset();
      else{
           printf("[ERROR] CameraD415::reset() --- No device to reset.\r\n");
           return false;
      }
-     if(with_startup) return this->start_streams(stream_cfgs);
+     if(with_startup) return this->start_streams(stream_cfgs, use_callback);
      else return true;
 }
 
@@ -811,102 +830,12 @@ int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth){
      return -2;
 }
 
-int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth, rs2::points* cloud){
-     int err = 0;
-     int errFrames = 0;
-     rs2::frameset tmpSet;
-     rs2::points points;
-     cv::Mat _rgb, _depth, _disparity;
-
-     this->_proc_queue.poll_for_frame(&tmpSet);
-     if(tmpSet){
-          rs2::frame _frgb = tmpSet.get_color_frame();
-          rs2::frame _fdepth = tmpSet.get_depth_frame();
-          if(_frgb) *rgb = cv::Mat(cv::Size(_cwidth, _cheight), CV_8UC3, (void*)_frgb.get_data(), cv::Mat::AUTO_STEP);
-          else *rgb = cv::Mat::zeros(_cwidth, _cheight, CV_8UC3);
-
-          if(_fdepth) *depth = cv::Mat(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)_fdepth.get_data(), cv::Mat::AUTO_STEP);
-          else *depth = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
-
-          if(_fdepth && _frgb){
-               // std::cout << "[INFO] Getting XYZRGB pointcloud" << std::endl;
-               this->get_pointcloud(_fdepth,_frgb, &points);
-               *cloud = points;
-          } else if(_fdepth){
-               // std::cout << "[INFO] Getting XYZ pointcloud" << std::endl;
-               this->get_pointcloud(_fdepth, &points);
-               *cloud = points;
-          }
-          return 0;
-     } else return -1;
-     return -2;
-}
-
-// int CameraD415::get_queued_images(cv::Mat* rgb, cv::Mat* depth, cv::Mat* disparity, bool get_disparity){
-//      int err = 0;
-//      int errFrames = 0;
-//      rs2::frameset tmpSet;
-//      cv::Mat _rgb, _depth, _disparity;
-//
-//      this->_proc_queue.poll_for_frame(&tmpSet);
-//      if(tmpSet){
-//           rs2::frame _frgb = tmpSet.get_color_frame();
-//           rs2::frame _fdepth = tmpSet.get_depth_frame();
-//           if(_frgb) *rgb = cv::Mat(cv::Size(_cwidth, _cheight), CV_8UC3, (void*)_frgb.get_data(), cv::Mat::AUTO_STEP);
-//           else *rgb = cv::Mat::zeros(_cwidth, _cheight, CV_8UC3);
-//
-//           if(_fdepth){
-//                *depth = cv::Mat(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)_fdepth.get_data(), cv::Mat::AUTO_STEP);
-//                if(get_disparity){
-//                     rs2::frame _fdisparity = this->_depth2disparity.process(_fdepth);
-//                     *disparity = cv::Mat(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)_fdisparity.get_data(), cv::Mat::AUTO_STEP);
-//                }
-//                else *disparity = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
-//           }
-//           else{
-//                *depth = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
-//                *disparity = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
-//           }
-//           return 0;
-//      } else return -1;
-//      return -2;
-// }
-
 void CameraD415::processingThread(){
-     float rsdt;
-     int err = 0;
      int step = 0;
-     bool goodRgb = false;
-     bool goodDepth = false;
-     bool goodProcessed = false;
-     rs2::frame color_frame, depth_frame, processed_frame;
-
-     rs2::decimation_filter decimate_filter(1.0f);
-     rs2::threshold_filter thresh_filter(0.1f, 10.0f);
-     rs2::disparity_transform depth_to_disparity(true);
-     rs2::spatial_filter spatial_filter(0.5f, 20.0f, 2.0f, 3.0f);
-     rs2::temporal_filter temporal_filter(0.4f, 40.0f, 0);
-     rs2::hole_filling_filter hole_filler(1);
-     rs2::disparity_transform disparity_to_depth(false);
      rs2::frameset data;
      rs2::frameset processed;
-
-     float sleep_dt = 1.0 / 1000.0;
-
-     duration<float> time_span;
-	high_resolution_clock::time_point now;
-     high_resolution_clock::time_point _prev_time = high_resolution_clock::now();
      double t = (double)cv::getTickCount();
      while(!this->_stopped){
-          // if(this->_debug_timings){
-          //      now = high_resolution_clock::now();
-          //      time_span = duration_cast<duration<float>>(now - _prev_time);
-          //      rsdt = time_span.count();
-          //      printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2f sec [%.2f Hz]):\r\n", step,rsdt, (1/rsdt));
-          //      // printf(" --- %.7f (%.2f) ---- \r\n",dt, (1/dt));
-          // }
-
-          // rs2::frameset data;
           if(this->_pipe.poll_for_frames(&data)){
                if(this->_do_align) data = this->_align.process(data);
                // if(this->_do_align) data = data.apply_filter(*this->_align);
@@ -920,16 +849,12 @@ void CameraD415::processingThread(){
                this->process_frames(data,&processed, this->_do_processing);
                this->_proc_queue.enqueue(processed);
                if(this->_debug_timings){
-                    _prev_time = now;
                     double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
                     t = (double)cv::getTickCount();
                     printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
                }
                step++;
-          } else{
-               usleep(10.0);
-               // usleep(1.0 * 1000);
-          }
+          } else{ usleep(10.0); }
      }
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;

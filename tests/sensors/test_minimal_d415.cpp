@@ -22,9 +22,9 @@ int main(int argc, char *argv[]){
 	int depth_resolution[2] = {848, 480};
 
 	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, dfps, depth_resolution);
+	CameraD415* cam = new CameraD415(fps, rgb_resolution, dfps, depth_resolution, false);
 	// cam->enable_alignment();
-	// cam->enable_timing_debug();
+	// if(debug_timing) cam->enable_timing_debug();
 	if(do_processing) cam->enable_filters();
 
 	printf("Press Ctrl+C to Stop...\r\n");

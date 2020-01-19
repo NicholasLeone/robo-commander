@@ -55,6 +55,7 @@ private:
      std::thread _cam_thread;
      /** Flags */
      std::atomic_bool _stopped;
+     std::atomic_bool _use_callback;
      std::atomic_bool _do_align;
      std::atomic_bool _do_processing;
      std::atomic_bool _thread_started;
@@ -62,6 +63,7 @@ private:
      /** Counters */
      uint64_t _counter = 0;
      uint64_t _img_counter = 0;
+     uint64_t _callback_counter = 0;
      uint64_t _nRgbFrames = 0;
      uint64_t _nDepthFrames = 0;
      uint64_t _nProcFrames = 0;
@@ -128,21 +130,24 @@ private:
      /** Private Functions */
      float _get_baseline(bool verbose = false);
      float _get_depth_scale(bool verbose = false);
+
+     // void processingCallback(const rs2::frame& frame);
+     void processingThread();
 public:
      /** Constructors */
-	CameraD415(bool show_options = false);
+	CameraD415(bool use_callback = false, bool show_options = false);
 	CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps,
-          int depth_resolution[2], bool show_options = false
+          int depth_resolution[2], bool use_callback = false, bool show_options = false
      );
      ~CameraD415();
 
      /** Startup - Shutdown - Initialization Functions */
      bool stop();
      void start_thread();
-     bool start_streams(std::vector<RS_STREAM_CFG> stream_cfgs);
+     bool start_streams(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback = false);
      bool sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs);
-     bool hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs);
-     bool reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup = true);
+     bool hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback = false);
+     bool reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup = true, bool use_callback = false);
 
      /** Basic Image Functions */
      rs2::frame get_rgb_frame(bool flag_aligned = false);
@@ -192,10 +197,6 @@ public:
      /** Misc Functions */
      int get_raw_queued_images(cv::Mat* rgb, cv::Mat* depth);
      int get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth);
-     int get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth, rs2::points* cloud);
-     // int get_queued_images(cv::Mat* rgb, cv::Mat* depth, cv::Mat* disparity, bool get_disparity = true);
-
-     void processingThread();
 };
 
 #endif /* CAMERA_D415_H_*/
