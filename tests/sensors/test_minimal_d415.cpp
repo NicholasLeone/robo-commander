@@ -32,6 +32,7 @@ int main(int argc, char *argv[]){
 	int count = 0;
 	int errThread = 0;
 	cv::Mat depth, rgb;
+	double cvtGain, cvtRatio;
 	rs2::points pcloud;
 	float dt_sleep = 1.0 / float(fps);
 	printf("[INFO] TestMinimalD415() ---- Sleeping %.2f secs [%d Hz] every loop\r\n", dt_sleep, fps);
@@ -43,6 +44,8 @@ int main(int argc, char *argv[]){
 		// errThread = cam->get_processed_queued_images(&rgb, &depth, &pcloud);
 		// std::cout << "errThread = " << errThread << std::endl;
 		if(errThread >= 0){
+			cam->convert_to_disparity_test(depth,&cvtGain, &cvtRatio);
+
 			// if(debug_timing) t = (double)cv::getTickCount();
 			if(debug_timing){
                     double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
