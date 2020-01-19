@@ -836,7 +836,9 @@ void CameraD415::processingThread(){
      rs2::frameset processed;
      double t = (double)cv::getTickCount();
      while(!this->_stopped){
-          if(this->_pipe.poll_for_frames(&data)){
+          data = this->_pipe.wait_for_frames();
+          // if(this->_pipe.poll_for_frames(&data)){
+          if(data){
                if(this->_do_align) data = this->_align.process(data);
                // if(this->_do_align) data = data.apply_filter(*this->_align);
 
@@ -854,7 +856,7 @@ void CameraD415::processingThread(){
                     printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
                }
                step++;
-          } else{ usleep(10.0); }
+          }// else{ usleep(10.0); }
      }
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;
