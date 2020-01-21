@@ -191,8 +191,8 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool u
           rs2::pipeline_profile profile;
           if(use_callback){
                auto callback = [&](const rs2::frame& frame){
-                    rs2::frameset processed;
                     std::lock_guard<std::mutex> lock(this->_lock);
+                    rs2::frameset processed;
                     double t = (double)cv::getTickCount();
                     if( rs2::frameset data = frame.as<rs2::frameset>() ){
                        if(this->_do_align) data = this->_align.process(data);
@@ -834,11 +834,14 @@ void CameraD415::processingThread(){
      int step = 0;
      rs2::frameset data;
      rs2::frameset processed;
+     double dt;
      double t = (double)cv::getTickCount();
      while(!this->_stopped){
-          data = this->_pipe.wait_for_frames();
-          // if(this->_pipe.poll_for_frames(&data)){
-          if(data){
+          t = (double)cv::getTickCount();
+          // data = this->_pipe.wait_for_frames();
+          // if(data){
+          if(this->_pipe.poll_for_frames(&data)){
+               this->_lock.lock();
                if(this->_do_align) data = this->_align.process(data);
                // if(this->_do_align) data = data.apply_filter(*this->_align);
 
@@ -851,12 +854,21 @@ void CameraD415::processingThread(){
                this->process_frames(data,&processed, this->_do_processing);
                this->_proc_queue.enqueue(processed);
                if(this->_debug_timings){
-                    double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-                    t = (double)cv::getTickCount();
+                    dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
                     printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
                }
                step++;
-          }// else{ usleep(10.0); }
+               this->_lock.unlock();
+          } else{
+               // usleep(1.0*1000);
+               // printf("[INFO] CameraD415::processingThread() ---- Sleeping loop...\r\n");
+               std::this_thread::yield();
+               std::this_thread::sleep_for(std::chrono::milliseconds(10));
+               // if(this->_debug_timings){
+               //      dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+               //      printf("[INFO] CameraD415::processingThread() ---- End Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
+               // }
+          }
      }
      printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;

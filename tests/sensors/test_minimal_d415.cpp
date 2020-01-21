@@ -11,18 +11,18 @@ using namespace chrono;
 using namespace std;
 
 int main(int argc, char *argv[]){
-	bool threading = true;
+	bool threading = false;
 	bool debug_timing = true;
 	bool do_processing = false;
 	bool visualize = false;
 
-	int fps = 60;
-	int dfps = 60;
+	int fps = 30;
+	int dfps = 30;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
 
-	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, dfps, depth_resolution, false);
+	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
+	// CameraD415* cam = new CameraD415(fps, rgb_resolution, dfps, depth_resolution, false);
 	// cam->enable_alignment();
 	// if(debug_timing) cam->enable_timing_debug();
 	if(do_processing) cam->enable_filters();
@@ -37,14 +37,18 @@ int main(int argc, char *argv[]){
 	float dt_sleep = 1.0 / float(fps);
 	printf("[INFO] TestMinimalD415() ---- Sleeping %.2f secs [%d Hz] every loop\r\n", dt_sleep, fps);
 
+	// usleep(10.0 * 1000000);
+	// std::this_thread::yield();
+	// std::this_thread::sleep_for(std::chrono::seconds(10));
 	if(threading) cam->start_thread();
+
 	double t = (double)cv::getTickCount();
 	while(1){
 		errThread = cam->get_processed_queued_images(&rgb, &depth);
 		// errThread = cam->get_processed_queued_images(&rgb, &depth, &pcloud);
 		// std::cout << "errThread = " << errThread << std::endl;
 		if(errThread >= 0){
-			cam->convert_to_disparity_test(depth,&cvtGain, &cvtRatio);
+			// cam->convert_to_disparity_test(depth,&cvtGain, &cvtRatio);
 
 			// if(debug_timing) t = (double)cv::getTickCount();
 			if(debug_timing){
@@ -61,6 +65,9 @@ int main(int argc, char *argv[]){
 					break;
 				}
 			}
+		} else{
+			// std::this_thread::yield();
+			// std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 		usleep(dt_sleep * 1000000);
 		count++;

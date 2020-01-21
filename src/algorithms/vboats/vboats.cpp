@@ -728,7 +728,7 @@ int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slo
 }
 
 bool VBOATS::find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
-     int hough_thresh, double gnd_deadzone, double minDeg, double maxDeg, bool verbose, bool debug_timing, bool visualize)
+     double minDeg, double maxDeg, int hough_thresh, double gnd_deadzone, bool verbose, bool debug_timing, bool visualize)
 {
      cv::Mat rs, angs;
      std::vector<cv::Vec2f> lines;

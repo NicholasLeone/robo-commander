@@ -92,8 +92,8 @@ public:
           double gnd_deadzone = 2.0, double minDeg = 26.0, double maxDeg = 89.0, bool verbose = false, bool debug_timing = false
      );
      bool find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
-          int hough_thresh = 100, double gnd_deadzone = 2.0, double minDeg = 26.0,
-          double maxDeg = 89.0, bool verbose = false, bool debug_timing = false, bool visualize = false
+          double minDeg = 26.0, double maxDeg = 89.0, int hough_thresh = 100,
+          double gnd_deadzone = 2.0, bool verbose = false, bool debug_timing = false, bool visualize = false
      );
      bool is_ground_present();
 
