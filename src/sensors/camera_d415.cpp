@@ -193,14 +193,14 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool u
                auto callback = [&](const rs2::frame& frame){
                     std::lock_guard<std::mutex> lock(this->_lock);
                     rs2::frameset processed;
-                    double t = (double)cv::getTickCount();
                     if( rs2::frameset data = frame.as<rs2::frameset>() ){
+                         double t = (double)cv::getTickCount();
                        if(this->_do_align) data = this->_align.process(data);
                        this->process_frames(data,&processed, this->_do_processing);
                        this->_proc_queue.enqueue(processed);
                        if(this->_debug_timings){
-                            double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-                            t = (double)cv::getTickCount();
+                            double dt = (t - this->_prev_t)/cv::getTickFrequency();
+                            this->_prev_t = t;
                             printf("[INFO] CameraD415::processingCallback() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", this->_callback_counter,dt, (1/dt));
                        }
                        this->_callback_counter++;
@@ -309,31 +309,37 @@ int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned, bool flag_pro
      }
      return err;
 }
-int CameraD415::read(cv::Mat* rgb, cv::Mat* depth, cv::Mat* processed, bool flag_aligned, bool flag_processed){
-     int errProc = -1;
-     cv::Mat _rgb, _depth, _processed;
+int CameraD415::read(cv::Mat* rgb, cv::Mat* depth){
+     int err = -2;
+     rs2::frameset data;
      // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
-     this->_frames = this->_pipe.wait_for_frames();
-     if(flag_aligned) this->_aligned_frames = this->_align.process(this->_frames);
-     // if(flag_aligned) this->_aligned_frames = this->_align->process(this->_frames);
+     // this->_lock.lock();
+     // data = this->_pipe.wait_for_frames();
+     // if(data){
+     if(this->_pipe.poll_for_frames(&data)){
+          rs2::frameset processed;
+          if(this->_do_align) data = this->_align.process(data);
+          this->process_frames(data,&processed, this->_do_processing);
+          // printf("[INFO] CameraD415::read() --- frameset \'data\' has %d frames. frameset \'processed\' has %d frames.\r\n", data.size(), processed.size());
 
-     int errRgb = this->get_rgb_image(&_rgb, flag_aligned);
-     if(errRgb >= 0) this->_nRgbFrames++;
-     *rgb = _rgb;
+          rs2::frame _frgb = processed.first(RS2_STREAM_COLOR);
+          if(_frgb){
+               *rgb = cv::Mat(cv::Size(_cwidth, _cheight), CV_8UC3, (void*)_frgb.get_data(), cv::Mat::AUTO_STEP);
+               this->_nRgbFrames++;
+               err = err + 1;
+          } else *rgb = cv::Mat::zeros(_cwidth, _cheight, CV_8UC3);
 
-     int errDepth = this->get_depth_image(&_depth, flag_aligned);
-     if(errDepth >= 0) this->_nDepthFrames++;
-     *depth = _depth;
-
-     if(flag_processed){
-          errProc = this->get_depth_image(&_processed, flag_aligned, flag_processed);
-          if(errProc > 0) this->_nProcFrames++;
-          *processed = _processed;
+          rs2::frame _fdepth = processed.first(RS2_STREAM_DEPTH);
+          if(_fdepth){
+               *depth = cv::Mat(cv::Size(_dwidth, _dheight), CV_16UC1, (void*)_fdepth.get_data(), cv::Mat::AUTO_STEP);
+               this->_nDepthFrames++;
+               err = err + 1;
+          } else *depth = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
      }
+     // this->_lock.unlock();
 
-     int err = errRgb + errDepth;
      if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
-     printf("[INFO] CameraD415::read() ---- nRGB = %d, nDepth = %d, nProcessed = %d.\r\n", this->_nRgbFrames, this->_nDepthFrames, this->_nProcFrames);
+     // printf("[INFO] CameraD415::read() ---- nRGB = %d, nDepth = %d, nProcessed = %d.\r\n", this->_nRgbFrames, this->_nDepthFrames, this->_nProcFrames);
      return err;
 }
 
@@ -838,9 +844,9 @@ void CameraD415::processingThread(){
      double t = (double)cv::getTickCount();
      while(!this->_stopped){
           t = (double)cv::getTickCount();
-          // data = this->_pipe.wait_for_frames();
-          // if(data){
-          if(this->_pipe.poll_for_frames(&data)){
+          rs2::frameset data = this->_pipe.wait_for_frames();
+          if(data){
+          // if(this->_pipe.poll_for_frames(&data)){
                this->_lock.lock();
                if(this->_do_align) data = this->_align.process(data);
                // if(this->_do_align) data = data.apply_filter(*this->_align);
@@ -860,10 +866,10 @@ void CameraD415::processingThread(){
                step++;
                this->_lock.unlock();
           } else{
-               // usleep(1.0*1000);
+               // usleep(10.0);
                // printf("[INFO] CameraD415::processingThread() ---- Sleeping loop...\r\n");
-               std::this_thread::yield();
-               std::this_thread::sleep_for(std::chrono::milliseconds(10));
+               // std::this_thread::yield();
+               // std::this_thread::sleep_for(std::chrono::microseconds(10));
                // if(this->_debug_timings){
                //      dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
                //      printf("[INFO] CameraD415::processingThread() ---- End Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));

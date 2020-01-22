@@ -116,6 +116,7 @@ private:
      float _trueMaxDisparity;
      std::string _device_name;
      std::string _distortion_model = "plumb_bob";
+     double _prev_t;
 
      /** Transformation frame ids */
      std::string _camera_base_frame = "camera_link";
@@ -159,7 +160,7 @@ public:
      int _get_depth_image(rs2::frame frame, cv::Mat* image, bool flag_processed = false);
      int get_depth_image(cv::Mat* image, bool flag_aligned = false, bool flag_processed = false);
 
-     int read(cv::Mat* rgb, cv::Mat* depth, cv::Mat* processed, bool flag_aligned = false, bool flag_processed = false);
+     int read(cv::Mat* rgb, cv::Mat* depth);
 
      /** Frame Post-Processing Functions */
      int process_depth_frame(rs2::frame frame, rs2::frame* processed);

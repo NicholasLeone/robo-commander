@@ -11,13 +11,14 @@ using namespace chrono;
 using namespace std;
 
 int main(int argc, char *argv[]){
+	// bool threading = true;
 	bool threading = false;
 	bool debug_timing = true;
 	bool do_processing = false;
 	bool visualize = false;
 
-	int fps = 30;
-	int dfps = 30;
+	int fps = 60;
+	int dfps = 60;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
 
@@ -30,7 +31,7 @@ int main(int argc, char *argv[]){
 	printf("Press Ctrl+C to Stop...\r\n");
 
 	int count = 0;
-	int errThread = 0;
+	int errThread;
 	cv::Mat depth, rgb;
 	double cvtGain, cvtRatio;
 	rs2::points pcloud;
@@ -46,8 +47,11 @@ int main(int argc, char *argv[]){
 	while(1){
 		errThread = cam->get_processed_queued_images(&rgb, &depth);
 		// errThread = cam->get_processed_queued_images(&rgb, &depth, &pcloud);
+		// errThread = cam->read(&rgb, &depth);
+
 		// std::cout << "errThread = " << errThread << std::endl;
 		if(errThread >= 0){
+			// std::cout << "errThread = " << errThread << std::endl;
 			// cam->convert_to_disparity_test(depth,&cvtGain, &cvtRatio);
 
 			// if(debug_timing) t = (double)cv::getTickCount();
@@ -67,9 +71,13 @@ int main(int argc, char *argv[]){
 			}
 		} else{
 			// std::this_thread::yield();
-			// std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			// // std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			// std::this_thread::sleep_for(std::chrono::microseconds(10));
+			// usleep(dt_sleep * 1000000);
+			// usleep(1.0 * 10.0);
 		}
 		usleep(dt_sleep * 1000000);
+		// usleep(1.0 * 1000000);
 		count++;
 	}
 

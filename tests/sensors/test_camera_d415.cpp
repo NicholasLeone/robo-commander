@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
 		// printf(" read vector --- %.7f ---- \r\n",dt);
 		if(!threading){
 			_prev_time = high_resolution_clock::now();
-			int err = cam->read(&rgb, &depth, &processed, true, do_processing);
+			int err = cam->read(&rgb, &depth);
 			// printf("Image sizes: RGB (%d, %d, %d) type = %d -- Depth (%d, %d, %d) type = %d\r\n", rgb.cols,rgb.rows, rgb.channels(), rgb.type(), depth.cols,depth.rows, depth.channels(), depth.type());
 
 			disparity = cam->convert_to_disparity(depth,&cvtGain, &cvtRatio);
