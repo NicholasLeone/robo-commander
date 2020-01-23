@@ -1,6 +1,7 @@
 #include <string.h>
 #include <iostream>
 #include <unistd.h>
+#include <chrono>
 
 #include "base/definitions.h"
 #include "sensors/generic_rtimu.h"
@@ -9,6 +10,7 @@ static const float G_TO_MPSS = 9.80665;
 static const int uT_TO_T = 1000000;
 
 using namespace std;
+using namespace chrono;
 
 GenericRTIMU::GenericRTIMU(){
      num_updates = 0;
@@ -31,7 +33,6 @@ GenericRTIMU::~GenericRTIMU(){
 }
 
 int GenericRTIMU::init(string path, string file){
-
      calib_path = path;
      calib_file = file;
 
@@ -70,49 +71,60 @@ int GenericRTIMU::init(string path, string file){
      return 1;
 }
 
-int GenericRTIMU::get_update_period(){
-     return _imu->IMUGetPollInterval() * 1000;
-}
+int GenericRTIMU::get_update_period(){ return _imu->IMUGetPollInterval() * 1000; }
 
-void GenericRTIMU::update(){
+int GenericRTIMU::update(float timeout){
+     int err = -1;
+     high_resolution_clock::time_point start = high_resolution_clock::now();
+     // printf("[INFO] GenericRTIMU::update() --- Reading until valid data received.\r\n");
+     while(1){
+          high_resolution_clock::time_point now = high_resolution_clock::now();
+          if(!this->_imu->IMURead()){
+               duration<float> time_span = duration_cast<duration<float>>(now - start);
+               float elapsed_time = time_span.count();
+               if(elapsed_time >= timeout){
+                    printf("[ERROR] GenericRTIMU::update() --- Unable to receive valid IMU data within %.3f seconds.\r\n", timeout);
+                    err = -100;
+                    break;
+               }
+          } else{
+               err = 0;
+               break;
+          }
+     }
 
-	while(_imu->IMURead()){
-          // TODO: Potentially need to update timestamp for this section
-          // TODO: Add if-statements for valid readings
-
-          num_updates++;
+     if(err >= 0){
           RTIMU_DATA data = _imu->getIMUData();
+          this->num_updates++;
+          this->now = RTMath::currentUSecsSinceEpoch();
 
-          now = RTMath::currentUSecsSinceEpoch();
+          this->accel[0] = data.accel.x() * G_TO_MPSS;
+          this->accel[1] = data.accel.y() * G_TO_MPSS;
+          this->accel[2] = data.accel.z() * G_TO_MPSS;
 
-          accel[0] = data.accel.x() * G_TO_MPSS;
-          accel[1] = data.accel.y() * G_TO_MPSS;
-          accel[2] = data.accel.z() * G_TO_MPSS;
+          this->gyro[0] = data.gyro.x();
+          this->gyro[1] = data.gyro.y();
+          this->gyro[2] = data.gyro.z();
 
-          gyro[0] = data.gyro.x();
-          gyro[1] = data.gyro.y();
-          gyro[2] = data.gyro.z();
+          this->quats[0] = data.fusionQPose.x();
+		this->quats[1] = data.fusionQPose.y();
+		this->quats[2] = data.fusionQPose.z();
+		this->quats[3] = data.fusionQPose.scalar();
 
-          quats[0] = data.fusionQPose.x();
-		quats[1] = data.fusionQPose.y();
-		quats[2] = data.fusionQPose.z();
-		quats[3] = data.fusionQPose.scalar();
-
+          // TODO: Potentially need to update timestamp for this section
 		if(data.compassValid){
-			// TODO: Potentially need to update timestamp for this section
-
-			mag[0] = data.compass.x() / uT_TO_T;
-               mag[1] = data.compass.y() / uT_TO_T;
-			mag[2] = data.compass.z() / uT_TO_T;
+			this->mag[0] = data.compass.x() / uT_TO_T;
+               this->mag[1] = data.compass.y() / uT_TO_T;
+			this->mag[2] = data.compass.z() / uT_TO_T;
 		}
 
-          euler[0] = data.fusionPose.x();
-          euler[1] = data.fusionPose.y();
-          euler[2] = data.fusionPose.z();
+          this->euler[0] = data.fusionPose.x();
+          this->euler[1] = data.fusionPose.y();
+          this->euler[2] = data.fusionPose.z();
 
-          corrected_yaw = euler[2] - declination_offset;
+          this->corrected_yaw = this->euler[2] - this->declination_offset;
 	}
-
+     return err;
 }
 
 vector<float> GenericRTIMU::get_raw_data(){
@@ -164,11 +176,11 @@ vector<float> GenericRTIMU::get_all_data(){
 
 void GenericRTIMU::print_settings(){
      // Print out all configured parameters for debugging
-     printf("GenericRTIMU CONFIGURATION SETTINGS: \r\n");
+     // printf("GenericRTIMU CONFIGURATION SETTINGS: \r\n");
      // printf("       Device Address: %s\r\n", _add);
      // printf("       Baud Rate: %d\r\n", _baud);
      // printf("       GenericRTIMU Type: %.4f\r\n", _type);
-     printf("\r\n");
+     // printf("\r\n");
 }
 
 void GenericRTIMU::print_data(){
@@ -182,11 +194,7 @@ void GenericRTIMU::print_data(){
 
 void GenericRTIMU::print_angles(){
      float tmpAng[3];
-
-     for(int i = 0; i<3;i++){
-          tmpAng[i] = euler[i] * M_RAD2DEG;
-     }
-
+     for(int i = 0; i<3;i++){ tmpAng[i] = euler[i] * M_RAD2DEG; }
      fflush(stdout);
      printf("       Fused Euler Angles (deg): %.4f        %.4f      %.4f\r\n\r\n", tmpAng[0], tmpAng[1], tmpAng[2]);
 }

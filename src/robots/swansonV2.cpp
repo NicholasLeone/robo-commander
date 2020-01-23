@@ -65,7 +65,7 @@ void SwansonV2::drive(float v, float w){
 }
 
 void SwansonV2::update_sensors(){
-     imu->update();
+     imu->update(5.0);
      claws->update_status();
      claws->update_encoders();
 }

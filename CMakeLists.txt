@@ -75,6 +75,7 @@ set(EXTERNAL_PACKAGE_LIBRARIES "${LAPACK_LIBRARIES}" "${BLAS_LIBRARIES}" "${ARMA
 
 # Find library for IMU
 find_library(RTIMULib libRTIMULib.so)
+message(STATUS "RTIMULib: ${RTIMULib}")
 
 # Find pigpiod libraries
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/external/pigpiod")
@@ -102,8 +103,8 @@ endif(WITH_GTSAM)
 # Find OpenCV libraries
 if(WITH_OPENCV)
      ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
-     # find_package(OpenCV 4.1.1 REQUIRED)
-     find_package(OpenCV 3.4.1 REQUIRED)
+     find_package(OpenCV 4.1.1 REQUIRED)
+     # find_package(OpenCV 3.4.1 REQUIRED)
      list(APPEND EXTERNAL_PACKAGE_INCLUDES "${OpenCV_INCLUDE_DIRS}")
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${OpenCV_LIBS}")
 endif(WITH_OPENCV)

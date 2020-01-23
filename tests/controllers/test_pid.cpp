@@ -133,7 +133,7 @@ int main(){
           cout << "Beginning Control Loop..." << endl;
 
           while(1){
-			imu.update();
+			imu.update(5.0);
 			dt = imu.get_update_period();
 			pid1->set_dt(float (dt) / 1000000);
 			angle = fmod((R2D(imu.euler[0]) + 360.0),360.0);

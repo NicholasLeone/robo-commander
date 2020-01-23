@@ -71,7 +71,7 @@ list(APPEND RoboCommander_LIBRARIES encoder)
 
 # IMU
 add_library(rtimu SHARED sensors/generic_rtimu.cpp)
-target_link_libraries(rtimu PUBLIC RTIMULib)
+target_link_libraries(rtimu PUBLIC ${RTIMULib})
 list(APPEND RoboCommander_LIBRARIES rtimu)
 
 # MPU-9250

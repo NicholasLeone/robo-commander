@@ -38,7 +38,7 @@ public:
      float position[3];
 
      int init(string path, string file);
-     void update();
+     int update(float timeout);
 
      void print_settings(); // TODO: extract settings from calibration.ini file
      void print_data();
@@ -50,7 +50,6 @@ public:
 
      // TODO: Add these functions for ease-of-use later
      // void reset_yaw();
-
 
 };
 
