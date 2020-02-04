@@ -38,7 +38,7 @@ public:
      float position[3];
 
      int init(string path, string file);
-     int update(float timeout);
+     int update(float timeout = 1.0);
 
      void print_settings(); // TODO: extract settings from calibration.ini file
      void print_data();
