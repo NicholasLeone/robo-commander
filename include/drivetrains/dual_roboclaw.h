@@ -11,18 +11,16 @@ using namespace chrono;
 class DualClaw {
 
 private:
-
      int _pi;
      int _ser_handle;
      int _address[2];
      uint8_t _status[4];
+     bool _valid[4];
 
      float _max_speed;
      float _base_width;
      float _wheel_diameter;
      int _qpps_per_meter;
-
-     bool _valid[4];
 
      uint16_t _main_battery[2] = {0,0};
      int16_t _currents[4] = {0,0,0,0};
@@ -62,7 +60,6 @@ public:
 
      DualClaw();
      DualClaw(int pi);
-     // DualClaw(int pi, int serial_handle);
      DualClaw(int pi, const char* config_file);
      DualClaw(const char* config_file);
      ~DualClaw();
@@ -73,8 +70,8 @@ public:
 
      void drive(float v, float w);
      void drive(vector<int32_t> cmds);
-     void update_status();
-     void update_encoders();
+     void update_status(bool verbose = false);
+     void update_encoders(bool verbose = false);
 
      vector<int32_t> get_target_speeds(float v, float w);
 
@@ -103,32 +100,5 @@ public:
      // TODO: develop
      // void keep_alive();
 };
-
-
-// // GOES INTO ROS NODE
-//
-// now = rospy.Time.now()
-//    dt = now.to_sec() - self.last_odom.to_sec()
-//
-//    if dt > 10.0 or dt == 0.0:
-//        self.last_odom = now
-//        return
-//
-//    self.last_odom = now
-//
-// dualclaw.get_odom();
-//
-//    self.vx = distance_travelled / dt
-//    self.vth = delta_th / dt
-//
-//    if distance_travelled != 0.0:
-//        delta_x = cos(delta_th) * distance_travelled
-//        delta_y = -sin(delta_th) * distance_travelled
-//        self.x += (cos(self.theta) * delta_x - sin(self.theta) * delta_y)
-//        self.y += (sin(self.theta) * delta_x - cos(self.theta) * delta_y)
-//
-//    if delta_th != 0.0:
-//        self.theta += delta_th
-
 
 #endif // DUAL_ROBOCLAW_H_

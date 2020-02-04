@@ -17,12 +17,12 @@ int main(int argc, char *argv[]){
 	bool do_processing = false;
 	bool visualize = false;
 
-	int fps = 60;
+	int fps = 15;
 	int dfps = 60;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
 
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
+	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, !threading);
 	// CameraD415* cam = new CameraD415(fps, rgb_resolution, dfps, depth_resolution, false);
 	// cam->enable_alignment();
 	// if(debug_timing) cam->enable_timing_debug();

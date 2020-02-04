@@ -114,8 +114,6 @@ if(WITH_LIBREALSENSE)
      if(NOT realsense2_FOUND)
           message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
      endif()
-     # list(APPEND EXTERNAL_PACKAGE_INCLUDES "${realsense2_INCLUDE_DIR}")
-     # list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${realsense2_LIBRARY}")
 endif(WITH_LIBREALSENSE)
 
 # Matplotlib-cpp
@@ -165,6 +163,24 @@ file(GLOB RoboCommander_HEADERS
      "${INCS_DIR}/vehicle_profiles/*.h"
      "${INCS_DIR}/base/*.h"
 )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -latomic")
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
+message(STATUS "MACHINE = ${MACHINE}")
+if(${MACHINE} MATCHES "arm-linux-gnueabihf")
+     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic")
+elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
+     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
+elseif(${MACHINE} MATCHES "powerpc64(le)?-linux-gnu")
+     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ftree-vectorize")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftree-vectorize")
+else()
+     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+     set(LRS_TRY_USE_AVX true)
+endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 
 # ===========================
 #     Build Targets
@@ -220,6 +236,9 @@ configure_file(cmake/RoboCommanderConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_
 configure_file(cmake/RoboCommanderConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/RoboCommanderConfigVersion.cmake" @ONLY)
 
 # Install the RoboCommanderConfig.cmake and RoboCommanderConfigVersion.cmake
+add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+
 install(
      FILES
           "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RoboCommanderConfig.cmake"

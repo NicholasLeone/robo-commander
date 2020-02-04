@@ -7,9 +7,9 @@
 using namespace std;
 using namespace chrono;
 
-//
-// Constructor
-//
+/** SECTION:
+     CONSTRUCTOR & DECONSTRUCTOR
+*/
 RoboClaw::RoboClaw(int pi, int handle, int address){
 	_pi = pi;
 	_handle = handle;
@@ -17,75 +17,49 @@ RoboClaw::RoboClaw(int pi, int handle, int address){
 	timeout = 0.1;
 	max_retry_attempts = 2;
 }
+RoboClaw::~RoboClaw(){}
 
-//
-// Destructor
-//
-RoboClaw::~RoboClaw(){
-
-}
 
 int RoboClaw::write(uint8_t byte){
 	int err = serial_write_byte(_pi,_handle,byte);
 
-	if(err >= 0)
-		return 0;
-	else
-		return err;
+	if(err >= 0) return 0;
+	else return err;
 }
-
 int RoboClaw::read(){
 	int err = serial_read_byte(_pi,_handle);
-
-	if(err < 0)
-		cout << "Pigpiod: Serial read error" << endl;
-
+	if(err < 0) cout << "Pigpiod: Serial read error" << endl;
 	return err;
 }
-
 int RoboClaw::available(){
 	return serial_data_available(_pi,_handle);
 }
-
 void RoboClaw::flush(){
 	char* tmp;
 	int buf = available();
 	serial_read(_pi,_handle,tmp, buf);
 }
-
 int RoboClaw::read(float timeout){
-
 	high_resolution_clock::time_point start = high_resolution_clock::now();
 
 	while(available() <= 0){
 		high_resolution_clock::time_point now = high_resolution_clock::now();
 		duration<float> time_span = duration_cast<duration<float>>(now - start);
 		float _dt = time_span.count();
-	   	if(_dt >= timeout)
-			return -1;
+		if(_dt >= timeout) return -1;
 	}
 	return read();
 }
-
-void RoboClaw::crc_clear(){
-	crc = 0;
-}
-
+void RoboClaw::crc_clear(){ crc = 0; }
 void RoboClaw::crc_update(uint8_t data){
 	int i;
 	crc = crc ^ ((uint16_t)data << 8);
-	for (i=0; i<8; i++)
-	{
-		if (crc & 0x8000)
-			crc = (crc << 1) ^ 0x1021;
-		else
-			crc <<= 1;
+	for (i=0; i<8; i++){
+		if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+		else crc <<= 1;
 	}
 }
-
-uint16_t RoboClaw::crc_get(){
-	return crc;
-}
+uint16_t RoboClaw::crc_get(){ return crc; }
 
 bool RoboClaw::write_n(uint8_t cnt, ... ){
 	uint8_t trys = max_retry_attempts;
@@ -104,11 +78,10 @@ bool RoboClaw::write_n(uint8_t cnt, ... ){
 		write(crc>>8);
 		write(crc);
 		if(read(timeout)==0xFF)
-			return true;
+		return true;
 	}while(trys--);
 	return false;
 }
-
 bool RoboClaw::read_n(uint8_t cnt,uint8_t address,uint8_t cmd,...){
 	uint32_t value = 0;
 	uint8_t trys = max_retry_attempts;
@@ -187,9 +160,7 @@ bool RoboClaw::read_n(uint8_t cnt,uint8_t address,uint8_t cmd,...){
 
 uint8_t RoboClaw::Read1(uint8_t address,uint8_t cmd,bool *valid){
 	uint8_t crc;
-
-	if(valid)
-		*valid = false;
+	if(valid) *valid = false;
 
 	uint8_t value = 0;
 	uint8_t trys = max_retry_attempts;
@@ -226,12 +197,9 @@ uint8_t RoboClaw::Read1(uint8_t address,uint8_t cmd,bool *valid){
 
 	return false;
 }
-
 uint16_t RoboClaw::Read2(uint8_t address,uint8_t cmd,bool *valid){
 	uint8_t crc;
-
-	if(valid)
-		*valid = false;
+	if(valid) *valid = false;
 
 	uint16_t value = 0;
 	uint8_t trys = max_retry_attempts;
@@ -273,12 +241,9 @@ uint16_t RoboClaw::Read2(uint8_t address,uint8_t cmd,bool *valid){
 	}while(trys--);
 	return false;
 }
-
 uint32_t RoboClaw::Read4(uint8_t address, uint8_t cmd, bool *valid){
 	uint8_t crc;
-
-	if(valid)
-		*valid = false;
+	if(valid) *valid = false;
 
 	uint32_t value = 0;
 	uint8_t trys = max_retry_attempts;
@@ -333,12 +298,9 @@ uint32_t RoboClaw::Read4(uint8_t address, uint8_t cmd, bool *valid){
 
 	return false;
 }
-
 uint32_t RoboClaw::Read4_1(uint8_t address, uint8_t cmd, uint8_t *status, bool *valid){
 	uint8_t crc;
-
-	if(valid)
-		*valid = false;
+	if(valid) *valid = false;
 
 	uint32_t value = 0;
 	uint8_t trys = max_retry_attempts;
@@ -378,7 +340,7 @@ uint32_t RoboClaw::Read4_1(uint8_t address, uint8_t cmd, uint8_t *status, bool *
 			data = read(timeout);
 			crc_update(data);
 			if(status)
-				*status = data;
+			*status = data;
 		}
 
 		if(data!=-1){
@@ -400,88 +362,32 @@ uint32_t RoboClaw::Read4_1(uint8_t address, uint8_t cmd, uint8_t *status, bool *
 	return false;
 }
 
-bool RoboClaw::ForwardM1(uint8_t speed){
-	return write_n(3,_add,M1FORWARD,speed);
-}
 
-bool RoboClaw::BackwardM1(uint8_t speed){
-	return write_n(3,_add,M1BACKWARD,speed);
-}
-
-bool RoboClaw::SetMinVoltageMainBattery(uint8_t voltage){
-	return write_n(3,_add,SETMINMB,voltage);
-}
-
-bool RoboClaw::SetMaxVoltageMainBattery(uint8_t voltage){
-	return write_n(3,_add,SETMAXMB,voltage);
-}
-
-bool RoboClaw::ForwardM2(uint8_t speed){
-	return write_n(3,_add,M2FORWARD,speed);
-}
-
-bool RoboClaw::BackwardM2(uint8_t speed){
-	return write_n(3,_add,M2BACKWARD,speed);
-}
-
-bool RoboClaw::ForwardBackwardM1(uint8_t speed){
-	return write_n(3,_add,M17BIT,speed);
-}
-
-bool RoboClaw::ForwardBackwardM2(uint8_t speed){
-	return write_n(3,_add,M27BIT,speed);
-}
-
-bool RoboClaw::ForwardMixed(uint8_t speed){
-	return write_n(3,_add,MIXEDFORWARD,speed);
-}
-
-bool RoboClaw::BackwardMixed(uint8_t speed){
-	return write_n(3,_add,MIXEDBACKWARD,speed);
-}
-
-bool RoboClaw::TurnRightMixed(uint8_t speed){
-	return write_n(3,_add,MIXEDRIGHT,speed);
-}
-
-bool RoboClaw::TurnLeftMixed(uint8_t speed){
-	return write_n(3,_add,MIXEDLEFT,speed);
-}
-
-bool RoboClaw::ForwardBackwardMixed(uint8_t speed){
-	return write_n(3,_add,MIXEDFB,speed);
-}
-
-bool RoboClaw::LeftRightMixed(uint8_t speed){
-	return write_n(3,_add,MIXEDLR,speed);
-}
-
-uint32_t RoboClaw::ReadEncM1(uint8_t *status,bool *valid){
-	return Read4_1(_add,GETM1ENC,status,valid);
-}
-
-uint32_t RoboClaw::ReadEncM2(uint8_t *status,bool *valid){
-	return Read4_1(_add,GETM2ENC,status,valid);
-}
-
-uint32_t RoboClaw::ReadSpeedM1(uint8_t *status,bool *valid){
-	return Read4_1(_add,GETM1SPEED,status,valid);
-}
-
-uint32_t RoboClaw::ReadSpeedM2(uint8_t *status,bool *valid){
-	return Read4_1(_add,GETM2SPEED,status,valid);
-}
-
-bool RoboClaw::ResetEncoders(){
-	return write_n(2,_add,RESETENC);
-}
+bool RoboClaw::ForwardM1(uint8_t speed){ return write_n(3,_add,M1FORWARD,speed); }
+bool RoboClaw::BackwardM1(uint8_t speed){ return write_n(3,_add,M1BACKWARD,speed); }
+bool RoboClaw::SetMinVoltageMainBattery(uint8_t voltage){ return write_n(3,_add,SETMINMB,voltage); }
+bool RoboClaw::SetMaxVoltageMainBattery(uint8_t voltage){ return write_n(3,_add,SETMAXMB,voltage); }
+bool RoboClaw::ForwardM2(uint8_t speed){ return write_n(3,_add,M2FORWARD,speed); }
+bool RoboClaw::BackwardM2(uint8_t speed){ return write_n(3,_add,M2BACKWARD,speed); }
+bool RoboClaw::ForwardBackwardM1(uint8_t speed){ return write_n(3,_add,M17BIT,speed); }
+bool RoboClaw::ForwardBackwardM2(uint8_t speed){ return write_n(3,_add,M27BIT,speed); }
+bool RoboClaw::ForwardMixed(uint8_t speed){ return write_n(3,_add,MIXEDFORWARD,speed); }
+bool RoboClaw::BackwardMixed(uint8_t speed){ return write_n(3,_add,MIXEDBACKWARD,speed); }
+bool RoboClaw::TurnRightMixed(uint8_t speed){ return write_n(3,_add,MIXEDRIGHT,speed); }
+bool RoboClaw::TurnLeftMixed(uint8_t speed){ return write_n(3,_add,MIXEDLEFT,speed); }
+bool RoboClaw::ForwardBackwardMixed(uint8_t speed){ return write_n(3,_add,MIXEDFB,speed); }
+bool RoboClaw::LeftRightMixed(uint8_t speed){ return write_n(3,_add,MIXEDLR,speed); }
+uint32_t RoboClaw::ReadEncM1(uint8_t *status,bool *valid){ return Read4_1(_add,GETM1ENC,status,valid); }
+uint32_t RoboClaw::ReadEncM2(uint8_t *status,bool *valid){ return Read4_1(_add,GETM2ENC,status,valid); }
+uint32_t RoboClaw::ReadSpeedM1(uint8_t *status,bool *valid){ return Read4_1(_add,GETM1SPEED,status,valid); }
+uint32_t RoboClaw::ReadSpeedM2(uint8_t *status,bool *valid){ return Read4_1(_add,GETM2SPEED,status,valid); }
+bool RoboClaw::ResetEncoders(){ return write_n(2,_add,RESETENC); }
 
 bool RoboClaw::ReadVersion(char *version){
 	uint8_t data;
 	uint8_t trys=max_retry_attempts;
 	do{
 		flush();
-
 		data = 0;
 
 		crc_clear();
@@ -510,38 +416,19 @@ bool RoboClaw::ReadVersion(char *version){
 					break;
 				}
 			}
-			else{
-				break;
-			}
+			else break;
 		}
 	}while(trys--);
 
 	return false;
 }
 
-bool RoboClaw::SetEncM1(int32_t val){
-	return write_n(6,_add,SETM1ENCCOUNT,SetDWORDval(val));
-}
-
-bool RoboClaw::SetEncM2(int32_t val){
-	return write_n(6,_add,SETM2ENCCOUNT,SetDWORDval(val));
-}
-
-uint16_t RoboClaw::ReadMainBatteryVoltage(bool *valid){
-	return Read2(_add,GETMBATT,valid);
-}
-
-uint16_t RoboClaw::ReadLogicBatteryVoltage(bool *valid){
-	return Read2(_add,GETLBATT,valid);
-}
-
-bool RoboClaw::SetMinVoltageLogicBattery(uint8_t voltage){
-	return write_n(3,_add,SETMINLB,voltage);
-}
-
-bool RoboClaw::SetMaxVoltageLogicBattery(uint8_t voltage){
-	return write_n(3,_add,SETMAXLB,voltage);
-}
+bool RoboClaw::SetEncM1(int32_t val){ return write_n(6,_add,SETM1ENCCOUNT,SetDWORDval(val)); }
+bool RoboClaw::SetEncM2(int32_t val){ return write_n(6,_add,SETM2ENCCOUNT,SetDWORDval(val)); }
+uint16_t RoboClaw::ReadMainBatteryVoltage(bool *valid){ return Read2(_add,GETMBATT,valid); }
+uint16_t RoboClaw::ReadLogicBatteryVoltage(bool *valid){ return Read2(_add,GETLBATT,valid); }
+bool RoboClaw::SetMinVoltageLogicBattery(uint8_t voltage){ return write_n(3,_add,SETMINLB,voltage); }
+bool RoboClaw::SetMaxVoltageLogicBattery(uint8_t voltage){ return write_n(3,_add,SETMAXLB,voltage); }
 
 bool RoboClaw::SetM1VelocityPID(float kp_fp, float ki_fp, float kd_fp, uint32_t qpps){
 	uint32_t kp = kp_fp*65536;
@@ -557,72 +444,23 @@ bool RoboClaw::SetM2VelocityPID(float kp_fp, float ki_fp, float kd_fp, uint32_t 
 	return write_n(18,_add,SETM2PID,SetDWORDval(kd),SetDWORDval(kp),SetDWORDval(ki),SetDWORDval(qpps));
 }
 
-uint32_t RoboClaw::ReadISpeedM1(uint8_t *status,bool *valid){
-	return Read4_1(_add,GETM1ISPEED,status,valid);
-}
-
-uint32_t RoboClaw::ReadISpeedM2(uint8_t *status,bool *valid){
-	return Read4_1(_add,GETM2ISPEED,status,valid);
-}
-
-bool RoboClaw::DutyM1(uint16_t duty){
-	return write_n(4,_add,M1DUTY,SetWORDval(duty));
-}
-
-bool RoboClaw::DutyM2(uint16_t duty){
-	return write_n(4,_add,M2DUTY,SetWORDval(duty));
-}
-
-bool RoboClaw::DutyM1M2(uint16_t duty1, uint16_t duty2){
-	return write_n(6,_add,MIXEDDUTY,SetWORDval(duty1),SetWORDval(duty2));
-}
-
-bool RoboClaw::SpeedM1(uint32_t speed){
-	return write_n(6,_add,M1SPEED,SetDWORDval(speed));
-}
-
-bool RoboClaw::SpeedM2(uint32_t speed){
-	return write_n(6,_add,M2SPEED,SetDWORDval(speed));
-}
-
-bool RoboClaw::SpeedM1M2(uint32_t speed1, uint32_t speed2){
-	return write_n(10,_add,MIXEDSPEED,SetDWORDval(speed1),SetDWORDval(speed2));
-}
-
-bool RoboClaw::SpeedAccelM1(uint32_t accel, uint32_t speed){
-	return write_n(10,_add,M1SPEEDACCEL,SetDWORDval(accel),SetDWORDval(speed));
-}
-
-bool RoboClaw::SpeedAccelM2(uint32_t accel, uint32_t speed){
-	return write_n(10,_add,M2SPEEDACCEL,SetDWORDval(accel),SetDWORDval(speed));
-}
-bool RoboClaw::SpeedAccelM1M2(uint32_t accel, uint32_t speed1, uint32_t speed2){
-	return write_n(14,_add,MIXEDSPEEDACCEL,SetDWORDval(accel),SetDWORDval(speed1),SetDWORDval(speed2));
-}
-
-bool RoboClaw::SpeedDistanceM1(uint32_t speed, uint32_t distance, uint8_t flag){
-	return write_n(11,_add,M1SPEEDDIST,SetDWORDval(speed),SetDWORDval(distance),flag);
-}
-
-bool RoboClaw::SpeedDistanceM2(uint32_t speed, uint32_t distance, uint8_t flag){
-	return write_n(11,_add,M2SPEEDDIST,SetDWORDval(speed),SetDWORDval(distance),flag);
-}
-
-bool RoboClaw::SpeedDistanceM1M2(uint32_t speed1, uint32_t distance1, uint32_t speed2, uint32_t distance2, uint8_t flag){
-	return write_n(19,_add,MIXEDSPEEDDIST,SetDWORDval(speed1),SetDWORDval(distance1),SetDWORDval(speed2),SetDWORDval(distance2),flag);
-}
-
-bool RoboClaw::SpeedAccelDistanceM1(uint32_t accel, uint32_t speed, uint32_t distance, uint8_t flag){
-	return write_n(15,_add,M1SPEEDACCELDIST,SetDWORDval(accel),SetDWORDval(speed),SetDWORDval(distance),flag);
-}
-
-bool RoboClaw::SpeedAccelDistanceM2(uint32_t accel, uint32_t speed, uint32_t distance, uint8_t flag){
-	return write_n(15,_add,M2SPEEDACCELDIST,SetDWORDval(accel),SetDWORDval(speed),SetDWORDval(distance),flag);
-}
-
-bool RoboClaw::SpeedAccelDistanceM1M2(uint32_t accel, uint32_t speed1, uint32_t distance1, uint32_t speed2, uint32_t distance2, uint8_t flag){
-	return write_n(23,_add,MIXEDSPEEDACCELDIST,SetDWORDval(accel),SetDWORDval(speed1),SetDWORDval(distance1),SetDWORDval(speed2),SetDWORDval(distance2),flag);
-}
+uint32_t RoboClaw::ReadISpeedM1(uint8_t *status,bool *valid){ return Read4_1(_add,GETM1ISPEED,status,valid); }
+uint32_t RoboClaw::ReadISpeedM2(uint8_t *status,bool *valid){ return Read4_1(_add,GETM2ISPEED,status,valid); }
+bool RoboClaw::DutyM1(uint16_t duty){ return write_n(4,_add,M1DUTY,SetWORDval(duty)); }
+bool RoboClaw::DutyM2(uint16_t duty){ return write_n(4,_add,M2DUTY,SetWORDval(duty)); }
+bool RoboClaw::DutyM1M2(uint16_t duty1, uint16_t duty2){ return write_n(6,_add,MIXEDDUTY,SetWORDval(duty1),SetWORDval(duty2)); }
+bool RoboClaw::SpeedM1(uint32_t speed){ return write_n(6,_add,M1SPEED,SetDWORDval(speed)); }
+bool RoboClaw::SpeedM2(uint32_t speed){ return write_n(6,_add,M2SPEED,SetDWORDval(speed)); }
+bool RoboClaw::SpeedM1M2(uint32_t speed1, uint32_t speed2){ return write_n(10,_add,MIXEDSPEED,SetDWORDval(speed1),SetDWORDval(speed2)); }
+bool RoboClaw::SpeedAccelM1(uint32_t accel, uint32_t speed){ return write_n(10,_add,M1SPEEDACCEL,SetDWORDval(accel),SetDWORDval(speed)); }
+bool RoboClaw::SpeedAccelM2(uint32_t accel, uint32_t speed){ return write_n(10,_add,M2SPEEDACCEL,SetDWORDval(accel),SetDWORDval(speed)); }
+bool RoboClaw::SpeedAccelM1M2(uint32_t accel, uint32_t speed1, uint32_t speed2){ return write_n(14,_add,MIXEDSPEEDACCEL,SetDWORDval(accel),SetDWORDval(speed1),SetDWORDval(speed2)); }
+bool RoboClaw::SpeedDistanceM1(uint32_t speed, uint32_t distance, uint8_t flag){ return write_n(11,_add,M1SPEEDDIST,SetDWORDval(speed),SetDWORDval(distance),flag); }
+bool RoboClaw::SpeedDistanceM2(uint32_t speed, uint32_t distance, uint8_t flag){ return write_n(11,_add,M2SPEEDDIST,SetDWORDval(speed),SetDWORDval(distance),flag); }
+bool RoboClaw::SpeedDistanceM1M2(uint32_t speed1, uint32_t distance1, uint32_t speed2, uint32_t distance2, uint8_t flag){ return write_n(19,_add,MIXEDSPEEDDIST,SetDWORDval(speed1),SetDWORDval(distance1),SetDWORDval(speed2),SetDWORDval(distance2),flag); }
+bool RoboClaw::SpeedAccelDistanceM1(uint32_t accel, uint32_t speed, uint32_t distance, uint8_t flag){ return write_n(15,_add,M1SPEEDACCELDIST,SetDWORDval(accel),SetDWORDval(speed),SetDWORDval(distance),flag); }
+bool RoboClaw::SpeedAccelDistanceM2(uint32_t accel, uint32_t speed, uint32_t distance, uint8_t flag){ return write_n(15,_add,M2SPEEDACCELDIST,SetDWORDval(accel),SetDWORDval(speed),SetDWORDval(distance),flag); }
+bool RoboClaw::SpeedAccelDistanceM1M2(uint32_t accel, uint32_t speed1, uint32_t distance1, uint32_t speed2, uint32_t distance2, uint8_t flag){ return write_n(23,_add,MIXEDSPEEDACCELDIST,SetDWORDval(accel),SetDWORDval(speed1),SetDWORDval(distance1),SetDWORDval(speed2),SetDWORDval(distance2),flag); }
 
 bool RoboClaw::ReadBuffers(uint8_t &depth1, uint8_t &depth2){
 	bool valid;
@@ -653,27 +491,42 @@ bool RoboClaw::ReadCurrents(int16_t &current1, int16_t &current2){
 	}
 	return valid;
 }
-
 bool RoboClaw::SpeedAccelM1M2_2(uint32_t accel1, uint32_t speed1, uint32_t accel2, uint32_t speed2){
 	return write_n(18,_add,MIXEDSPEED2ACCEL,SetDWORDval(accel1),SetDWORDval(speed1),SetDWORDval(accel2),SetDWORDval(speed2));
 }
-
 bool RoboClaw::SpeedAccelDistanceM1M2_2(uint32_t accel1, uint32_t speed1, uint32_t distance1, uint32_t accel2, uint32_t speed2, uint32_t distance2, uint8_t flag){
 	return write_n(27,_add,MIXEDSPEED2ACCELDIST,SetDWORDval(accel1),SetDWORDval(speed1),SetDWORDval(distance1),SetDWORDval(accel2),SetDWORDval(speed2),SetDWORDval(distance2),flag);
 }
+bool RoboClaw::DutyAccelM1(uint16_t duty, uint32_t accel){ return write_n(8,_add,M1DUTYACCEL,SetWORDval(duty),SetDWORDval(accel)); }
+bool RoboClaw::DutyAccelM2(uint16_t duty, uint32_t accel){ return write_n(8,_add,M2DUTYACCEL,SetWORDval(duty),SetDWORDval(accel)); }
+bool RoboClaw::DutyAccelM1M2(uint16_t duty1, uint32_t accel1, uint16_t duty2, uint32_t accel2){ return write_n(14,_add,MIXEDDUTYACCEL,SetWORDval(duty1),SetDWORDval(accel1),SetWORDval(duty2),SetDWORDval(accel2)); }
 
-bool RoboClaw::DutyAccelM1(uint16_t duty, uint32_t accel){
-	return write_n(8,_add,M1DUTYACCEL,SetWORDval(duty),SetDWORDval(accel));
+/** DEPRECATED:
+bool RoboClaw::ReadM1VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps){
+	uint32_t Kp,Ki,Kd;
+	uint32_t _qpps;
+	bool valid = read_n(4,_add,READM1PID,&Kp,&Ki,&Kd,&_qpps);
+	float _Kp_fp = ((float)Kp)/65536;
+	float _Ki_fp = ((float)Ki)/65536;
+	float _Kd_fp = ((float)Kd)/65536;
+	if(*Kp_fp) *Kp_fp = _Kp_fp;
+	if(*Ki_fp) *Ki_fp = _Ki_fp;
+	if(*Kd_fp) *Kd_fp = _Kd_fp;
+	return valid;
 }
-
-bool RoboClaw::DutyAccelM2(uint16_t duty, uint32_t accel){
-	return write_n(8,_add,M2DUTYACCEL,SetWORDval(duty),SetDWORDval(accel));
+bool RoboClaw::ReadM2VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps){
+	uint32_t Kp,Ki,Kd;
+	uint32_t _qpps;
+	bool valid = read_n(4,_add,READM2PID,&Kp,&Ki,&Kd,&_qpps);
+	float _Kp_fp = ((float)Kp)/65536;
+	float _Ki_fp = ((float)Ki)/65536;
+	float _Kd_fp = ((float)Kd)/65536;
+	if(*Kp_fp) *Kp_fp = _Kp_fp;
+	if(*Ki_fp) *Ki_fp = _Ki_fp;
+	if(*Kd_fp) *Kd_fp = _Kd_fp;
+	return valid;
 }
-
-bool RoboClaw::DutyAccelM1M2(uint16_t duty1, uint32_t accel1, uint16_t duty2, uint32_t accel2){
-	return write_n(14,_add,MIXEDDUTYACCEL,SetWORDval(duty1),SetDWORDval(accel1),SetWORDval(duty2),SetDWORDval(accel2));
-}
-
+*/
 bool RoboClaw::ReadM1VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t &qpps){
 	uint32_t Kp,Ki,Kd;
 	bool valid = read_n(4,_add,READM1PID,&Kp,&Ki,&Kd,&qpps);
@@ -691,38 +544,8 @@ bool RoboClaw::ReadM2VelocityPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t
 	return valid;
 }
 
-// bool RoboClaw::ReadM1VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps){
-// 	uint32_t Kp,Ki,Kd;
-// 	uint32_t _qpps;
-// 	bool valid = read_n(4,_add,READM1PID,&Kp,&Ki,&Kd,&_qpps);
-// 	float _Kp_fp = ((float)Kp)/65536;
-// 	float _Ki_fp = ((float)Ki)/65536;
-// 	float _Kd_fp = ((float)Kd)/65536;
-// 	if(*Kp_fp) *Kp_fp = _Kp_fp;
-// 	if(*Ki_fp) *Ki_fp = _Ki_fp;
-// 	if(*Kd_fp) *Kd_fp = _Kd_fp;
-// 	return valid;
-// }
-// bool RoboClaw::ReadM2VelocityPID(float* Kp_fp,float* Ki_fp,float* Kd_fp,uint32_t* qpps){
-// 	uint32_t Kp,Ki,Kd;
-// 	uint32_t _qpps;
-// 	bool valid = read_n(4,_add,READM2PID,&Kp,&Ki,&Kd,&_qpps);
-// 	float _Kp_fp = ((float)Kp)/65536;
-// 	float _Ki_fp = ((float)Ki)/65536;
-// 	float _Kd_fp = ((float)Kd)/65536;
-// 	if(*Kp_fp) *Kp_fp = _Kp_fp;
-// 	if(*Ki_fp) *Ki_fp = _Ki_fp;
-// 	if(*Kd_fp) *Kd_fp = _Kd_fp;
-// 	return valid;
-// }
-
-bool RoboClaw::SetMainVoltages(uint16_t min,uint16_t max){
-	return write_n(6,_add,SETMAINVOLTAGES,SetWORDval(min),SetWORDval(max));
-}
-
-bool RoboClaw::SetLogicVoltages(uint16_t min,uint16_t max){
-	return write_n(6,_add,SETLOGICVOLTAGES,SetWORDval(min),SetWORDval(max));
-}
+bool RoboClaw::SetMainVoltages(uint16_t min,uint16_t max){ return write_n(6,_add,SETMAINVOLTAGES,SetWORDval(min),SetWORDval(max)); }
+bool RoboClaw::SetLogicVoltages(uint16_t min,uint16_t max){ return write_n(6,_add,SETLOGICVOLTAGES,SetWORDval(min),SetWORDval(max)); }
 
 bool RoboClaw::ReadMinMaxMainVoltages(uint16_t &min,uint16_t &max){
 	bool valid;
@@ -779,27 +602,16 @@ bool RoboClaw::ReadM2PositionPID(float &Kp_fp,float &Ki_fp,float &Kd_fp,uint32_t
 bool RoboClaw::SpeedAccelDeccelPositionM1(uint32_t accel,uint32_t speed,uint32_t deccel,uint32_t position,uint8_t flag){
 	return write_n(19,_add,M1SPEEDACCELDECCELPOS,SetDWORDval(accel),SetDWORDval(speed),SetDWORDval(deccel),SetDWORDval(position),flag);
 }
-
 bool RoboClaw::SpeedAccelDeccelPositionM2(uint32_t accel,uint32_t speed,uint32_t deccel,uint32_t position,uint8_t flag){
 	return write_n(19,_add,M2SPEEDACCELDECCELPOS,SetDWORDval(accel),SetDWORDval(speed),SetDWORDval(deccel),SetDWORDval(position),flag);
 }
-
 bool RoboClaw::SpeedAccelDeccelPositionM1M2(uint32_t accel1,uint32_t speed1,uint32_t deccel1,uint32_t position1,uint32_t accel2,uint32_t speed2,uint32_t deccel2,uint32_t position2,uint8_t flag){
 	return write_n(35,_add,MIXEDSPEEDACCELDECCELPOS,SetDWORDval(accel1),SetDWORDval(speed1),SetDWORDval(deccel1),SetDWORDval(position1),SetDWORDval(accel2),SetDWORDval(speed2),SetDWORDval(deccel2),SetDWORDval(position2),flag);
 }
 
-bool RoboClaw::SetM1DefaultAccel(uint32_t accel){
-	return write_n(6,_add,SETM1DEFAULTACCEL,SetDWORDval(accel));
-}
-
-bool RoboClaw::SetM2DefaultAccel(uint32_t accel){
-	return write_n(6,_add,SETM2DEFAULTACCEL,SetDWORDval(accel));
-}
-
-bool RoboClaw::SetPinFunctions(uint8_t S3mode, uint8_t S4mode, uint8_t S5mode){
-	return write_n(5,_add,SETPINFUNCTIONS,S3mode,S4mode,S5mode);
-}
-
+bool RoboClaw::SetM1DefaultAccel(uint32_t accel){ return write_n(6,_add,SETM1DEFAULTACCEL,SetDWORDval(accel)); }
+bool RoboClaw::SetM2DefaultAccel(uint32_t accel){ return write_n(6,_add,SETM2DEFAULTACCEL,SetDWORDval(accel)); }
+bool RoboClaw::SetPinFunctions(uint8_t S3mode, uint8_t S4mode, uint8_t S5mode){ return write_n(5,_add,SETPINFUNCTIONS,S3mode,S4mode,S5mode); }
 bool RoboClaw::GetPinFunctions(uint8_t &S3mode, uint8_t &S4mode, uint8_t &S5mode){
 	uint8_t crc;
 	bool valid = false;
@@ -849,14 +661,10 @@ bool RoboClaw::GetPinFunctions(uint8_t &S3mode, uint8_t &S4mode, uint8_t &S5mode
 			}
 		}
 	}while(trys--);
-
 	return false;
 }
 
-bool RoboClaw::SetDeadBand(uint8_t Min, uint8_t Max){
-	return write_n(4,_add,SETDEADBAND,Min,Max);
-}
-
+bool RoboClaw::SetDeadBand(uint8_t Min, uint8_t Max){ return write_n(4,_add,SETDEADBAND,Min,Max); }
 bool RoboClaw::GetDeadBand(uint8_t &Min, uint8_t &Max){
 	bool valid;
 	uint16_t value = Read2(_add,GETDEADBAND,&valid);
@@ -893,9 +701,7 @@ bool RoboClaw::ReadTemp2(uint16_t &temp){
 	return valid;
 }
 
-uint16_t RoboClaw::ReadError(bool *valid){
-	return Read2(_add,GETERROR,valid);
-}
+uint16_t RoboClaw::ReadError(bool *valid){ return Read2(_add,GETERROR,valid); }
 
 bool RoboClaw::ReadEncoderModes(uint8_t &M1mode, uint8_t &M2mode){
 	bool valid;
@@ -907,68 +713,40 @@ bool RoboClaw::ReadEncoderModes(uint8_t &M1mode, uint8_t &M2mode){
 	return valid;
 }
 
-bool RoboClaw::SetM1EncoderMode(uint8_t mode){
-	return write_n(3,_add,SETM1ENCODERMODE,mode);
-}
+bool RoboClaw::SetM1EncoderMode(uint8_t mode){ return write_n(3,_add,SETM1ENCODERMODE,mode); }
+bool RoboClaw::SetM2EncoderMode(uint8_t mode){ return write_n(3,_add,SETM2ENCODERMODE,mode); }
+bool RoboClaw::WriteNVM(){ return write_n(6,_add,WRITENVM, SetDWORDval(0xE22EAB7A) ); }
+bool RoboClaw::ReadNVM(){ return write_n(2,_add,READNVM); }
 
-bool RoboClaw::SetM2EncoderMode(uint8_t mode){
-	return write_n(3,_add,SETM2ENCODERMODE,mode);
-}
-
-bool RoboClaw::WriteNVM(){
-	return write_n(6,_add,WRITENVM, SetDWORDval(0xE22EAB7A) );
-}
-
-bool RoboClaw::ReadNVM(){
-	return write_n(2,_add,READNVM);
-}
-
-bool RoboClaw::SetConfig(uint16_t config){
-	return write_n(4,_add,SETCONFIG,SetWORDval(config));
-}
-
+bool RoboClaw::SetConfig(uint16_t config){ return write_n(4,_add,SETCONFIG,SetWORDval(config)); }
 bool RoboClaw::GetConfig(uint16_t &config){
 	bool valid;
 	uint16_t value = Read2(_add,GETCONFIG,&valid);
-	if(valid){
-		config = value;
-	}
+	if(valid) config = value;
 	return valid;
 }
 
-bool RoboClaw::SetM1MaxCurrent(uint32_t max){
-	return write_n(10,_add,SETM1MAXCURRENT,SetDWORDval(max),SetDWORDval(0));
-}
-
-bool RoboClaw::SetM2MaxCurrent(uint32_t max){
-	return write_n(10,_add,SETM2MAXCURRENT,SetDWORDval(max),SetDWORDval(0));
-}
+bool RoboClaw::SetM1MaxCurrent(uint32_t max){ return write_n(10,_add,SETM1MAXCURRENT,SetDWORDval(max),SetDWORDval(0)); }
+bool RoboClaw::SetM2MaxCurrent(uint32_t max){ return write_n(10,_add,SETM2MAXCURRENT,SetDWORDval(max),SetDWORDval(0)); }
 
 bool RoboClaw::ReadM1MaxCurrent(uint32_t &max){
 	uint32_t tmax,dummy;
 	bool valid = read_n(2,_add,GETM1MAXCURRENT,&tmax,&dummy);
-	if(valid)
-		max = tmax;
+	if(valid) max = tmax;
 	return valid;
 }
 
 bool RoboClaw::ReadM2MaxCurrent(uint32_t &max){
 	uint32_t tmax,dummy;
 	bool valid = read_n(2,_add,GETM2MAXCURRENT,&tmax,&dummy);
-	if(valid)
-		max = tmax;
+	if(valid) max = tmax;
 	return valid;
 }
 
-bool RoboClaw::SetPWMMode(uint8_t mode){
-	return write_n(3,_add,SETPWMMODE,mode);
-}
-
+bool RoboClaw::SetPWMMode(uint8_t mode){ return write_n(3,_add,SETPWMMODE,mode); }
 bool RoboClaw::GetPWMMode(uint8_t &mode){
 	bool valid;
 	uint8_t value = Read1(_add,GETPWMMODE,&valid);
-	if(valid){
-		mode = value;
-	}
+	if(valid){ mode = value; }
 	return valid;
 }

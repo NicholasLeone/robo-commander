@@ -11,7 +11,7 @@ DualClaw::DualClaw(){
      int pi = pigpio_start(NULL, NULL);
      if(pi < 0){
           printf("[ERROR] DualClaw() --- Could not initialize pigpiod \r\n");
-		exit(0);
+          exit(0);
      }
      this->_pi = pi;
 
@@ -26,7 +26,6 @@ DualClaw::DualClaw(){
      this->_wheel_diameter = 0.1905;
      this->_prev_time = high_resolution_clock::now();
 }
-
 DualClaw::DualClaw(int pi){
      this->_pi = pi;
 
@@ -41,21 +40,6 @@ DualClaw::DualClaw(int pi){
      this->_wheel_diameter = 0.1905;
      this->_prev_time = high_resolution_clock::now();
 }
-
-// DualClaw::DualClaw(int pi, int serial_handle){
-//      this->_pi = pi;
-//      this->_ser_handle = serial_handle;
-//      flag_turn_dir = 1;
-//      flag_left_sign = 1;
-//      flag_right_sign = 1;
-//
-//      _base_width = 0.219;
-//      _max_speed = 2.0;
-//
-//      _qpps_per_meter = 9596;
-//      _wheel_diameter = 0.1905;
-// }
-
 DualClaw::DualClaw(int pi, const char* config_file){
      this->_pi = pi;
 
@@ -70,12 +54,11 @@ DualClaw::DualClaw(int pi, const char* config_file){
      }
      this->_prev_time = high_resolution_clock::now();
 }
-
 DualClaw::DualClaw(const char* config_file){
      int pi = pigpio_start(NULL, NULL);
      if(pi < 0){
           printf("[ERROR] DualClaw() --- Could not initialize pigpiod \r\n");
-		exit(0);
+          exit(0);
      }
      this->_pi = pi;
 
@@ -86,11 +69,10 @@ DualClaw::DualClaw(const char* config_file){
      int err = this->init(config_file);
      if(err < 0){
           printf("[ERROR] DualClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
-		exit(0);
+          exit(0);
      }
      this->_prev_time = high_resolution_clock::now();
 }
-
 DualClaw::~DualClaw(){
      printf("[INFO] DualClaw() --- Shutting Down...\r\n");
      vector<int32_t> cmds{0,0};
@@ -162,7 +144,6 @@ int DualClaw::init(const char* config_file){
      this->reset_encoders();
      return 0;
 }
-
 int DualClaw::init(const char* serial_device, int baud,int left_claw_addr,int right_claw_addr){
      int h = serial_open(this->_pi, const_cast <char*>(serial_device), baud, 0);
      if(h < 0){
@@ -195,15 +176,12 @@ int DualClaw::init(const char* serial_device, int baud,int left_claw_addr,int ri
 
 void DualClaw::drive(vector<int32_t> cmds){
      int n = cmds.size();
-
      this->leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
      this->rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
 }
-
 void DualClaw::drive(float v, float w){
      vector<int32_t> cmds = this->get_target_speeds(v,w);
      int n = cmds.size();
-
      this->leftclaw->SpeedM1M2(cmds.at(0),cmds.at(0));
      this->rightclaw->SpeedM1M2(cmds.at(1),cmds.at(1));
 }
@@ -228,12 +206,10 @@ vector<int32_t> DualClaw::get_target_speeds(float v, float w){
 }
 
 void DualClaw::set_turn_direction(int dir){ this->flag_turn_dir = dir; }
-
 void DualClaw::set_base_width(float width){ this->_base_width = width; }
 void DualClaw::set_max_speed(float speed){ this->_max_speed = speed; }
 void DualClaw::set_qpps_per_meter(int qpps){ this->_qpps_per_meter = qpps; }
 void DualClaw::set_wheel_diameter(float diameter){ this->_wheel_diameter = diameter; }
-
 float DualClaw::get_base_width(){ return this->_base_width; }
 float DualClaw::get_max_speed(){ return this->_max_speed; }
 int DualClaw::get_qpps_per_meter(){ return this->_qpps_per_meter; }
@@ -268,7 +244,7 @@ vector<float> DualClaw::get_velocities(){
      return tmp;
 }
 
-void DualClaw::update_status(){
+void DualClaw::update_status(bool verbose){
      int err[8];
      uint8_t status;
      bool valid1,valid2,valid3,valid4;
@@ -287,15 +263,17 @@ void DualClaw::update_status(){
      this->currents[2] = (float) this->_currents[2] / 100.0;
      this->currents[3] = (float) this->_currents[3] / 100.0;
 
-     // printf("Battery Voltages:     %.3f |    %.3f\r\n",main_battery[0], main_battery[1]);
-     // printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n",currents[0], currents[1], currents[2], currents[3]);
+     if(verbose){
+          printf("Battery Voltages:     %.3f |    %.3f\r\n",main_battery[0], main_battery[1]);
+          printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n",currents[0], currents[1], currents[2], currents[3]);
+     }
 
      // TODO: User-friendly handling of errors
      this->error[0] = this->leftclaw->ReadError(&valid3);
      this->error[1] = this->rightclaw->ReadError(&valid4);
 }
 
-void DualClaw::update_encoders(){
+void DualClaw::update_encoders(bool verbose){
      uint8_t status1, status2, status3, status4;
      bool valid1, valid2, valid3, valid4;
 
@@ -382,10 +360,12 @@ void DualClaw::update_encoders(){
      this->dy = _dy;
      this->dyaw = dTheta;
 
-     // printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
-     // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
-     // printf("Δdistance, ΔX, ΔY, ΔYaw: %.3f, %.3f, %.3f, %.3f\r\n",dist_traveled, dx,dy,dyaw);
-     // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
+     if(verbose){
+          printf("Motor Speeds (m/s)/[PPS]:  %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)  | %.3f / (%d)\r\n",speeds[0],_speeds[0],speeds[1],_speeds[1],speeds[2],_speeds[2],speeds[3],_speeds[3]);
+          // printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",tmpPos[0],tmpPos[1],tmpPos[2],tmpPos[3]);
+          // printf("Δdistance, ΔX, ΔY, ΔYaw: %.3f, %.3f, %.3f, %.3f\r\n",dist_traveled, dx,dy,dyaw);
+          // printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",_current_pose[0],_current_pose[1],_current_pose[5]);
+     }
 }
 
 void DualClaw::reset_encoders(){

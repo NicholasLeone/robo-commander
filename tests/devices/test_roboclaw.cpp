@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <thread>
+#include <atomic>
 
 #include <pigpiod_if2.h>
 #include "devices/roboclaw.h"
@@ -9,14 +10,15 @@ using namespace std;
 
 RoboClaw* claw1;
 RoboClaw* claw2;
+bool kill_thread = false;
 
 void readSpeeds(){
      uint8_t status1, status2, status3, status4;
      bool valid1, valid2, valid3, valid4;
      int32_t spd1, spd2, spd3, spd4;
 
-     while(1){
-          usleep(0.01 * 1000000);
+     while(!kill_thread){
+          usleep(0.5 * 1000000);
           spd1 = claw1->ReadSpeedM1(&status1,&valid1);
           spd2 = claw1->ReadSpeedM2(&status2,&valid2);
           spd3 = claw2->ReadSpeedM1(&status3,&valid3);
@@ -33,6 +35,7 @@ int main(int argc, char *argv[]){
      bool valid1, valid2, valid3, valid4;
      uint8_t status1, status2, status3, status4;
 
+     std::thread readThread;
      int h;
      uint32_t go1 = 0;
      uint32_t go2 = -10000;
@@ -47,7 +50,7 @@ int main(int argc, char *argv[]){
                claw2 = new RoboClaw(pi, h, 129);
 
                // usleep(2 * 1000000);
-               // thread speedReader(readSpeeds);
+               readThread = std::thread(readSpeeds);
 
                int err, c;
                bool flag_stop = false;
@@ -125,18 +128,14 @@ int main(int argc, char *argv[]){
                claw1->SpeedM1M2(0,0);
                claw2->SpeedM1M2(0,0);
           }
+          kill_thread = true;
           int err = serial_close(pi, h);
           usleep(0.1 * 10000000);
           pigpio_stop(pi);
      }
      // usleep(1 * 10000000);
+     cout << "Closing Read Thread..." << endl;
+     if(readThread.joinable()){ readThread.join(); }
      cout << "DONE!" << endl;
-
      return 0;
 }
-
-/** TO COMPILE:
-
-     g++ -w test_roboclaw.cpp -o TestClaw -lpigpiod_if2 -Wall -pthread
-
-*/
