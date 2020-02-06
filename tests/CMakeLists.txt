@@ -150,6 +150,11 @@ add_executable(test_roboclaw ${TEST_DIR}/devices/test_roboclaw.cpp)
 target_link_libraries(test_roboclaw PUBLIC roboclaw ${RoboCommander_EXTERNAL_LIBRARIES})
 list(APPEND RoboCommander_TESTS test_roboclaw)
 
+# Two RoboClaws over usb cable
+add_executable(test_roboclaw_usb ${TEST_DIR}/devices/test_roboclaw_usb.cpp)
+target_link_libraries(test_roboclaw_usb PUBLIC roboclaw ${RoboCommander_EXTERNAL_LIBRARIES})
+list(APPEND RoboCommander_TESTS test_roboclaw_usb)
+
 # PWM Driver - PCA-9685
 add_executable(test_pca9685 ${TEST_DIR}/devices/test_pca9685.cpp)
 target_link_libraries(test_pca9685 PUBLIC pca9685 ${RoboCommander_EXTERNAL_LIBRARIES})

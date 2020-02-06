@@ -3,97 +3,95 @@
 
 #include <vector>
 #include <chrono>
+#include <mutex>
 #include "devices/roboclaw.h"
 
 using namespace std;
 using namespace chrono;
 
 class DualClaw {
-
 private:
+     std::mutex _lock;
+     /** Communication Variables */
      int _pi;
-     int _ser_handle;
-     int _address[2];
-     uint8_t _status[4];
-     bool _valid[4];
+     vector<int> _ser_handles;
 
+     /** Roboclaw Config Parameters */
      float _max_speed;
      float _base_width;
-     float _wheel_diameter;
      int _qpps_per_meter;
+     float _wheel_diameter;
 
-     uint16_t _main_battery[2] = {0,0};
-     int16_t _currents[4] = {0,0,0,0};
-     uint32_t _positions[4] = {0,0,0,0};
-     uint32_t _speeds[4] = {0,0,0,0};
-     uint32_t _last_positions[4] = {0,0,0,0};
+     /** Roboclaw Data Containers */
+     vector<float> _main_battery_voltages;
+     vector<float> _motor_currents;
+     vector<uint16_t> _claw_error_status;
+     vector<uint32_t> _motors_pps;
+     vector<float> _motor_velocities;
+     vector<uint32_t> _encoder_positions;
 
-     // Pose and velocities in the body frame (for odometry)
-     float _current_pose[3] = {0,0,0};
+     /** Timing Variables */
+     float _sampled_enc_dt;
+     high_resolution_clock::time_point _prev_enc_time;
+
+     /** Odometry Update Related Variables */
+     uint32_t _prev_encoder_positions[4] = {0,0,0,0};
+     float _odom_changes[4] = {0.0,0.0,0.0,0.0};
+     float _cur_pose[3] = {0,0,0};
      float _linear_vel;
      float _angular_vel;
-     high_resolution_clock::time_point _prev_time;
-
+     /** Variables for motor direction switching */
+     int _turn_dir_sign;
+     int _left_dir;
+     int _right_dir;
 public:
      RoboClaw* leftclaw;
      RoboClaw* rightclaw;
 
-     int flag_turn_dir;
-     int flag_left_sign;
-     int flag_right_sign;
-     // PID Values
-     uint32_t qpps[4];
-     float kp[4];
-     float ki[4];
-     float kd[4];
-
-     uint16_t error[2];
-     float main_battery[2];
-     float currents[4];
-
-     float speeds[4];
-     float positions[4];
-     float dx;
-     float dy;
-     float dyaw;
-     float dist_traveled;
-
+     /** Constructors / Deconstructors */
      DualClaw();
      DualClaw(int pi);
-     DualClaw(int pi, const char* config_file);
      DualClaw(const char* config_file);
+     DualClaw(int pi, const char* config_file);
      ~DualClaw();
 
-     // FUNCTIONS
+     /** Device Startup Functions */
      int init(const char* config_file);
      int init(const char* serial_device, int baud, int left_claw_addr = 128, int right_claw_addr = 129);
+     int init(int baud, const char* serial_device_left, const char* serial_device_right, int left_claw_addr = 128, int right_claw_addr = 129);
 
+     /** Device Motion Control Functions */
+     vector<int32_t> get_target_speeds(float v, float w);
      void drive(float v, float w);
      void drive(vector<int32_t> cmds);
+     /** Device Data Request/Update Functions */
      void update_status(bool verbose = false);
-     void update_encoders(bool verbose = false);
+     void update_motors(bool verbose = false);
+     void update_odometry(bool verbose = false);
 
-     vector<int32_t> get_target_speeds(float v, float w);
-
+     /** Class Config Getters / Setters */
      void set_turn_direction(int dir);
      void set_base_width(float width);
      void set_max_speed(float speed);
      void set_qpps_per_meter(int qpps);
      void set_wheel_diameter(float diameter);
-
      float get_base_width();
      float get_max_speed();
      int get_qpps_per_meter();
      float get_wheel_diameter();
 
+     /** Class Stored Data Getters */
      vector<float> get_currents();
      vector<float> get_voltages();
+     vector<uint16_t> get_error_status();
      vector<uint32_t> get_encoder_positions();
-     vector<float> get_encoder_speeds();
+     vector<float> get_motor_speeds();
+     vector<uint32_t> get_motor_pps();
      vector<float> get_odom_deltas();
      vector<float> get_pose();
      vector<float> get_velocities();
 
+     /** Helper Functions */
      void reset_encoders();
      float normalize_heading(const float& angle);
 
