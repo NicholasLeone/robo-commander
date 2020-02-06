@@ -249,30 +249,34 @@ void DualClaw::drive(float v, float w){
 *
 */
 void DualClaw::update_status(bool verbose){
-     int success;
-     uint8_t status;
+     bool success;
      bool valid1,valid2,valid3,valid4;
      int16_t leftAmps1, leftAmps2, rightAmps1, rightAmps2;
 
      /** Query roboclaws for information and store for later */
-     uint16_t leftErrStatus = this->leftclaw->ReadError(&valid1);
-     uint16_t rightErrStatus = this->rightclaw->ReadError(&valid2);
      uint16_t leftVolt = this->leftclaw->ReadMainBatteryVoltage(&valid3);
      uint16_t rightVolt = this->rightclaw->ReadMainBatteryVoltage(&valid4);
-     success = this->leftclaw->ReadCurrents(leftAmps1, leftAmps2);
-     success = this->rightclaw->ReadCurrents(rightAmps1, rightAmps2);
-
      /** Convert recevied information into user-friendly format */
      float leftBatLvl = (float) ((int16_t) leftVolt) / 10.0;
      float rightBatLvl = (float) ((int16_t) rightVolt) / 10.0;
+     /** Package converted data containers */
+     vector<float> voltVec{leftBatLvl, rightBatLvl};
+
+     /** Query roboclaws for information and store for later */
+     success = this->leftclaw->ReadCurrents(leftAmps1, leftAmps2);
+     success = this->rightclaw->ReadCurrents(rightAmps1, rightAmps2);
+     /** Convert recevied information into user-friendly format */
      float leftCurrent1 = (float) leftAmps1 / 100.0;
      float leftCurrent2 = (float) leftAmps2 / 100.0;
      float rightCurrent1 = (float) rightAmps1 / 100.0;
      float rightCurrent2 = (float) rightAmps2 / 100.0;
      /** Package converted data containers */
-     vector<uint16_t> errVec{leftErrStatus, rightErrStatus};
-     vector<float> voltVec{leftBatLvl, rightBatLvl};
      vector<float> currentVec{leftCurrent1, leftCurrent2, rightCurrent1, rightCurrent2};
+
+     /** Query roboclaws for information and store for later */
+     // uint16_t leftErrStatus = this->leftclaw->ReadError(&valid1);
+     // uint16_t rightErrStatus = this->rightclaw->ReadError(&valid2);
+     // vector<uint16_t> errVec{leftErrStatus, rightErrStatus};
 
      if(verbose){
           printf("Battery Voltages:     %.3f |    %.3f\r\n", leftBatLvl, rightBatLvl);
@@ -280,7 +284,7 @@ void DualClaw::update_status(bool verbose){
      }
      /** Store received data internally */
      this->_lock.lock();
-     this->_claw_error_status = vector<uint16_t>(errVec.begin(), errVec.end());
+     // this->_claw_error_status = vector<uint16_t>(errVec.begin(), errVec.end());
      this->_main_battery_voltages = vector<float>(voltVec.begin(), voltVec.end());
      this->_motor_currents = vector<float>(currentVec.begin(), currentVec.end());
      this->_lock.unlock();
