@@ -97,9 +97,6 @@ public:
      void reset_encoders(bool verbose = false);
      void reset_odometry(bool verbose = false);
      float normalize_heading(const float& angle);
-
-     // TODO: develop
-     // void keep_alive();
 };
 
 #endif // DUAL_ROBOCLAW_H_
