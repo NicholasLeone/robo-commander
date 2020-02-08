@@ -49,6 +49,16 @@ void echoOn(void){
 bool kill_thread = false;
 
 int main(int argc, char *argv[]){
+     std::string dev1;
+     std::string dev2;
+     if(argc < 3){
+          dev1 = "/dev/ttyACM0";
+          dev2 = "/dev/ttyACM1";
+     } else{
+          dev1 = argv[1];
+          dev2 = argv[2];
+     }
+
      float target_lin = 0.0, target_rot = 0.0;
      vector<int32_t> cmds;
      // vector<int32_t> cmds1;
@@ -61,14 +71,14 @@ int main(int argc, char *argv[]){
      if (pi >= 0){
           int err;
           DualClaw claws(pi);
-          err = claws.init(115200, "/dev/ttyACM1", "/dev/ttyACM0", 128, 129);
+          err = claws.init(115200, dev1.c_str(), dev2.c_str(), 128, 129);
           // err = claws.init("/home/pi/devel/robo-commander/config/profiles/dualclaw.config");
           if(err < 0){
                return -1;
           }
           // cmds1 = claws.get_target_speeds(1.0, 0.0);
           // cmds2 = claws.get_target_speeds(0.0, 0.0);
-
+          // claws.reset_encoders();
           bool flag_stop = false;
           echoOff();
           int c = '\0';
@@ -99,42 +109,46 @@ int main(int argc, char *argv[]){
                               target_rot = target_rot - dRot;
                               printf("Decreasing angular velocity to %.3f...\r\n", target_rot);
                               break;
-                         case 'z': // check speeds
-                              // spd1 = claw1->ReadSpeedM1(&status1,&valid1);
-                              // spd2 = claw1->ReadSpeedM2(&status2,&valid2);
-                              // spd3 = claw2->ReadSpeedM1(&status3,&valid3);
-                              // spd4 = claw2->ReadSpeedM2(&status4,&valid4);
-                              // printf("V1, V2, V3, V4:     %d   |    %d |    %d  |    %d\r\n",spd1,spd2,spd3,spd4);
+                         case 'f': // check speeds
+                              // claws.flip_odom_turn_direction();
                               break;
                          case 'e': // Check PID Params
-                              // float kp1, ki1, kd1;
-                              // float kp2, ki2, kd2;
-                              // float kp3, ki3, kd3;
-                              // float kp4, ki4, kd4;
-                              // uint32_t qpps1, qpps2, qpps3, qpps4;
-                              // // if(claw1->ReadM1VelocityPID(&kp1,&ki1,&kd1,&qpps1))
-                              // if(claw1->ReadM1VelocityPID(kp1,ki1,kd1,qpps1))
-                              //      printf("Motor1 -- KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp1,ki1,kd1,qpps1);
-                              // // if(claw1->ReadM2VelocityPID(&kp2,&ki2,&kd2,&qpps2))
-                              // if(claw1->ReadM2VelocityPID(kp2,ki2,kd2,qpps2))
-                              //      printf("Motor2 -- KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp2,ki2,kd2,qpps2);
-                              // // if(claw2->ReadM1VelocityPID(&kp3,&ki3,&kd3,&qpps3))
-                              // if(claw2->ReadM1VelocityPID(kp3,ki3,kd3,qpps3))
-                              //      printf("Motor3 -- KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp3,ki3,kd3,qpps3);
-                              // // if(claw2->ReadM2VelocityPID(&kp4,&ki4,&kd4,&qpps4))
-                              // if(claw2->ReadM2VelocityPID(kp4,ki4,kd4,qpps4))
-                              //      printf("Motor4 -- KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp4,ki4,kd4,qpps4);
+                              claws.reset_encoders();
                               break;
                          case 'r': // STOP
                               printf("Setting speeds to 0...\r\n");
                               target_lin = 0.0;
                               target_rot = 0.0;
+                              claws.reset_odometry();
                               break;
                     }
                }
                cmds = claws.get_target_speeds(target_lin, target_rot);
                claws.drive(cmds);
-               claws.update_odometry(true);
+               claws.update_odometry();
+               claws.update_status(true);
+
+               float ppm = claws.get_qpps_per_meter();
+          	float wheelbase = claws.get_base_width();
+          	float wheel_diamter = claws.get_wheel_diameter();
+          	float max_claw_speed = claws.get_max_speed();
+          	vector<uint32_t> positions = claws.get_encoder_positions();
+          	vector<float> spds = claws.get_motor_speeds();
+          	vector<float> dOdom = claws.get_odom_deltas();
+          	vector<float> pose = claws.get_pose();
+          	vector<float> vels = claws.get_velocities();
+          	vector<float> currents = claws.get_currents();
+          	vector<float> voltages = claws.get_voltages();
+
+               printf("Motor Speeds (m/s):  %.3f | %.3f  | %.3f  | %.3f \r\n",spds[0],spds[1],spds[2],spds[3]);
+     		printf("Encoder Positions (qpps): %d | %d | %d | %d\r\n",positions[0],positions[1],positions[2],positions[3]);
+     		printf("Δdistance, ΔYaw, ΔX, ΔY,: %.3f, %.3f, %.3f, %.3f\r\n",dOdom[0], dOdom[1],dOdom[2],dOdom[3]);
+     		printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",pose[0],pose[1],pose[2]);
+     		// printf("Battery Voltages:     %.3f |    %.3f\r\n",voltages[0], voltages[1]);
+     		// printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n",currents[0], currents[1], currents[2], currents[3]);
+     		printf(" =========================================== \r\n");
+
+
                usleep(0.1 * 1000000);
           }
           echoOn();

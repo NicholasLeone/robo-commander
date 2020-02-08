@@ -18,7 +18,8 @@ DualClaw::DualClaw(){
      }
      this->_pi = pi;
 
-     this->_turn_dir_sign = 1;
+     this->_cmd_turn_dir_sign = 1;
+     this->_odom_turn_dir_sign = 1;
      this->_left_dir = 1;
      this->_right_dir = 1;
 
@@ -32,7 +33,8 @@ DualClaw::DualClaw(){
 DualClaw::DualClaw(int pi){
      this->_pi = pi;
 
-     this->_turn_dir_sign = 1;
+     this->_cmd_turn_dir_sign = 1;
+     this->_odom_turn_dir_sign = 1;
      this->_left_dir = 1;
      this->_right_dir = 1;
 
@@ -46,7 +48,8 @@ DualClaw::DualClaw(int pi){
 DualClaw::DualClaw(int pi, const char* config_file){
      this->_pi = pi;
 
-     this->_turn_dir_sign = 1;
+     this->_cmd_turn_dir_sign = 1;
+     this->_odom_turn_dir_sign = 1;
      this->_left_dir = 1;
      this->_right_dir = 1;
 
@@ -65,7 +68,8 @@ DualClaw::DualClaw(const char* config_file){
      }
      this->_pi = pi;
 
-     this->_turn_dir_sign = 1;
+     this->_cmd_turn_dir_sign = 1;
+     this->_odom_turn_dir_sign = 1;
      this->_left_dir = 1;
      this->_right_dir = 1;
 
@@ -216,11 +220,12 @@ int DualClaw::init(int baud, const char* serial_device_left, const char* serial_
 *
 */
 vector<int32_t> DualClaw::get_target_speeds(float v, float w){
+     if(fabs(v) > this->_max_speed) v= this->_max_speed;
      vector<int32_t> cmds(2);
 
      /**   Differential Drive Drive Equations     */
-     float v_left = v - (this->_turn_dir_sign * w) * (this->_base_width / 2.0);
-     float v_right = v + (this->_turn_dir_sign * w) * (this->_base_width / 2.0);
+     float v_left = v - (this->_cmd_turn_dir_sign * w) * (this->_base_width / 2.0);
+     float v_right = v + (this->_cmd_turn_dir_sign * w) * (this->_base_width / 2.0);
 
      float left_spd = v_left * this->_qpps_per_meter * this->_left_dir;
      float right_spd = v_right * this->_qpps_per_meter * this->_right_dir;
@@ -254,22 +259,33 @@ void DualClaw::update_status(bool verbose){
      int16_t leftAmps1, leftAmps2, rightAmps1, rightAmps2;
 
      /** Query roboclaws for information and store for later */
-     uint16_t leftVolt = this->leftclaw->ReadMainBatteryVoltage(&valid3);
-     uint16_t rightVolt = this->rightclaw->ReadMainBatteryVoltage(&valid4);
+     uint16_t leftVolt = this->leftclaw->ReadMainBatteryVoltage(&valid1);
+     uint16_t rightVolt = this->rightclaw->ReadMainBatteryVoltage(&valid2);
      /** Convert recevied information into user-friendly format */
-     float leftBatLvl = (float) ((int16_t) leftVolt) / 10.0;
-     float rightBatLvl = (float) ((int16_t) rightVolt) / 10.0;
+     float leftBatLvl, rightBatLvl;
+     if(valid1) leftBatLvl = (float) ((int16_t) leftVolt) / 10.0;
+     else leftBatLvl = -1.0;
+     if(valid2) rightBatLvl = (float) ((int16_t) rightVolt) / 10.0;
+     else rightBatLvl = -1.0;
      /** Package converted data containers */
      vector<float> voltVec{leftBatLvl, rightBatLvl};
 
      /** Query roboclaws for information and store for later */
      success = this->leftclaw->ReadCurrents(leftAmps1, leftAmps2);
+     if(!success){
+          leftAmps1 = -100;
+          leftAmps2 = -100;
+     }
      success = this->rightclaw->ReadCurrents(rightAmps1, rightAmps2);
+     if(!success){
+          rightAmps1 = -100;
+          rightAmps2 = -100;
+     }
      /** Convert recevied information into user-friendly format */
-     float leftCurrent1 = (float) leftAmps1 / 100.0;
-     float leftCurrent2 = (float) leftAmps2 / 100.0;
-     float rightCurrent1 = (float) rightAmps1 / 100.0;
-     float rightCurrent2 = (float) rightAmps2 / 100.0;
+     float leftCurrent1 = ( (float) leftAmps1 ) / 100.0;
+     float leftCurrent2 = ( (float) leftAmps2 ) / 100.0;
+     float rightCurrent1 = ( (float) rightAmps1 ) / 100.0;
+     float rightCurrent2 = ( (float) rightAmps2 ) / 100.0;
      /** Package converted data containers */
      vector<float> currentVec{leftCurrent1, leftCurrent2, rightCurrent1, rightCurrent2};
 
@@ -279,8 +295,9 @@ void DualClaw::update_status(bool verbose){
      // vector<uint16_t> errVec{leftErrStatus, rightErrStatus};
 
      if(verbose){
-          printf("Battery Voltages:     %.3f |    %.3f\r\n", leftBatLvl, rightBatLvl);
+          printf("Battery Voltages:     %.3f |    %.3f\r\n",leftBatLvl, rightBatLvl);
           printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n", leftCurrent1, leftCurrent2, rightCurrent1, rightCurrent2);
+          // printf("Motor Currents:     %d |    %d |    %d |    %d\r\n", leftAmps1, leftAmps2, rightAmps1, rightAmps2);
      }
      /** Store received data internally */
      this->_lock.lock();
@@ -331,13 +348,13 @@ void DualClaw::update_odometry(bool verbose){
      float encoderDeltas[4] = {0.0,0.0,0.0,0.0};
      this->_lock.lock();
      for(int i = 0; i < 4; i++){
-          int32_t curPos = (int32_t) this->_encoder_positions[i];
-          int32_t prevPos = (int32_t) this->_prev_encoder_positions[i];
-          encoderDeltas[i] =  (float) (curPos - prevPos) / (float) this->_qpps_per_meter;
-          this->_prev_encoder_positions[i] = (uint32_t) curPos;
+          int32_t curEncPos = (int32_t) this->_encoder_positions[i];
+          int32_t prevEncPos = (int32_t) this->_prev_encoder_positions[i];
+          encoderDeltas[i] =  (float) (curEncPos - prevEncPos) / (float) this->_qpps_per_meter;
+          this->_prev_encoder_positions[i] = (uint32_t) curEncPos;
      }
      // Store these values locally before unlock
-     float curPos[3] = {this->_cur_pose[0], this->_cur_pose[1], this->_cur_pose[2]};
+     float curPose[3] = {this->_cur_pose[0], this->_cur_pose[1], this->_cur_pose[2]};
      float encDt = this->_sampled_enc_dt;
      this->_lock.unlock();
 
@@ -345,17 +362,18 @@ void DualClaw::update_odometry(bool verbose){
      float avgDistL = (encoderDeltas[0] + encoderDeltas[1]) / 2.0;
      float avgDistR = (encoderDeltas[2] + encoderDeltas[3]) / 2.0;
      float linDistTraveled = (avgDistL + avgDistR) / 2.0;
-     float dTheta = (avgDistL - avgDistR) / this->_base_width;
+     float dTheta = (avgDistR - avgDistL) / this->_base_width;
+     dTheta = (float)(this->_odom_turn_dir_sign) * dTheta;
 
      // Prevent wrong pdometry from any potential data corruption
      if(isnan(linDistTraveled)) linDistTraveled = 0.0;
      float curX, curY, curYaw;
-     if(isnan(curPos[0])) curX = 0.0;
-     else curX = curPos[0];
-     if(isnan(curPos[1])) curY = 0.0;
-     else curY = curPos[1];
-     if(isnan(curPos[2])) curYaw = 0.0;
-     else curYaw = curPos[2];
+     if(isnan(curPose[0])) curX = 0.0;
+     else curX = curPose[0];
+     if(isnan(curPose[1])) curY = 0.0;
+     else curY = curPose[1];
+     if(isnan(curPose[2])) curYaw = 0.0;
+     else curYaw = curPose[2];
 
      float dX, dY, dYaw;
      if(isnan(dTheta)){
@@ -407,7 +425,8 @@ void DualClaw::update_odometry(bool verbose){
 /** SECTION: Class Config Getters / Setters
 *
 */
-void DualClaw::set_turn_direction(int dir){ this->_turn_dir_sign = dir; }
+void DualClaw::set_odom_turn_direction(int dir){ this->_odom_turn_dir_sign = dir; }
+void DualClaw::set_command_turn_direction(int dir){ this->_cmd_turn_dir_sign = dir; }
 void DualClaw::set_base_width(float width){ this->_base_width = width; }
 void DualClaw::set_max_speed(float speed){ this->_max_speed = speed; }
 void DualClaw::set_qpps_per_meter(int qpps){ this->_qpps_per_meter = qpps; }
@@ -466,20 +485,19 @@ vector<float> DualClaw::get_pose(){
 /** SECTION: Helper Functions
 *
 */
-void DualClaw::reset_encoders(){
+void DualClaw::reset_encoders(bool verbose){
      this->leftclaw->ResetEncoders();
      this->rightclaw->ResetEncoders();
-     for(int i = 0; i < 4; i++){
-          this->_odom_changes[i] = 0.0;
-          this->_encoder_positions[i] = 0;
-          this->_prev_encoder_positions[i] = 0;
-     }
-
-     this->_cur_pose[0] = 0.0;
-     this->_cur_pose[1] = 0.0;
-     this->_cur_pose[2] = 0.0;
-
-     printf("Encoders Reset (qpps): %d | %d | %d | %d\r\n",this->_encoder_positions[0],this->_encoder_positions[1],this->_encoder_positions[2],this->_encoder_positions[3]);
+     // if(verbose) printf("Encoders Reset (qpps): %d | %d | %d | %d\r\n",this->_encoder_positions[0],this->_encoder_positions[1],this->_encoder_positions[2],this->_encoder_positions[3]);
+}
+void DualClaw::reset_odometry(bool verbose){
+     this->_lock.lock();
+     this->reset_encoders();
+     for(int i = 0; i < 4; i++){ this->_prev_encoder_positions[i] = 0; }
+     for(int i = 0; i < 4; i++){ this->_odom_changes[i] = 0.0; }
+     for(int j = 0; j < 3; j++){ this->_cur_pose[j] = 0.0; }
+     this->_lock.unlock();
+     if(verbose) printf("Odometry Reset --- Current Pose (X, Y, Heading) = %.3f | %.3f | %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
 }
 float DualClaw::normalize_heading(const float& angle){
      float tmpAngle = angle;

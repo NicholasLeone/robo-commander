@@ -1,0 +1,2 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2404", ATTRS{devpath}=="1.4", SYMLINK+="ttyClawLeft", GROUP="dialout", MODE="0666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2404", ATTRS{devpath}=="1.3", SYMLINK+="ttyClawRight", GROUP="dialout", MODE="0666"

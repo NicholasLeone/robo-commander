@@ -37,11 +37,12 @@ private:
      /** Odometry Update Related Variables */
      uint32_t _prev_encoder_positions[4] = {0,0,0,0};
      float _odom_changes[4] = {0.0,0.0,0.0,0.0};
-     float _cur_pose[3] = {0,0,0};
+     float _cur_pose[3] = {0.0, 0.0, 0.0};
      float _linear_vel;
      float _angular_vel;
      /** Variables for motor direction switching */
-     int _turn_dir_sign;
+     int _cmd_turn_dir_sign;
+     int _odom_turn_dir_sign;
      int _left_dir;
      int _right_dir;
 public:
@@ -70,7 +71,8 @@ public:
      void update_odometry(bool verbose = false);
 
      /** Class Config Getters / Setters */
-     void set_turn_direction(int dir);
+     void set_odom_turn_direction(int dir);
+     void set_command_turn_direction(int dir);
      void set_base_width(float width);
      void set_max_speed(float speed);
      void set_qpps_per_meter(int qpps);
@@ -92,7 +94,8 @@ public:
      vector<float> get_velocities();
 
      /** Helper Functions */
-     void reset_encoders();
+     void reset_encoders(bool verbose = false);
+     void reset_odometry(bool verbose = false);
      float normalize_heading(const float& angle);
 
      // TODO: develop

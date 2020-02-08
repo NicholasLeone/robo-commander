@@ -45,7 +45,8 @@ SwansonV2::SwansonV2(int pi){
      claws = new DualClaw(pi,"/home/pi/devel/robo-commander/config/profiles/dualclaw.config");
      imu = new GenericRTIMU(path, file);
 
-     claws->set_turn_direction(-1);
+     claws->set_odom_turn_direction(-1);
+     // claws->flip_command_turn_direction();
      claws->reset_encoders();
 
      this->flag_verbose = false;
