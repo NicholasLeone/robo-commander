@@ -1,7 +1,7 @@
 #ifndef CAMERA_D415_H_
 #define CAMERA_D415_H_
 
-#include <string>
+#include <string.h>
 #include <chrono>
 #include <vector>
 #include <thread>

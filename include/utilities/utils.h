@@ -3,13 +3,17 @@
 
 #include <map>
 #include <vector>
+#include <string>
+#include <sstream>
 #include <assert.h>
+#include <algorithm>
+#include <iterator>
+
 #include <armadillo>
 #include "base/definitions.h"
 #include "yaml-cpp/yaml.h"
 
 using namespace std;
-using namespace arma;
 
 float convertRadians2Degrees(float angle);
 float convertDegrees2Radians(float angle);
@@ -27,9 +31,13 @@ vector<int> get_csv_size(const string &file);
 vector<vector<float>> csv_to_array(const string &file);
 vector<vector<float>> csv_extract_columns(const string &file);
 
-fmat csv_to_matrix(const string &file);
+arma::fmat csv_to_matrix(const string &file);
+arma::fmat Ci2b(float angles[3]);
 
-fmat Ci2b(float angles[3]);
+std::string ltrim(const std::string& s);
+std::string rtrim(const std::string& s);
+std::string trim(const std::string& s);
+std::vector<float> extractFloatStringList(std::string inputString, std::string delimiter);
 
 template<typename T> void print_vector(string header, vector<T> vec);
 template<typename T> void print_vectors(string header, vector< vector<T> > vecs);
@@ -50,14 +58,16 @@ std::string format(const char* format, Args... args ){
      return str;
 }
 
-// void printUdpHeader(CommunicationHeaderByte* header);
-// void printImu(Sim_Msg_IMUData data);
-// void printGps(Sim_Msg_GPSData data);
-// void printLidar(Sim_Msg_LidarData data);
-
-// UDP Sending Overloads
-// int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_IMUData data);
-// int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_GPSData data);
-// int sendUdp(int _port, char* _add, CommunicationHeaderByte* header, Sim_Msg_LidarData data);
+template<typename T>
+std::string vector_str(vector<T> vec, std::string delimiter){
+     std::string out;
+     std::ostringstream vts;
+     if(!vec.empty()){
+          std::copy(vec.begin(), vec.end()-1, std::ostream_iterator<T>(vts, delimiter.c_str()));
+          vts << vec.back();
+          out = vts.str();
+     }
+     return out;
+}
 
 #endif /* UTILITIES_UTILS_H_ */

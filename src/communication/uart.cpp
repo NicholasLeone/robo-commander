@@ -1,5 +1,5 @@
-#include <iostream>
 #include <string.h>
+#include <iostream>
 #include "communication/uart.h"
 
 using namespace std;

@@ -105,8 +105,6 @@ if(WITH_OPENCV)
      ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
      find_package(OpenCV 4.1.1 REQUIRED)
      # find_package(OpenCV 3.4.1 REQUIRED)
-     list(APPEND EXTERNAL_PACKAGE_INCLUDES "${OpenCV_INCLUDE_DIRS}")
-     list(APPEND EXTERNAL_PACKAGE_LIBRARIES "${OpenCV_LIBS}")
 endif(WITH_OPENCV)
 
 if(WITH_LIBREALSENSE)
@@ -124,6 +122,7 @@ include_directories(
      ${Boost_INCLUDE_DIRS}
      ${pigpio_INCLUDE_DIR}
      ${EXTERNAL_PACKAGE_INCLUDES}
+     ${OpenCV_INCLUDE_DIRS}
      # For PurePursuit Controller
      ${PYTHON_INCLUDE_DIRS}
      /usr/local/lib/python2.7/dist-packages/numpy/core/include
@@ -136,6 +135,7 @@ set( RoboCommander_EXTERNAL_LIBRARIES
      ${CMAKE_THREAD_LIBS_INIT}
      ${EXTERNAL_PACKAGE_LIBRARIES}
      ${PYTHON_LIBRARIES}
+     ${OpenCV_LIBS}
 )
 
 set( RoboCommander_INCLUDE_DIRS
@@ -168,8 +168,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -latomic")
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
 message(STATUS "MACHINE = ${MACHINE}")
 if(${MACHINE} MATCHES "arm-linux-gnueabihf")
-     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic")
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic")
+     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic -marm")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic -marm")
 elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
@@ -179,8 +179,14 @@ elseif(${MACHINE} MATCHES "powerpc64(le)?-linux-gnu")
 else()
      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
-     set(LRS_TRY_USE_AVX true)
 endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
+
+message(STATUS "Detected processor: ${CMAKE_SYSTEM_PROCESSOR}")
+if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+     message("++ 64 bit architecture")
+else()
+     message("++ 32 bit architecture")
+endif()
 
 # ===========================
 #     Build Targets

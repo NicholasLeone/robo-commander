@@ -1,3 +1,5 @@
+#include <string>
+
 #include "utilities/image_utils.h"
 #include "utilities/plot_utils.h"
 #include "utilities/cv_utils.h"

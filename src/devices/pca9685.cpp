@@ -1,6 +1,6 @@
-#include <pigpiod_if2.h>
-#include <unistd.h>
 #include <math.h>
+#include <unistd.h>
+#include <pigpiod_if2.h>
 
 #include "devices/pca9685.h"
 

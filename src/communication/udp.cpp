@@ -1,5 +1,5 @@
 #include <arpa/inet.h>        // for sockaddr_in and inet_addr()
-#include <string.h>           // for memset()
+#include <string.h>             // for memset()
 #include <unistd.h>           // for close(), usleep
 #include <iostream>           // for cout, endl
 #include <fcntl.h>

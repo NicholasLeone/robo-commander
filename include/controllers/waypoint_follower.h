@@ -4,7 +4,7 @@
 #include <armadillo>
 #include <chrono>
 #include <vector>
-#include <cmath>
+#include <math.h>
 
 using namespace std;
 using namespace arma;

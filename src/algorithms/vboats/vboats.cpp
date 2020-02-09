@@ -1,5 +1,6 @@
-#include <chrono>
 #include <math.h>       /* ceil, cos, sin, sqrt */
+#include <chrono>
+#include <string>
 
 #include "base/definitions.h"
 #include "utilities/utils.h"
@@ -386,12 +387,17 @@ float VBOATS::get_uv_map_scaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, dou
      return dt;
 }
 
-void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool visualize){
-     if(verbose) printf("%s\r\n",cvStrSize("Vmap Filtering Input",input).c_str());
+void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool debug, bool visualize){
+     // if(verbose) printf("%s\r\n",cvStrSize("Vmap Filtering Input",input).c_str());
      vector<float> threshs;
      vector<float> default_threshs = {0.15,0.15,0.01,0.01};
      if(!thresholds) threshs = default_threshs;
-     else threshs = *thresholds;
+     else threshs = (*thresholds);
+
+     if(verbose){
+          std::string threshStr = vector_str(threshs, ", ");
+          printf("[INFO] VBOATS::filter_disparity_vmap() --- Using %d thresholds = [%s]\r\n", threshs.size(), threshStr.c_str());
+     }
 
      int err;
      cv::Mat filtered;
@@ -411,9 +417,9 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
      cv::minMaxLoc(imgCopy, &minVal, &maxVal);
 
      float ratio = (float)(w) / 255.0;
-     int nStrips = int(ceil(ratio * nThreshs));
+     int nStrips = int(ceil(ratio * nThreshs)) - 1;
      int vMax = (int)maxVal;
-     if(verbose) printf("vMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", vMax, ratio, nStrips);
+     if(debug) printf("vMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", vMax, ratio, nStrips);
 
      /**
      int divSection = 3;
@@ -469,18 +475,18 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
                     continue;
                }
 
-               if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
+               if(debug) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
                double maxValRatio = (double) vMax/255.0;
                double relRatio = (double)(tmpMax-tmpStd)/(double)vMax;
                double relRatio2 = (tmpMean)/(double)(tmpMax);
-               if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
+               if(debug) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
 
                double tmpGain;
                if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
                else tmpGain = 1.0 - (relRatio + relRatio2);
 
                int thresh = int(threshs[idx] * tmpGain * tmpMax);
-               if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
+               if(debug) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
 
                cv::Mat tmpStrip;
                threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
@@ -506,13 +512,17 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
      }
      if(output) *output = filtered;
 }
-void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool visualize){
-     if(verbose) printf("%s\r\n",cvStrSize("Umap Filtering Input",input).c_str());
+void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool debug, bool visualize){
+     // if(verbose) printf("%s\r\n",cvStrSize("Umap Filtering Input",input).c_str());
      vector<float> threshs;
      vector<float> default_threshs = {0.25,0.15,0.35,0.35};
      if(!thresholds) threshs = default_threshs;
-     else threshs = *thresholds;
+     else threshs = (*thresholds);
 
+     if(verbose){
+          std::string threshStr = vector_str(threshs, ", ");
+          printf("[INFO] VBOATS::filter_disparity_umap() --- Using %d thresholds = [%s]\r\n", threshs.size(), threshStr.c_str());
+     }
      int err;
      cv::Mat filtered;
      cv::Mat imgCopy = input.clone();
@@ -532,8 +542,8 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
 
      float ratio = (float)(h) / 255.0;
      int uMax = (int)maxVal;
-     int nStrips = int(ceil(ratio * nThreshs));
-     if(verbose) printf("uMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", uMax, ratio, nStrips);
+     int nStrips = int(ceil(ratio * nThreshs)) - 1;
+     if(debug) printf("uMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", uMax, ratio, nStrips);
 
      cv::threshold(imgCopy, imgCopy, 8, 255, cv::THRESH_TOZERO);
 
@@ -555,18 +565,18 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
                     continue;
                }
 
-               if(verbose) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
+               if(debug) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
                double maxValRatio = (double) uMax/255.0;
                double relRatio = (double)(tmpMax-tmpStd)/(double)uMax;
                double relRatio2 = (tmpMean)/(double)(tmpMax);
-               if(verbose) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
+               if(debug) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
 
                double tmpGain;
                if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
                else tmpGain = 1.0 - (relRatio + relRatio2);
 
                int thresh = int(threshs[idx] * tmpGain * tmpMax);
-               if(verbose) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
+               if(debug) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
 
                cv::Mat tmpStrip;
                threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);

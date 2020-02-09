@@ -1,7 +1,7 @@
 #ifndef UTILITIES_IMAGE_UTILS_H_
 #define UTILITIES_IMAGE_UTILS_H_
 
-#include <string>
+#include <string.h>
 #include <vector>
 
 #include <opencv2/opencv.hpp>
@@ -28,6 +28,8 @@ void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& targe
 void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
      cv::Size* new_size, bool verbose = false
 );
+
+int imshowCmap(const cv::Mat& img, std::string title);
 
 /** TODO */
 // def histogram_sliding_filter(hist, window_size=16, flag_plot=False):

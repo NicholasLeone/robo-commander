@@ -1,6 +1,6 @@
-#include <unistd.h>
-#include <iostream>
 #include <chrono>
+#include <iostream>
+#include <unistd.h>
 #include <pigpiod_if2.h>
 
 #include "sensors/encoder.h"

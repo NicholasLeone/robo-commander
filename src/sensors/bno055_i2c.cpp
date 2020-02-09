@@ -1,6 +1,6 @@
-#include <unistd.h>      // For usleep
 #include <iostream>      // For printf
 #include <string.h>      // For memcpy
+#include <unistd.h>      // For usleep
 #include "sensors/bno055_i2c.h"
 
 using namespace std;

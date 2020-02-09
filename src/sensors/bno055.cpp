@@ -1,7 +1,7 @@
-#include <unistd.h>
-#include <iostream>
 #include <vector>
 #include <string.h>
+#include <unistd.h>
+#include <iostream>
 #include "sensors/bno055.h"
 
 using namespace std;

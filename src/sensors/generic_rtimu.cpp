@@ -1,7 +1,7 @@
+#include <chrono>
 #include <string.h>
 #include <iostream>
 #include <unistd.h>
-#include <chrono>
 
 #include "base/definitions.h"
 #include "sensors/generic_rtimu.h"

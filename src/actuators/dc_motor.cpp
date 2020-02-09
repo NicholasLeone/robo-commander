@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <math.h>
-
+#include <stdio.h>
 #include <pigpiod_if2.h>
+
 #include "actuators/dc_motor.h"
 #include "utilities/utils.h"
 

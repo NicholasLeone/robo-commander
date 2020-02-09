@@ -1,7 +1,7 @@
 #ifndef CAMERA_H_
 #define CAMERA_H_
 
-#include <string>
+#include <string.h>
 #include <opencv2/opencv.hpp>
 
 using namespace std;

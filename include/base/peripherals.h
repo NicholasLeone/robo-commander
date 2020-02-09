@@ -1,8 +1,9 @@
 #ifndef PERIPHERALS_H_
 #define PERIPHERALS_H_
-#define PLATFORM_SPECIFIC extern
+// #define PLATFORM_SPECIFIC extern
 
 #include <string>
+#include <stdint.h>
 
 using namespace std;
 
@@ -41,7 +42,7 @@ typedef struct I2C_PARAMS{
 }I2C_PARAMS;
 
 typedef struct INTERFACE_PARAMS{
-     string cMeth;  // Method to use for Device Communication
+     std::string cMeth;  // Method to use for Device Communication
      char* host;    //
      char* port;    //
 

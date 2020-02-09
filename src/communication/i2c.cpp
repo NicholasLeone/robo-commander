@@ -1,3 +1,4 @@
+#include <iostream>
 #include <pigpiod_if2.h>
 #include "communication/i2c.h"
 

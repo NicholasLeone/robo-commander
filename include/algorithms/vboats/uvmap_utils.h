@@ -1,7 +1,7 @@
 #ifndef VBOATS_UVMAP_UTILS_H_
 #define VBOATS_UVMAP_UTILS_H_
 
-#include <string>
+#include <string.h>
 #include <vector>
 
 #include <opencv2/opencv.hpp>

@@ -111,6 +111,22 @@ int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged, bool merge_hori
      return 0;
 }
 
+int imshowCmap(const cv::Mat& img, std::string title){
+     if(img.empty()) return -1;
+     cv::Mat display;
+     cv::Mat input = img.clone();
+     cv::namedWindow(title.c_str(), cv::WINDOW_NORMAL);
+     if(input.type() != CV_8UC1){
+          if(input.channels() > 1) cv::cvtColor(input, input, cv::COLOR_BGR2GRAY);
+          double minVal, maxVal;
+          cv::minMaxLoc(input, &minVal, &maxVal);
+          input.convertTo(display, CV_8UC1, (255.0/maxVal) );
+     } else display = input.clone();
+     cv::applyColorMap(display, display, cv::COLORMAP_JET);
+     cv::imshow(title.c_str(), display);
+     return 0;
+}
+
 /** TODO */
 /**
 def histogram_sliding_filter(hist, window_size=16, flag_plot=False):

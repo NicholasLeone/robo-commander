@@ -1,5 +1,5 @@
-#include <pigpiod_if2.h>
 #include <math.h>
+#include <pigpiod_if2.h>
 
 #include "utilities/utils.h"
 #include "drivetrains/dual_roboclaw.h"

@@ -1,6 +1,6 @@
-#include <string.h> 		// For memcpy
-#include <iostream>			// For printf
+#include <string.h> 	    	// For memcpy
 #include <chrono>			// For high_resolution_clock
+#include <iostream>			// For printf
 
 #include "base/definitions.h"
 #include "interfaces/android_app_interface.h"
