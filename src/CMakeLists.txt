@@ -90,9 +90,9 @@ list(APPEND RoboCommander_LIBRARIES bno055_i2c)
 
 # Camera - D415
 if(WITH_LIBREALSENSE)
-     add_library(camera_d415 SHARED sensors/camera_d415.cpp)
-     target_link_libraries(camera_d415 img_utils cv_utils ${realsense2_LIBRARY})
-     list(APPEND RoboCommander_LIBRARIES camera_d415)
+     add_library(camera_d4xx SHARED sensors/camera_d4xx.cpp)
+     target_link_libraries(camera_d4xx PUBLIC img_utils cv_utils ${OpenCV_LIBS} ${realsense2_LIBRARY})
+     list(APPEND RoboCommander_LIBRARIES camera_d4xx)
 endif(WITH_LIBREALSENSE)
 
 # =========================================

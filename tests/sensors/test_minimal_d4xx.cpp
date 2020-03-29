@@ -1,4 +1,4 @@
-#include "sensors/camera_d415.h"
+#include "sensors/camera_d4xx.h"
 #include <iostream>
 #include <unistd.h>                // For usleep
 #include <chrono>
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
 
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, !threading);
+	CameraD4XX* cam = new CameraD4XX(fps, rgb_resolution, fps, depth_resolution, !threading);
 
 	int count = 0;
 	int errThread;
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
 		if(errThread >= 0){
 			if(debug_timing){
                     double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-                    printf("[INFO] TestCameraD415() ---- convert_to_disparity step took %.2lf ms [%.2lf Hz]):\r\n", dt*1000, (1/dt));
+                    printf("[INFO] TestCameraD4XX() ---- convert_to_disparity step took %.2lf ms [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 				t = (double)cv::getTickCount();
                }
 			// printf(" --------------------------- \r\n");

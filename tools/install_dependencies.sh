@@ -52,11 +52,12 @@ read -n1 -p "Do you need to install the GTSAM library? Enter (y) or (n)" doit
 echo
 if [[ $doit == "Y" || $doit == "y" ]]; then
      cd $libs_root
-     git clone https://github.com/borglab/gtsam.git
+     git clone --branch 4.0.0-alpha2 https://github.com/borglab/gtsam.git
      cd gtsam
      mkdir build
      cd build
-     cmake ..
+     # cmake .. # Or
+     cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=OFF ..
      make -j4
      make check
      sudo make install
@@ -77,7 +78,7 @@ if [[ $doit == "Y" || $doit == "y" ]]; then
      sudo ./scripts/setup_udev_rules.sh
      mkdir build
      cd build
-     cmake -DBUILD_PYTHON_BINDINGS=bool:true -DPYTHON_EXECUTABLE=/usr/bin/python2 -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_OPENMP=bool:true ..
+     cmake -DBUILD_PYTHON_BINDINGS=bool:true -DPYTHON_EXECUTABLE=/usr/bin/python2 -DCMAKE_BUILD_TYPE=Release -DBUILD_WITH_OPENMP=bool:true -DFORCE_LIBUVC=true ..
      make -j4
      cd $libs_root/librealsense/build
      sudo make install

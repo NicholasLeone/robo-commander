@@ -1,5 +1,5 @@
-#ifndef CAMERA_D415_H_
-#define CAMERA_D415_H_
+#ifndef ROBOCOMMANDER_CAMERA_D4XX_H_
+#define ROBOCOMMANDER_CAMERA_D4XX_H_
 
 #include <string.h>
 #include <chrono>
@@ -10,6 +10,8 @@
 #include <atomic>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2/rsutil.h>
@@ -48,7 +50,7 @@ public:
     std::atomic_bool is_enabled;                               //A boolean controlled by the user that determines whether to apply the filter or not
 };
 
-class CameraD415{
+class CameraD4XX{
 private:
      /** Threading Mechanisms */
      std::mutex _lock;
@@ -136,11 +138,11 @@ private:
      void processingThread();
 public:
      /** Constructors */
-	CameraD415(bool use_callback = false, bool show_options = false);
-	CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps,
+	CameraD4XX(bool use_callback = false, bool show_options = false);
+	CameraD4XX(int rgb_fps, int rgb_resolution[2], int depth_fps,
           int depth_resolution[2], bool use_callback = false, bool show_options = false
      );
-     ~CameraD415();
+     ~CameraD4XX();
 
      /** Startup - Shutdown - Initialization Functions */
      bool stop();
@@ -200,4 +202,4 @@ public:
      int get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth);
 };
 
-#endif /* CAMERA_D415_H_*/
+#endif /* ROBOCOMMANDER_CAMERA_D4XX_H_*/

@@ -3,7 +3,7 @@
 #include <limits>                  // For infinity
 #include <math.h>                  // For fabs
 
-#include "sensors/camera_d415.h"
+#include "sensors/camera_d4xx.h"
 #include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 
@@ -30,7 +30,7 @@ filter_options::filter_options(filter_options&& other) :
     filter_name(std::move(other.filter_name)), filter(other.filter),
     is_enabled(other.is_enabled.load()){}
 
-CameraD415::CameraD415(bool use_callback, bool show_options) : _cam_thread(), _stopped(false),
+CameraD4XX::CameraD4XX(bool use_callback, bool show_options) : _cam_thread(), _stopped(false),
      _do_align(false), _do_processing(false), _thread_started(false), _debug_timings(false), _depth2disparity(true), _disparity2depth(false),
      _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH), _use_callback(use_callback)
 {
@@ -68,10 +68,10 @@ CameraD415::CameraD415(bool use_callback, bool show_options) : _cam_thread(), _s
      this->_trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
      this->_trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
      this->_filters = this->get_default_filters();
-     printf("[INFO] CameraD415::CameraD415() --- Successfully created.\r\n");
+     printf("[INFO] CameraD4XX::CameraD4XX() --- Successfully created.\r\n");
 }
 
-CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2],
+CameraD4XX::CameraD4XX(int rgb_fps, int rgb_resolution[2], int depth_fps, int depth_resolution[2],
      bool use_callback, bool show_options) : _cam_thread(), _stopped(false), _do_align(false), _debug_timings(false),
      _do_processing(false), _thread_started(false), _depth2disparity(true), _disparity2depth(false),
      _proc_queue(MAX_QUEUE), _raw_queue(MAX_QUEUE), _disparity_queue(MAX_QUEUE), _align(RS2_STREAM_DEPTH), _use_callback(use_callback)
@@ -118,10 +118,10 @@ CameraD415::CameraD415(int rgb_fps, int rgb_resolution[2], int depth_fps, int de
      this->_trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
      this->_trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
      this->_filters = this->get_default_filters();
-     printf("[INFO] CameraD415::CameraD415() --- Successfully created.\r\n");
+     printf("[INFO] CameraD4XX::CameraD4XX() --- Successfully created.\r\n");
 }
 
-CameraD415::~CameraD415(){
+CameraD4XX::~CameraD4XX(){
      this->stop();
      // delete this->_align;
 }
@@ -134,7 +134,7 @@ CameraD415::~CameraD415(){
 ██ ██   ████ ██    ██    ██ ██   ██ ███████ ██ ███████ ███████
 */
 
-bool CameraD415::stop(){
+bool CameraD4XX::stop(){
      this->_pipe.stop();
      this->_stopped = true;
      if(this->_thread_started){
@@ -142,11 +142,11 @@ bool CameraD415::stop(){
      }
      return true;
 }
-void CameraD415::start_thread(){
+void CameraD4XX::start_thread(){
      this->_thread_started = true;
-     _cam_thread = std::thread(&CameraD415::processingThread,this);
+     _cam_thread = std::thread(&CameraD4XX::processingThread,this);
 }
-bool CameraD415::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback){
+bool CameraD4XX::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback){
      bool err = this->reset(stream_cfgs, false, use_callback);
      usleep(STARTUP_DELAY_SEC * 1000000);
      // Try initializing camera hardware
@@ -155,14 +155,14 @@ bool CameraD415::start_streams(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_
           if(!this->reset(stream_cfgs, true, use_callback)){
                // if unsuccessful initialization after two reset attempts give up
                if(!this->reset(stream_cfgs, true, use_callback)){
-                    printf("[ERROR] Could not initialize CameraD415 object!\r\n");
+                    printf("[ERROR] Could not initialize CameraD4XX object!\r\n");
                     return false;
                }
           }
      }
      return true;
 }
-bool CameraD415::sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
+bool CameraD4XX::sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
      try{
           rs2::config cfg;
           for(std::vector<RS_STREAM_CFG>::iterator it = stream_cfgs.begin(); it != stream_cfgs.end(); ++it){
@@ -170,12 +170,12 @@ bool CameraD415::sensors_startup(std::vector<RS_STREAM_CFG> stream_cfgs){
           }
           this->_cfg = cfg;
      } catch(const rs2::error & e){
-          std::cerr << "[ERROR] CameraD415::sensors_startup() --- Could not initialize rs2::config. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+          std::cerr << "[ERROR] CameraD4XX::sensors_startup() --- Could not initialize rs2::config. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
           return false;
      }
      return true;
 }
-bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback){
+bool CameraD4XX::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool use_callback){
      bool success = this->sensors_startup(stream_cfgs);
      if(!success) return false;
 
@@ -183,7 +183,7 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool u
           rs2::pipeline pipe;
           this->_pipe = pipe;
      } catch(const rs2::error & e){
-          std::cerr << "[ERROR] CameraD415::hardware_startup() --- Could not initialize rs2::pipeline. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+          std::cerr << "[ERROR] CameraD4XX::hardware_startup() --- Could not initialize rs2::pipeline. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
           return false;
      }
 
@@ -201,7 +201,7 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool u
                        if(this->_debug_timings){
                             double dt = (t - this->_prev_t)/cv::getTickFrequency();
                             this->_prev_t = t;
-                            printf("[INFO] CameraD415::processingCallback() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", this->_callback_counter,dt, (1/dt));
+                            printf("[INFO] CameraD4XX::processingCallback() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", this->_callback_counter,dt, (1/dt));
                        }
                        this->_callback_counter++;
                    }
@@ -210,15 +210,15 @@ bool CameraD415::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool u
           } else profile = this->_pipe.start(this->_cfg);
           this->_profile = profile;
      } catch(const rs2::error & e){
-          std::cerr << "[ERROR] CameraD415::hardware_startup() --- Could not initialize rs2::pipeline_profile. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+          std::cerr << "[ERROR] CameraD4XX::hardware_startup() --- Could not initialize rs2::pipeline_profile. RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
           return false;
      }
      return true;
 }
-bool CameraD415::reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup, bool use_callback){
+bool CameraD4XX::reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup, bool use_callback){
      if(this->_dev) this->_dev.hardware_reset();
      else{
-          printf("[ERROR] CameraD415::reset() --- No device to reset.\r\n");
+          printf("[ERROR] CameraD4XX::reset() --- No device to reset.\r\n");
           return false;
      }
      if(with_startup) return this->start_streams(stream_cfgs, use_callback);
@@ -233,32 +233,32 @@ bool CameraD415::reset(std::vector<RS_STREAM_CFG> stream_cfgs, bool with_startup
 ██ ██      ██  ██████      ██████  ██   ██ ███████ ██  ██████ ███████
 */
 
-rs2::frame CameraD415::get_rgb_frame(bool flag_aligned){
+rs2::frame CameraD4XX::get_rgb_frame(bool flag_aligned){
      rs2::frame output;
      if((flag_aligned) && (this->_aligned_frames)) output = this->_aligned_frames.first(RS2_STREAM_COLOR);
      else if(this->_frames) output = this->_frames.first(RS2_STREAM_COLOR);
      return output;
 }
-rs2::frame CameraD415::get_depth_frame(bool flag_aligned){
+rs2::frame CameraD4XX::get_depth_frame(bool flag_aligned){
      rs2::frame output;
      if((flag_aligned) && (this->_aligned_frames)) output = this->_aligned_frames.first(RS2_STREAM_DEPTH);
      else if(this->_frames) output = this->_frames.first(RS2_STREAM_DEPTH);
      return output;
 }
-int CameraD415::_get_rgb_image(rs2::frame frame, cv::Mat* image){
+int CameraD4XX::_get_rgb_image(rs2::frame frame, cv::Mat* image){
      if(frame){
           this->_color_frame = frame;
           cv::Mat tmp(cv::Size(_cwidth, _cheight), CV_8UC3, (void*)frame.get_data(), cv::Mat::AUTO_STEP);
           *image = tmp;
           return 0;
      } else{
-          printf("[WARN] CameraD415::get_rgb_image() ---- Retrieved frame is empty.\r\n");
+          printf("[WARN] CameraD4XX::get_rgb_image() ---- Retrieved frame is empty.\r\n");
           cv::Mat tmp = cv::Mat::zeros(_cwidth, _cheight, CV_8UC3);
           *image = tmp;
           return -1;
      }
 }
-int CameraD415::get_rgb_image(cv::Mat* image, bool flag_aligned){
+int CameraD4XX::get_rgb_image(cv::Mat* image, bool flag_aligned){
      rs2::frame tmpFrame = this->get_rgb_frame(flag_aligned);
      if(tmpFrame){
           this->_color_frame = tmpFrame;
@@ -266,13 +266,13 @@ int CameraD415::get_rgb_image(cv::Mat* image, bool flag_aligned){
           *image = tmp;
           return 0;
      } else{
-          printf("[WARN] CameraD415::get_rgb_image() ---- Retrieved frame is empty.\r\n");
+          printf("[WARN] CameraD4XX::get_rgb_image() ---- Retrieved frame is empty.\r\n");
           cv::Mat tmp = cv::Mat::zeros(_cwidth, _cheight, CV_8UC3);
           *image = tmp;
           return -1;
      }
 }
-int CameraD415::_get_depth_image(rs2::frame frame, cv::Mat* image, bool flag_processed){
+int CameraD4XX::_get_depth_image(rs2::frame frame, cv::Mat* image, bool flag_processed){
      int err = 0;
      if(frame){
           this->_depth_frame = frame;
@@ -287,13 +287,13 @@ int CameraD415::_get_depth_image(rs2::frame frame, cv::Mat* image, bool flag_pro
           }
           return 0;
      } else{
-          // printf("[WARN] CameraD415::get_depth_image() ---- Retrieved frame is empty.\r\n");
+          // printf("[WARN] CameraD4XX::get_depth_image() ---- Retrieved frame is empty.\r\n");
           cv::Mat tmp = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
           *image = tmp;
           return -1;
      }
 }
-int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned, bool flag_processed){
+int CameraD4XX::get_depth_image(cv::Mat* image, bool flag_aligned, bool flag_processed){
      int err = 0;
      rs2::frame tmpFrame = this->get_depth_frame(flag_aligned);
      if(tmpFrame){
@@ -302,17 +302,17 @@ int CameraD415::get_depth_image(cv::Mat* image, bool flag_aligned, bool flag_pro
           *image = tmp;
           return err;
      } else{
-          printf("[WARN] CameraD415::get_depth_image() ---- Retrieved frame is empty.\r\n");
+          printf("[WARN] CameraD4XX::get_depth_image() ---- Retrieved frame is empty.\r\n");
           cv::Mat tmpNull = cv::Mat::zeros(_dwidth, _dheight, CV_16UC1);
           *image = tmpNull;
           return -1;
      }
      return err;
 }
-int CameraD415::read(cv::Mat* rgb, cv::Mat* depth){
+int CameraD4XX::read(cv::Mat* rgb, cv::Mat* depth){
      int err = -2;
      rs2::frameset data;
-     // printf("[INFO] CameraD415::update_frames() --- Updating frames...\r\n");
+     // printf("[INFO] CameraD4XX::update_frames() --- Updating frames...\r\n");
      // this->_lock.lock();
      // data = this->_pipe.wait_for_frames();
      // if(data){
@@ -320,7 +320,7 @@ int CameraD415::read(cv::Mat* rgb, cv::Mat* depth){
           rs2::frameset processed;
           if(this->_do_align) data = this->_align.process(data);
           this->process_frames(data,&processed, this->_do_processing);
-          // printf("[INFO] CameraD415::read() --- frameset \'data\' has %d frames. frameset \'processed\' has %d frames.\r\n", data.size(), processed.size());
+          // printf("[INFO] CameraD4XX::read() --- frameset \'data\' has %d frames. frameset \'processed\' has %d frames.\r\n", data.size(), processed.size());
 
           rs2::frame _frgb = processed.first(RS2_STREAM_COLOR);
           if(_frgb){
@@ -338,8 +338,8 @@ int CameraD415::read(cv::Mat* rgb, cv::Mat* depth){
      }
      // this->_lock.unlock();
 
-     if(err < 0) printf("[WARN] CameraD415::read() ---- One or more of the retrieved images are empty.\r\n");
-     // printf("[INFO] CameraD415::read() ---- nRGB = %d, nDepth = %d, nProcessed = %d.\r\n", this->_nRgbFrames, this->_nDepthFrames, this->_nProcFrames);
+     if(err < 0) printf("[WARN] CameraD4XX::read() ---- One or more of the retrieved images are empty.\r\n");
+     // printf("[INFO] CameraD4XX::read() ---- nRGB = %d, nDepth = %d, nProcessed = %d.\r\n", this->_nRgbFrames, this->_nDepthFrames, this->_nProcFrames);
      return err;
 }
 
@@ -351,7 +351,7 @@ int CameraD415::read(cv::Mat* rgb, cv::Mat* depth){
 ██      ██   ██  ██████   ██████ ███████ ███████ ███████
 */
 
-int CameraD415::process_depth_frame(rs2::frame frame, rs2::frame* processed){
+int CameraD4XX::process_depth_frame(rs2::frame frame, rs2::frame* processed){
      int err = 0;
      rs2::frame _processed = frame;
      if(this->_filters.size() > 0){
@@ -364,7 +364,7 @@ int CameraD415::process_depth_frame(rs2::frame frame, rs2::frame* processed){
      *processed = _processed;
      return err;
 }
-int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed, bool use_filters){
+int CameraD4XX::process_frames(rs2::frameset frames, rs2::frameset* processed, bool use_filters){
      int err = 0;
      rs2::frameset _processed = frames;
      if((this->_filters.size() > 0) && (use_filters)){
@@ -385,7 +385,7 @@ int CameraD415::process_frames(rs2::frameset frames, rs2::frameset* processed, b
  ██████  ██████  ██   ████   ████   ███████ ██   ██    ██
 */
 /** BETA TESTING FUNCTION */
-cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+cv::Mat CameraD4XX::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
      cv::Mat tmp, disparity8;
      double min, maxIn, maxDisparity, maxDepth;
      // cvinfo(depth,"depth input");
@@ -432,7 +432,7 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
      // return disparity88;
 }
 
-cv::Mat CameraD415::convert_to_disparity_alternative(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+cv::Mat CameraD4XX::convert_to_disparity_alternative(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
      cv::Mat tmp, disparity8;
      int roiSz = 5;
      cv::Rect microRoi = cv::Rect(0,depth.rows-2*roiSz,roiSz,roiSz);
@@ -488,7 +488,7 @@ cv::Mat CameraD415::convert_to_disparity_alternative(const cv::Mat depth, double
 
 /** ALPHA TESTING FUNCTION */
 /**
-cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+cv::Mat CameraD4XX::convert_to_disparity(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
      // float trueMaxDisparity = (this->_fxd * this->_baseline)/((float) D415_MAX_DEPTH_M);
      // float trueMinDisparity = (this->_fxd * this->_baseline)/((float) D415_MIN_DEPTH_M);
      // float cvter = (this->_fxd * this->_baseline) / (this->_dscale);
@@ -534,7 +534,7 @@ cv::Mat CameraD415::convert_to_disparity(const cv::Mat depth, double* conversion
 }*/
 /** BASE FUNCTION */
 /** */
-cv::Mat CameraD415::convert_to_disparity_test(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
+cv::Mat CameraD4XX::convert_to_disparity_test(const cv::Mat depth, double* conversion_gain, double* conversion_offset){
      cv::Mat tmpMat;
      depth.convertTo(tmpMat, CV_32F);
      double gain = (this->_fxd * this->_baseline) / this->_dscale;
@@ -576,13 +576,13 @@ cv::Mat CameraD415::convert_to_disparity_test(const cv::Mat depth, double* conve
      if(conversion_offset) *conversion_offset = maxDisparity;
      return tmpMat;
 }
-int CameraD415::get_pointcloud(const rs2::frame& depth, rs2::points* cloud){
+int CameraD4XX::get_pointcloud(const rs2::frame& depth, rs2::points* cloud){
      // Generate the pointcloud and texture mappings
      rs2::points points = this->pc_.calculate(depth);
      if(*cloud) *cloud = points;
      return 0;
 }
-int CameraD415::get_pointcloud(const rs2::frame& depth, const rs2::frame& color, rs2::points* cloud){
+int CameraD4XX::get_pointcloud(const rs2::frame& depth, const rs2::frame& color, rs2::points* cloud){
      this->pc_.map_to(color);
      // Generate the pointcloud and texture mappings
      rs2::points points = this->pc_.calculate(depth);
@@ -598,7 +598,7 @@ int CameraD415::get_pointcloud(const rs2::frame& depth, const rs2::frame& color,
  ██████  ███████    ██       ██    ███████ ██   ██ ███████
 */
 
-vector<rs2::device> CameraD415::get_available_devices(bool show_features, bool verbose){
+vector<rs2::device> CameraD4XX::get_available_devices(bool show_features, bool verbose){
      int index = 0;
      vector<rs2::device> devs;
      rs2::device_list devices = this->_ctx.query_devices();
@@ -613,11 +613,11 @@ vector<rs2::device> CameraD415::get_available_devices(bool show_features, bool v
      }
      return devs;
 }
-std::string CameraD415::get_sensor_name(const rs2::sensor& sensor){
+std::string CameraD4XX::get_sensor_name(const rs2::sensor& sensor){
      if (sensor.supports(RS2_CAMERA_INFO_NAME)) return sensor.get_info(RS2_CAMERA_INFO_NAME);
      else return "Unknown Sensor";
 }
-void CameraD415::get_available_sensors(rs2::device dev){
+void CameraD4XX::get_available_sensors(rs2::device dev){
      int index = 0;
      std::vector<rs2::sensor> sensors = dev.query_sensors();
 
@@ -633,7 +633,7 @@ void CameraD415::get_available_sensors(rs2::device dev){
      }
      get_sensor_option(sensors[selected_sensor_index]);
 }
-void CameraD415::get_sensor_option(const rs2::sensor& sensor){
+void CameraD4XX::get_sensor_option(const rs2::sensor& sensor){
      std::cout << "Sensor supports the following options:\n" << std::endl;
      // The following loop shows how to iterate over all available options
      // Starting from 0 until RS2_OPTION_COUNT (exclusive)
@@ -661,7 +661,7 @@ void CameraD415::get_sensor_option(const rs2::sensor& sensor){
           throw std::out_of_range("Selected option is out of range");
      }
 }
-int CameraD415::get_intrinsics(rs2_stream stream_type, cv::Mat* K, cv::Mat* P, bool verbose){
+int CameraD4XX::get_intrinsics(rs2_stream stream_type, cv::Mat* K, cv::Mat* P, bool verbose){
      int err;
      cv::Mat _K = cv::Mat::zeros(3, 3, CV_64F);
      cv::Mat _P = cv::Mat::zeros(3, 4, CV_64F);
@@ -683,7 +683,7 @@ int CameraD415::get_intrinsics(rs2_stream stream_type, cv::Mat* K, cv::Mat* P, b
           _P.at<double>(10) = 1;
 
           if(verbose){
-               printf("[INFO] CameraD415::get_intrinsics() --- Intrinsic Properties:\r\n");
+               printf("[INFO] CameraD4XX::get_intrinsics() --- Intrinsic Properties:\r\n");
                printf("\tSize ---------- [w, h]: %d, %d\r\n",tmp_stream.width(),tmp_stream.height());
                printf("\tFocal Length -- [X, Y]: %.2f, %.2f\r\n",intr.fx,intr.fy);
                printf("\tPrinciple Point [X, Y]: %.2f, %.2f\r\n",intr.ppx,intr.ppy);
@@ -695,14 +695,14 @@ int CameraD415::get_intrinsics(rs2_stream stream_type, cv::Mat* K, cv::Mat* P, b
      *P = _P;
      return err;
 }
-void CameraD415::get_extrinsics(bool verbose){
+void CameraD4XX::get_extrinsics(bool verbose){
      if(this->_profile){
           rs2::stream_profile depth_stream = this->_profile.get_stream(RS2_STREAM_DEPTH);
           rs2::stream_profile rgb_stream = this->_profile.get_stream(RS2_STREAM_COLOR);
           rs2_extrinsics extr = depth_stream.get_extrinsics_to(rgb_stream);
      }
 }
-float CameraD415::_get_baseline(bool verbose){
+float CameraD4XX::_get_baseline(bool verbose){
      if(this->_profile){
           // rs2::stream_profile ir1_stream = this->_profile.get_stream(RS2_STREAM_INFRARED, 1);
           // rs2::stream_profile ir2_stream = this->_profile.get_stream(RS2_STREAM_INFRARED, 2);
@@ -712,25 +712,25 @@ float CameraD415::_get_baseline(bool verbose){
           rs2_extrinsics extr = depth_stream.get_extrinsics_to(rgb_stream);
 
           float baseline = extr.translation[0];
-          if(verbose) printf("[INFO] CameraD415::_get_baseline() --- Baseline = %f\r\n",baseline);
+          if(verbose) printf("[INFO] CameraD4XX::_get_baseline() --- Baseline = %f\r\n",baseline);
           return baseline;
      }else{ return -1.0;}
 }
-float CameraD415::get_baseline(bool verbose){ return this->_baseline; }
-float CameraD415::_get_depth_scale(bool verbose){
+float CameraD4XX::get_baseline(bool verbose){ return this->_baseline; }
+float CameraD4XX::_get_depth_scale(bool verbose){
      if(!this->_profile){
-          printf("[ERROR] CameraD415::get_depth_scale() --- Camera Profile is not initialized.\r\n");
+          printf("[ERROR] CameraD4XX::get_depth_scale() --- Camera Profile is not initialized.\r\n");
           return -1.0;
      } else{
           rs2::depth_sensor sensor = this->_profile.get_device().first<rs2::depth_sensor>();
           float scale = sensor.get_depth_scale();
-          if(verbose) printf("[INFO] CameraD415::get_depth_scale() --- Depth Scale = %f\r\n",scale);
+          if(verbose) printf("[INFO] CameraD4XX::get_depth_scale() --- Depth Scale = %f\r\n",scale);
           return scale;
      }
 }
-float CameraD415::get_depth_scale(bool verbose){ return this->_dscale; }
+float CameraD4XX::get_depth_scale(bool verbose){ return this->_dscale; }
 
-std::vector<rs2::filter> CameraD415::get_default_filters(bool use_decimation, bool use_threshold,
+std::vector<rs2::filter> CameraD4XX::get_default_filters(bool use_decimation, bool use_threshold,
      bool depth_to_disparity, bool use_spatial, bool use_temporal, bool use_hole_filling)
 {
 
@@ -789,14 +789,14 @@ std::vector<rs2::filter> CameraD415::get_default_filters(bool use_decimation, bo
 ███████ ███████    ██       ██    ███████ ██   ██ ███████
 */
 
-void CameraD415::enable_filters(){ this->_do_processing = true; }
-void CameraD415::disable_filters(){ this->_do_processing = false; }
-void CameraD415::enable_alignment(){ this->_do_align = true; }
-void CameraD415::disable_alignment(){ this->_do_align = false; }
-void CameraD415::enable_timing_debug(){ this->_debug_timings = true; }
-void CameraD415::disable_timing_debug(){ this->_debug_timings = false; }
+void CameraD4XX::enable_filters(){ this->_do_processing = true; }
+void CameraD4XX::disable_filters(){ this->_do_processing = false; }
+void CameraD4XX::enable_alignment(){ this->_do_align = true; }
+void CameraD4XX::disable_alignment(){ this->_do_align = false; }
+void CameraD4XX::enable_timing_debug(){ this->_debug_timings = true; }
+void CameraD4XX::disable_timing_debug(){ this->_debug_timings = false; }
 
-int CameraD415::get_raw_queued_images(cv::Mat* rgb, cv::Mat* depth){
+int CameraD4XX::get_raw_queued_images(cv::Mat* rgb, cv::Mat* depth){
      int err = 0;
      int errFrames = 0;
      rs2::frameset tmpSet;
@@ -816,7 +816,7 @@ int CameraD415::get_raw_queued_images(cv::Mat* rgb, cv::Mat* depth){
      return -2;
 }
 
-int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth){
+int CameraD4XX::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth){
      int err = 0;
      int errFrames = 0;
      rs2::frameset tmpSet;
@@ -836,7 +836,7 @@ int CameraD415::get_processed_queued_images(cv::Mat* rgb, cv::Mat* depth){
      return -2;
 }
 
-void CameraD415::processingThread(){
+void CameraD4XX::processingThread(){
      int step = 0;
      rs2::frameset data;
      rs2::frameset processed;
@@ -861,21 +861,21 @@ void CameraD415::processingThread(){
                this->_proc_queue.enqueue(processed);
                if(this->_debug_timings){
                     dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-                    printf("[INFO] CameraD415::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
+                    printf("[INFO] CameraD4XX::processingThread() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
                }
                step++;
                this->_lock.unlock();
           } else{
                // usleep(10.0);
-               // printf("[INFO] CameraD415::processingThread() ---- Sleeping loop...\r\n");
+               // printf("[INFO] CameraD4XX::processingThread() ---- Sleeping loop...\r\n");
                // std::this_thread::yield();
                // std::this_thread::sleep_for(std::chrono::microseconds(10));
                // if(this->_debug_timings){
                //      dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-               //      printf("[INFO] CameraD415::processingThread() ---- End Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
+               //      printf("[INFO] CameraD4XX::processingThread() ---- End Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", step,dt, (1/dt));
                // }
           }
      }
-     printf("[INFO] CameraD415::processingThread() ---- Exiting loop...\r\n");
+     printf("[INFO] CameraD4XX::processingThread() ---- Exiting loop...\r\n");
      this->_thread_started = false;
 }

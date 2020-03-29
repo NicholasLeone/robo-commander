@@ -1,4 +1,4 @@
-#include "sensors/camera_d415.h"
+#include "sensors/camera_d4xx.h"
 #include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 #include "utilities/plot_utils.h"
@@ -19,8 +19,8 @@ int main(int argc, char *argv[]){
 	int fps = 90;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
-	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
-	CameraD415* cam = new CameraD415(60, rgb_resolution, fps, depth_resolution);
+	// CameraD4XX* cam = new CameraD4XX(fps, rgb_resolution, fps, depth_resolution, true);
+	CameraD4XX* cam = new CameraD4XX(60, rgb_resolution, fps, depth_resolution);
 	cam->enable_alignment();
 	// cam->enable_timing_debug();
 	cam->enable_filters();

@@ -1,4 +1,4 @@
-#include "sensors/camera_d415.h"
+#include "sensors/camera_d4xx.h"
 #include <iostream>
 #include <unistd.h>                // For usleep
 #include <chrono>
@@ -11,12 +11,12 @@ using namespace std;
 
 int main(int argc, char *argv[]){
 	bool do_processing = true;
-	// CameraD415* cam = new CameraD415(480,640,30);
+	// CameraD4XX* cam = new CameraD4XX(480,640,30);
 	int fps = 30;
 	int rgb_resolution[2] = {848, 480};
 	int depth_resolution[2] = {848, 480};
-	// CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution, true);
-	CameraD415* cam = new CameraD415(fps, rgb_resolution, fps, depth_resolution);
+	// CameraD4XX* cam = new CameraD4XX(fps, rgb_resolution, fps, depth_resolution, true);
+	CameraD4XX* cam = new CameraD4XX(fps, rgb_resolution, fps, depth_resolution);
 	float dt_sleep = 1.0 / float(fps);
 	cam->enable_alignment();
 	// cam->enable_timing_debug();
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]){
 				// // cvinfo(disparity,"disparityPrime");
 				// if(debug_timing){
 	               //      double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-	               //      printf("[INFO] TestCameraD415() ---- convert_to_disparity step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
+	               //      printf("[INFO] TestCameraD4XX() ---- convert_to_disparity step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 	               // }
 				// printf(" --------------------------- \r\n");
 				// if(debug_timing) t = (double)cv::getTickCount();
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]){
 				// // cvinfo(disparityTest,"disparityTest");
 				// if(debug_timing){
 	               //      double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-	               //      printf("[INFO] TestCameraD415() ---- convert_to_disparity_alternative step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
+	               //      printf("[INFO] TestCameraD4XX() ---- convert_to_disparity_alternative step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 	               // }
 				// printf(" --------------------------- \r\n");
 				// cv::imshow("RGB", rgb);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]){
 				// // cvinfo(disparityAlt,"disparityAlt");
 				// if(debug_timing){
 	               //      double dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-	               //      printf("[INFO] TestCameraD415() ---- convert_to_disparity_test step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
+	               //      printf("[INFO] TestCameraD4XX() ---- convert_to_disparity_test step took %.2lf sec [%.2lf Hz]):\r\n", dt*1000, (1/dt));
 	               // }
 				// printf(" =========================== \r\n");
 			}

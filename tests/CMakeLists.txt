@@ -97,13 +97,13 @@ list(APPEND RoboCommander_TESTS test_bno055_mux)
 
 # Camera - D415
 if(WITH_LIBREALSENSE)
-     add_executable(test_minimal_d415 ${TEST_DIR}/sensors/test_minimal_d415.cpp)
-     target_link_libraries(test_minimal_d415 camera_d415)
-     list(APPEND RoboCommander_TESTS test_minimal_d415)
+     add_executable(test_minimal_d4xx ${TEST_DIR}/sensors/test_minimal_d4xx.cpp)
+     target_link_libraries(test_minimal_d4xx camera_d4xx)
+     list(APPEND RoboCommander_TESTS test_minimal_d4xx)
 
-     add_executable(test_camera_d415 ${TEST_DIR}/sensors/test_camera_d415.cpp)
-     target_link_libraries(test_camera_d415 camera_d415)
-     list(APPEND RoboCommander_TESTS test_camera_d415)
+     add_executable(test_camera_d4xx ${TEST_DIR}/sensors/test_camera_d4xx.cpp)
+     target_link_libraries(test_camera_d4xx camera_d4xx)
+     list(APPEND RoboCommander_TESTS test_camera_d4xx)
 endif(WITH_LIBREALSENSE)
 
 # =========================================
@@ -137,7 +137,7 @@ list(APPEND RoboCommander_TESTS test_ekf)
 # VBOATS - RGBD Obstacle Avoidance
 if(WITH_LIBREALSENSE)
      add_executable(test_vboats ${TEST_DIR}/algorithms/vboats/test_vboats.cpp)
-     target_link_libraries(test_vboats PUBLIC utils img_utils plot_utils cv_utils uvmap_utils camera_d415 vboats)
+     target_link_libraries(test_vboats PUBLIC utils img_utils plot_utils cv_utils uvmap_utils camera_d4xx vboats)
      list(APPEND RoboCommander_TESTS test_vboats)
 endif(WITH_LIBREALSENSE)
 
