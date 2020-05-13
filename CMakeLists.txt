@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 project(RoboCommander)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(RoboCommander_VERSION_MAJOR 1 CACHE STRING "major version" FORCE)
 set(RoboCommander_VERSION_MINOR 0 CACHE STRING "minor version" FORCE)
@@ -65,6 +67,12 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Threads)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
+# Find OpenCV libraries
+if(WITH_OPENCV)
+     ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
+     find_package(OpenCV 4.2 REQUIRED)
+     # find_package(OpenCV 3.4 REQUIRED)
+endif(WITH_OPENCV)
 
 # Find Armadillo
 find_package(LAPACK REQUIRED)
@@ -100,13 +108,6 @@ if(WITH_GTSAM)
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES gtsam)
 endif(WITH_GTSAM)
 
-# Find OpenCV libraries
-if(WITH_OPENCV)
-     ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
-     find_package(OpenCV 4.1.1 REQUIRED)
-     # find_package(OpenCV 3.4.1 REQUIRED)
-endif(WITH_OPENCV)
-
 if(WITH_LIBREALSENSE)
      find_package(realsense2 REQUIRED)
      if(NOT realsense2_FOUND)
@@ -119,10 +120,11 @@ find_package(PythonLibs 2.7)
 
 include_directories(
      include
-     ${Boost_INCLUDE_DIRS}
+     ${CMAKE_CURRENT_BINARY_DIR}
+     ${Boost_INCLUDE_DIR}
+     ${OpenCV_INCLUDE_DIRS}
      ${pigpio_INCLUDE_DIR}
      ${EXTERNAL_PACKAGE_INCLUDES}
-     ${OpenCV_INCLUDE_DIRS}
      # For PurePursuit Controller
      ${PYTHON_INCLUDE_DIRS}
      /usr/local/lib/python2.7/dist-packages/numpy/core/include
@@ -131,6 +133,7 @@ include_directories(
 
 set( RoboCommander_EXTERNAL_LIBRARIES
      ${Boost_LIBRARIES}
+     ${OpenCV_LIBRARY_DIRS}
      ${pigpiod_if2_LIBRARY}
      ${CMAKE_THREAD_LIBS_INIT}
      ${EXTERNAL_PACKAGE_LIBRARIES}
@@ -192,6 +195,9 @@ endif()
 # ===========================
 #     Build Targets
 # ===========================
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing -Wwrite-strings")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing -Wwrite-strings")
+
 add_subdirectory(src)
 
 if(BUILD_TESTS)

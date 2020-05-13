@@ -4,24 +4,10 @@
 #include <math.h>                  // For fabs
 
 #include "sensors/camera_d4xx.h"
-#include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 
 using namespace std;
 using namespace chrono;
-
-template<typename Pixel>
-struct ForEachOperator{
-     Pixel m_gain;
-     ForEachOperator(Pixel gain){
-          m_gain = gain;
-     }
-     void operator()(Pixel& pixel, const int * idx) const {
-          if(pixel != 0.0){
-               pixel = m_gain / pixel;
-          }
-     }
-};
 
 filter_options::filter_options(const std::string name, rs2::filter& flt) :
     filter_name(name), filter(flt), is_enabled(true){}
@@ -201,7 +187,7 @@ bool CameraD4XX::hardware_startup(std::vector<RS_STREAM_CFG> stream_cfgs, bool u
                        if(this->_debug_timings){
                             double dt = (t - this->_prev_t)/cv::getTickFrequency();
                             this->_prev_t = t;
-                            printf("[INFO] CameraD4XX::processingCallback() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", this->_callback_counter,dt, (1/dt));
+                            printf("[INFO] CameraD4XX::processingCallback() ---- Starting Step %d (previous step took %.2lf sec [%.2lf Hz]):\r\n", (int) this->_callback_counter,dt, (1/dt));
                        }
                        this->_callback_counter++;
                    }

@@ -4,8 +4,6 @@
 
 #include "base/definitions.h"
 #include "utilities/utils.h"
-#include "utilities/cv_utils.h"
-#include "utilities/image_utils.h"
 #include "algorithms/vboats/vboats.h"
 
 #define VERBOSE_OBS_SEARCH false
@@ -388,6 +386,7 @@ float VBOATS::get_uv_map_scaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, dou
 }
 
 void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool debug, bool visualize){
+     if(input.empty()) return;
      // if(verbose) printf("%s\r\n",cvStrSize("Vmap Filtering Input",input).c_str());
      vector<float> threshs;
      vector<float> default_threshs = {0.15,0.15,0.01,0.01};
@@ -396,7 +395,7 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
 
      if(verbose){
           std::string threshStr = vector_str(threshs, ", ");
-          printf("[INFO] VBOATS::filter_disparity_vmap() --- Using %d thresholds = [%s]\r\n", threshs.size(), threshStr.c_str());
+          printf("[INFO] VBOATS::filter_disparity_vmap() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
      }
 
      int err;
@@ -456,7 +455,7 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
           // cv::imshow("input image w/ thresholded portion", imgCopy);
           // cv::waitKey(0);
      }
-*/
+     */
      int idx = 0;
      cv::Scalar cvMean, cvStddev;
      std::vector<cv::Mat> strips;
@@ -513,6 +512,7 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
      if(output) *output = filtered;
 }
 void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool debug, bool visualize){
+     if(input.empty()) return;
      // if(verbose) printf("%s\r\n",cvStrSize("Umap Filtering Input",input).c_str());
      vector<float> threshs;
      vector<float> default_threshs = {0.25,0.15,0.35,0.35};
@@ -521,7 +521,7 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
 
      if(verbose){
           std::string threshStr = vector_str(threshs, ", ");
-          printf("[INFO] VBOATS::filter_disparity_umap() --- Using %d thresholds = [%s]\r\n", threshs.size(), threshStr.c_str());
+          printf("[INFO] VBOATS::filter_disparity_umap() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
      }
      int err;
      cv::Mat filtered;
@@ -858,9 +858,10 @@ void VBOATS::extract_contour_bounds(const vector<cv::Point>& contour, vector<int
 }
 
 int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
-     int* pixel_thresholds, int* window_size, float* line_params,
+     int* pixel_thresholds, int* window_size, float* line_params, vector<cv::Rect>* obs_windows,
      bool verbose, bool visualize, bool debug, bool debug_timing)
 {
+     if(vmap.empty()) return -1;
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
 
@@ -870,6 +871,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
 
      vector<int> _yLimits;
      vector<vector<cv::Point>> windows;
+     vector<cv::Rect> obstacle_windows;
      cv::Mat img, display;
      if(vmap.channels() < 3) img = vmap;
      else cv::cvtColor(vmap, img, cv::COLOR_BGR2GRAY);
@@ -909,7 +911,6 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
           xk = (w-1)-2*dWx;
           if(debug) printf("New xk = %d\r\n", xk);
      }
-
 
      if(debug){
           printf("Input Image [%d x %d]\r\n", w,h);
@@ -974,6 +975,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
                _yLimits.push_back(yk);
                if(visualize) cv::circle(display,cv::Point(xmid,yk),3,cv::Scalar(255,0,255),-1);
           }
+          obstacle_windows.push_back(searchRoi);
           if(visualize){
                cv::rectangle(display, searchRoi, cv::Scalar(0, 255, 255), 1);
                if(debug){
@@ -998,18 +1000,23 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
           cv::waitKey(0);
      }
      if(yLimits) *yLimits = _yLimits;
+     if(obs_windows) *obs_windows = obstacle_windows;
      return nWindows;
 }
 
-int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, vector<Obstacle>* found_obstacles, float* line_params, bool verbose, bool debug_timing){
+int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
+     vector<Obstacle>* found_obstacles, float* line_params, vector< vector<cv::Rect> >* obstacle_windows,
+     bool verbose, bool debug_timing)
+{
+     if(vmap.empty()) return -1;
      int nObs = 0;
      bool gndPresent;
      vector<int> xLims;
      vector<int> dLims;
      vector<int> yLims;
      vector<Obstacle> obs;
-     double t;
-     if(debug_timing) t = (double)cv::getTickCount();
+     vector< vector<cv::Rect> > windows;
+     double t = (double)cv::getTickCount();
 
      if(line_params){
           if(verbose) printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
@@ -1018,14 +1025,17 @@ int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv
           if(verbose) printf("No Ground Found\r\n");
           gndPresent = false;
      }
-     // #pragma omp parallel for private(xLims,dLims,yLims)
-     // #pragma omp parallel for
+
      int nCnts = contours.size();
      for(int i = 0; i < nCnts; i++){
+          vector<cv::Rect> obWindows;
           vector<cv::Point> contour = contours[i];
           extract_contour_bounds(contour,&xLims, &dLims);
           // int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, true);
-          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
+          int nWins;
+          if(obstacle_windows) nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, &obWindows, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
+          else nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, nullptr, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
+
           if(nWins == 0) continue;
           if((yLims.size() <= 2) && (gndPresent)){
                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
@@ -1037,20 +1047,22 @@ int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv
                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
                continue;
           }else{
-               if(verbose) printf("[INFO] Adding Obstacle (%d y limits)...\r\n",yLims.size());
+               if(verbose) printf("[INFO] Adding Obstacle (%d y limits)...\r\n", (int)yLims.size());
                // cv::Point(xLims[0],yLims[0]);
                // cv::Point(xLims[1],yLims.back());
                vector<cv::Point> pts = {cv::Point(xLims[0],yLims[0]), cv::Point(xLims[1],yLims.back())};
                obs.push_back(Obstacle(pts,dLims));
+               if(obstacle_windows) windows.push_back(obWindows);
                nObs++;
           }
           if(verbose) printf(" --------------------------- \r\n");
      }
      if(debug_timing){
           t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-          printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), obs.size());
+          printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), (int)obs.size());
      }
      if(found_obstacles) *found_obstacles = obs;
+     if(obstacle_windows) *obstacle_windows = windows;
      return nObs;
 }
 

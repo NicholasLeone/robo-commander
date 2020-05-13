@@ -10,6 +10,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
 
+#include "utilities/image_utils.h"
+
 using namespace std;
 
 class Obstacle{
@@ -106,12 +108,14 @@ public:
      void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose = false);
 
      int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
-          int* pixel_thresholds = nullptr, int* window_size = nullptr, float* line_params = nullptr,
+          int* pixel_thresholds = nullptr, int* window_size = nullptr,
+          float* line_params = nullptr, vector<cv::Rect>* obs_windows = nullptr,
           bool verbose = true, bool visualize = false, bool debug = false, bool debug_timing = false
      );
 
      int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
-           vector<Obstacle>* found_obstacles, float* line_params, bool verbose = false, bool debug_timing = false
+           vector<Obstacle>* found_obstacles, float* line_params, vector< vector<cv::Rect> >* obstacle_windows = nullptr,
+           bool verbose = false, bool debug_timing = false
      );
 
      int pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap,

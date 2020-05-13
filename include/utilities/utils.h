@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <iterator>
+#include <stdint.h>      // For uintX_T types
 
 #include <armadillo>
 #include "base/definitions.h"
@@ -15,9 +16,28 @@
 
 using namespace std;
 
+std::string txt_red(){ return std::string("\033[1;31m"); }
+std::string txt_bold_red(){ return std::string("\033[1;31m"); }
+std::string txt_yellow(){ return std::string("\033[1;33m"); }
+std::string txt_bold_yellow(){ return std::string("\033[01;33m"); }
+std::string txt_green(){ return std::string("\033[0;32m"); }
+std::string txt_bold_green(){ return std::string("\033[1;32m"); }
+std::string txt_blue(){ return std::string("\033[0;34m"); }
+std::string txt_bold_blue(){ return std::string("\033[1;34m"); }
+std::string txt_magenta(){ return std::string("\033[0;35m"); }
+std::string txt_bold_magenta(){ return std::string("\033[1;35m"); }
+std::string txt_cyan(){ return std::string("\033[0;36m"); }
+std::string txt_bold_cyan(){ return std::string("\033[1;36m"); }
+std::string txt_reset_color(){ return std::string("\033[0m"); }
+
+uint64_t get_sys_time_micro();
+float unwrap_angle(float angle);
 float convertRadians2Degrees(float angle);
 float convertDegrees2Radians(float angle);
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral);
+
+std::string base64_encode(unsigned char const* , unsigned int len);
+std::string base64_decode(std::string const& s);
 void LoadInitialVariables(const string &fileName, map<string, float> &variables);
 void LoadStringVariables(const string &fileName, map<string, string> &variables);
 int extract_bit(int inputByte, int bitLocation);
