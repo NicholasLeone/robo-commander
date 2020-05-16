@@ -37,19 +37,38 @@ void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
      cv::Size* new_size, bool verbose = false
 );
 
+cv::Mat rotate_image(const cv::Mat& input, double angle = 0.0);
+
 /** Visualization Functions */
 cv::Mat imCvtCmap(const cv::Mat& img);
 int imshowCmap(const cv::Mat& img, std::string title);
 
 /** ForEach Functors */
+// template<typename dtype> struct ForEachDepthConverter{
+//      dtype m_gain;
+//      ForEachDepthConverter(dtype gain){
+//           m_gain = gain;
+//      }
+//      void operator()(dtype& pixel, const int * idx) const{
+//           if(!std::isfinite(pixel)) pixel = 0;
+//           else if(pixel != 0.0){ pixel = m_gain / pixel; }
+//      }
+// };
+
 template<typename dtype> struct ForEachDepthConverter{
-     dtype m_gain;
-     ForEachDepthConverter(dtype gain){
-          m_gain = gain;
-     }
+     const dtype m_gain;
+     const dtype m_min;
+     const dtype m_max;
+     ForEachDepthConverter(dtype gain) : m_gain(gain), m_min(0), m_max(0){}
+     ForEachDepthConverter(dtype gain, dtype min, dtype max) : m_gain(gain), m_min(min), m_max(max){}
      void operator()(dtype& pixel, const int * idx) const{
           if(!std::isfinite(pixel)) pixel = 0;
-          else if(pixel != 0.0){ pixel = m_gain / pixel; }
+          else if(pixel != 0){
+               dtype tmpVal = pixel;
+               if((m_min != 0) && (tmpVal < m_min)) tmpVal = m_min;
+               else if((m_max != 0) && (tmpVal > m_max)) tmpVal = m_max;
+               pixel = ((dtype) m_gain / tmpVal);
+          }
      }
 };
 
@@ -62,23 +81,6 @@ template<typename Pixel> struct ForEachOperator{
      }
 };
 
-// template<typename dtype> struct ForEachDepthConverter{
-//      const dtype m_gain;
-//      const dtype m_min;
-//      const dtype m_max;
-//      ForEachDepthConverter(dtype gain) : m_gain(gain), m_min(0), m_max(0){}
-//      ForEachDepthConverter(dtype gain, dtype min, dtype max) : m_gain(gain), m_min(min), m_max(max){}
-//      void operator()(dtype& pixel, const int * idx) const{
-//           if(!std::isfinite(pixel)) pixel = 0;
-//           else if(pixel != 0){
-//                dtype tmpVal = pixel;
-//                if((m_min != 0) && (tmpVal < m_min)) tmpVal = m_min;
-//                else if((m_max != 0) && (tmpVal > m_max)) tmpVal = m_max;
-//                pixel = ((dtype) m_gain / tmpVal);
-//           }
-//      }
-// };
-
 template<typename dtype> struct ForEachPrepareDepthConverter{
      const dtype m_min;
      const dtype m_max;
@@ -87,8 +89,53 @@ template<typename dtype> struct ForEachPrepareDepthConverter{
      void operator()(dtype& pixel, const int * idx) const{
           if(!std::isfinite(pixel)){ pixel = 0; }
           else if(pixel != 0){
-               if(m_min != 0){ if(pixel < m_min) pixel = m_min; }
-               if(m_max != 0){ if(pixel > m_max) pixel = m_max; }
+               if(m_min != 0){ if(pixel < m_min) pixel = 0; }
+               if(m_max != 0){ if(pixel > m_max) pixel = 0; }
+          }
+     }
+};
+
+template<typename dtype> struct ForEachSaturateDepthLimits{
+     const dtype m_min;
+     const dtype m_max;
+     const dtype m_fx;
+     const dtype m_fy;
+     const dtype m_px;
+     const dtype m_py;
+     const dtype x_min;
+     const dtype x_max;
+     const dtype y_min;
+     const dtype y_max;
+     ForEachSaturateDepthLimits() : m_min(0), m_max(0),
+          m_fx(0), m_fy(0), m_px(0), m_py(0),
+          x_min(0), x_max(0), y_min(0), y_max(0)
+     {}
+     ForEachSaturateDepthLimits(dtype abs_min, dtype abs_max,
+          dtype fx, dtype fy, dtype px, dtype py,
+          dtype minX, dtype maxX, dtype minY, dtype maxY) : m_min(abs_min), m_max(abs_max),
+           m_fx(fx), m_fy(fy), m_px(px), m_py(py),
+           x_min(minX), x_max(maxX), y_min(minY), y_max(maxY)
+     {}
+     void operator()(dtype& pixel, const int * idx) const{
+          if(!std::isfinite(pixel)){ pixel = 0; }
+          else if(pixel != 0){
+               int curPx = idx[1];
+               int curPy = idx[0];
+               float curDepth = (float) pixel;
+               if(m_min != 0){ if(curDepth < m_min) pixel = 0; }
+               if(m_max != 0){ if(curDepth > m_max) pixel = 0; }
+               if(m_fx != 0){
+                    float x = (float)(( (float) curPx - m_px) * curDepth) / (float) m_fx;
+                    float absX = fabs(x);
+                    if(x_min != 0){ if(x < x_min) pixel = 0; }
+                    if(x_max != 0){ if(x > x_max) pixel = 0; }
+               }
+               if(m_fy != 0){
+                    float y = (float)(( (float) curPy - m_py) * curDepth) / (float) m_fy;
+                    float absY = fabs(y);
+                    if(y_min != 0){ if(y < y_min) pixel = 0; }
+                    if(y_max != 0){ if(y > y_max) pixel = 0; }
+               }
           }
      }
 };

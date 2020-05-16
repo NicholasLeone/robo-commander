@@ -191,6 +191,15 @@ int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged, bool merge_hori
      return 0;
 }
 
+cv::Mat rotate_image(const cv::Mat& input, double angle){
+     cv::Mat output;
+     if(input.empty()) return output;
+     cv::Point2f rotate_center(input.cols/2., input.rows/2.);
+     cv::Mat RotMat = cv::getRotationMatrix2D(rotate_center, angle, 1.0);
+     cv::warpAffine(input, output, RotMat, input.size());
+     return output;
+}
+
 cv::Mat imCvtCmap(const cv::Mat& img){
      cv::Mat output;
      if(img.empty()) return output;
