@@ -109,12 +109,12 @@ public:
 
      int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
           int* pixel_thresholds = nullptr, int* window_size = nullptr,
-          float* line_params = nullptr, vector<cv::Rect>* obs_windows = nullptr,
+          std::vector<float> line_params = {}, vector<cv::Rect>* obs_windows = nullptr,
           bool verbose = true, bool visualize = false, bool debug = false, bool debug_timing = false
      );
 
      int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
-           vector<Obstacle>* found_obstacles, float* line_params, vector< vector<cv::Rect> >* obstacle_windows = nullptr,
+           vector<Obstacle>* found_obstacles, std::vector<float> line_params, vector< vector<cv::Rect> >* obstacle_windows = nullptr,
            bool verbose = false, bool debug_timing = false
      );
 

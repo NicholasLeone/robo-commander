@@ -641,7 +641,6 @@ int VBOATS::find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_line
      if(found_lines) *found_lines = _lines;
      return n;
 }
-
 void VBOATS::get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept){
      float a = cos(theta),    b = sin(theta);
      float x0 = a*rho,        y0 = b*rho;
@@ -656,7 +655,6 @@ void VBOATS::get_hough_line_params(const float& rho, const float& theta, float* 
      if(slope) *slope = _m;
      if(intercept) *intercept = _intercept;
 }
-
 int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope,
      int* best_intercept, float* worst_slope, int* worst_intercept, double gnd_deadzone,
      double minDeg, double maxDeg, bool verbose, bool debug_timing)
@@ -736,7 +734,6 @@ int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slo
      if(worst_intercept) *worst_intercept = otherIntercept;
      return num;
 }
-
 bool VBOATS::find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
      double minDeg, double maxDeg, int hough_thresh, double gnd_deadzone, bool verbose, bool debug_timing, bool visualize)
 {
@@ -773,7 +770,6 @@ bool VBOATS::find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_
      }
      return true;
 }
-
 bool VBOATS::is_ground_present(){return this->_is_ground_present;}
 
 void VBOATS::find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
@@ -845,7 +841,6 @@ void VBOATS::find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found
 
      if(found_contours) *found_contours = filtered_contours;
 }
-
 void VBOATS::extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose){
      // printf("extract_contour_bounds() --- %d\r\n", contour.size());
      cv::Rect tmpRect = cv::boundingRect(contour);
@@ -858,7 +853,7 @@ void VBOATS::extract_contour_bounds(const vector<cv::Point>& contour, vector<int
 }
 
 int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
-     int* pixel_thresholds, int* window_size, float* line_params, vector<cv::Rect>* obs_windows,
+     int* pixel_thresholds, int* window_size, std::vector<float> line_params, vector<cv::Rect>* obs_windows,
      bool verbose, bool visualize, bool debug, bool debug_timing)
 {
      if(vmap.empty()) return -1;
@@ -893,7 +888,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
      int dWy = 10, dWx = abs(xmid - xmin);
      int yf = h;
 
-     if(line_params){
+     if(!line_params.empty()){
           yf = (int)(xmid * line_params[0] + line_params[1]);
           // printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
      }
@@ -924,7 +919,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
                flag_hit_limits = true;
                if(debug) printf("[INFO] Reached max image width.\r\n");
           }
-          if((yk >= yf) and (line_params)){
+          if((yk >= yf) and (!line_params.empty())){
                flag_hit_limits = true;
                if(debug) printf("[INFO] Reached Estimated Ground line at y = %d.\r\n", yk);
           } else if(yk + dWy >= h){
@@ -1003,9 +998,8 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
      if(obs_windows) *obs_windows = obstacle_windows;
      return nWindows;
 }
-
 int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
-     vector<Obstacle>* found_obstacles, float* line_params, vector< vector<cv::Rect> >* obstacle_windows,
+     vector<Obstacle>* found_obstacles, std::vector<float> line_params, vector< vector<cv::Rect> >* obstacle_windows,
      bool verbose, bool debug_timing)
 {
      if(vmap.empty()) return -1;
@@ -1018,7 +1012,7 @@ int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv
      vector< vector<cv::Rect> > windows;
      double t = (double)cv::getTickCount();
 
-     if(line_params){
+     if(!line_params.empty()){
           if(verbose) printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
           gndPresent = true;
      } else{
@@ -1129,14 +1123,14 @@ int VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, co
      }
 
      if(debug_timing) tmpT = (double)cv::getTickCount();
-     float* line_params;
+     std::vector<float> line_params;
      float gndM; int gndB;
      bool gndPresent = find_ground_line(sobelV, &gndM,&gndB);
      // bool gndPresent = find_ground_line(vProcessed, &gndM,&gndB);
      if(gndPresent){
-          float tmpParams[] = {gndM, (float) gndB};
-          line_params = &tmpParams[0];
-     }else line_params = nullptr;
+          line_params.push_back(gndM);
+          line_params.push_back((float) gndB);
+     }
      this->_is_ground_present = gndPresent;
 
      if(debug_timing){
