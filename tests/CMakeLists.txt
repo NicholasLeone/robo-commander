@@ -19,9 +19,9 @@ set(RoboCommander_TESTS test_utils)
 # target_link_libraries(test_json utils)
 # list(APPEND RoboCommander_TESTS test_json)
 
-add_executable(test_img_utils ${TEST_DIR}/utilities/test_image_utils.cpp)
-target_link_libraries(test_img_utils PUBLIC utils img_utils cv_utils plot_utils uvmap_utils vboats)
-list(APPEND RoboCommander_TESTS test_img_utils)
+add_executable(test_image_utils ${TEST_DIR}/utilities/test_image_utils.cpp)
+target_link_libraries(test_image_utils PUBLIC utils image_utils plot_utils uvmap_utils vboats)
+list(APPEND RoboCommander_TESTS test_image_utils)
 
 # =========================================
 #         Build Communication Tests
@@ -137,7 +137,7 @@ list(APPEND RoboCommander_TESTS test_ekf)
 # VBOATS - RGBD Obstacle Avoidance
 if(WITH_LIBREALSENSE)
      add_executable(test_vboats ${TEST_DIR}/algorithms/vboats/test_vboats.cpp)
-     target_link_libraries(test_vboats PUBLIC utils img_utils plot_utils cv_utils uvmap_utils camera_d4xx vboats)
+     target_link_libraries(test_vboats PUBLIC utils image_utils plot_utils uvmap_utils camera_d4xx vboats)
      list(APPEND RoboCommander_TESTS test_vboats)
 endif(WITH_LIBREALSENSE)
 

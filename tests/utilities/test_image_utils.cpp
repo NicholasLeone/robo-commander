@@ -2,7 +2,6 @@
 
 #include "utilities/image_utils.h"
 #include "utilities/plot_utils.h"
-#include "utilities/cv_utils.h"
 #include "algorithms/vboats/vboats.h"
 #include "algorithms/vboats/uvmap_utils.h"
 #include <opencv2/core/utility.hpp>

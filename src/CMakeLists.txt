@@ -14,17 +14,13 @@ add_library(utils SHARED utilities/utils.cpp)
 target_link_libraries(utils PUBLIC ${OpenCV_LIBS} ${EXTERNAL_PACKAGE_LIBRARIES})
 set(RoboCommander_LIBRARIES utils)
 
-add_library(cv_utils SHARED utilities/cv_utils.cpp)
-target_link_libraries(cv_utils PUBLIC utils ${OpenCV_LIBS})
-list(APPEND RoboCommander_LIBRARIES cv_utils)
+add_library(image_utils SHARED utilities/image_utils.cpp)
+target_link_libraries(image_utils PUBLIC utils ${OpenCV_LIBS})
+list(APPEND RoboCommander_LIBRARIES image_utils)
 
 add_library(plot_utils SHARED utilities/plot_utils.cpp)
 target_link_libraries(plot_utils PUBLIC ${OpenCV_LIBS})
 list(APPEND RoboCommander_LIBRARIES plot_utils)
-
-add_library(img_utils SHARED utilities/image_utils.cpp)
-target_link_libraries(img_utils PUBLIC ${OpenCV_LIBS})
-list(APPEND RoboCommander_LIBRARIES img_utils)
 
 # =========================================
 #      Build Communication Libraries
@@ -91,7 +87,7 @@ list(APPEND RoboCommander_LIBRARIES bno055_i2c)
 # Camera - D415
 if(WITH_LIBREALSENSE)
      add_library(camera_d4xx SHARED sensors/camera_d4xx.cpp)
-     target_link_libraries(camera_d4xx PUBLIC img_utils cv_utils ${OpenCV_LIBS} ${realsense2_LIBRARY})
+     target_link_libraries(camera_d4xx PUBLIC image_utils ${OpenCV_LIBS} ${realsense2_LIBRARY})
      list(APPEND RoboCommander_LIBRARIES camera_d4xx)
 endif(WITH_LIBREALSENSE)
 
@@ -126,11 +122,11 @@ list(APPEND RoboCommander_LIBRARIES ekf)
 
 # VBOATS - RGBD Obstacle Avoidance
 add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
-target_link_libraries(uvmap_utils PUBLIC utils img_utils cv_utils ${OpenCV_LIBS})
+target_link_libraries(uvmap_utils PUBLIC utils image_utils ${OpenCV_LIBS})
 list(APPEND RoboCommander_LIBRARIES uvmap_utils)
 
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC utils img_utils cv_utils ${OpenCV_LIBS})
+target_link_libraries(vboats PUBLIC utils image_utils ${OpenCV_LIBS})
 list(APPEND RoboCommander_LIBRARIES vboats)
 
 # =========================================

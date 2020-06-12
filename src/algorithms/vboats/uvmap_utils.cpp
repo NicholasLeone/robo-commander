@@ -1,12 +1,14 @@
 #include "utilities/utils.h"
-#include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
-
 #include "algorithms/vboats/uvmap_utils.h"
 
 using namespace std;
 
 void genUVMap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, bool verbose){
+     if(image.empty()){
+          if(verbose) printf("[WARN] genUVMap() --- Input image is empty, not generating UV-maps.\r\n");
+          return;
+     }
      double minVal, maxVal;
      cv::minMaxLoc(image, &minVal, &maxVal);
      int dmax = (int) maxVal + 1;
@@ -62,6 +64,10 @@ void genUVMap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, bool verbose){
 }
 
 void genUVMapThreaded(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double nThreads, bool verbose){
+     if(image.empty()){
+          if(verbose) printf("[WARN] genUVMapThreaded() --- Input image is empty, not generating UV-maps.\r\n");
+          return;
+     }
      double minVal, maxVal;
      cv::minMaxLoc(image, &minVal, &maxVal);
      int dmax = (int) maxVal + 1;
@@ -96,26 +102,6 @@ void genUVMapThreaded(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double nThrea
      },nThreads);
      /** Correct generated vmap's dimensions */
      vmapMat = vmapMat.t();
-     // cv::Mat vmapTrans = vmapMat.t();
-
-     /** EXPERIMENTAL:
-     cv::Mat _umap, _vmap;
-     if(dmax != 256){
-          printf("Adding uvmap buffers\r\n");
-          // yoffset = 256 - dmax;
-          // int xoffset = 0, yoffset = 0;
-          int offset = 256 - dmax;
-          cv::Mat umapBuf = cv::Mat::zeros(offset, image.cols, CV_8UC1);
-     	cv::Mat vmapBuf = cv::Mat::zeros(image.rows, offset, CV_8UC1);
-          // cv::vconcat(umapBuf, umapMat, _umap);
-          // cv::hconcat(vmapBuf, vmapMat, _vmap);
-          cv::vconcat(umapMat, umapBuf, _umap);
-          cv::hconcat(vmapMat, vmapBuf, _vmap);
-     } else{
-          _umap = umapMat;
-          _vmap = vmapMat;
-     }
-     */
 
      if(umap) *umap = umapMat;
      if(vmap) *vmap = vmapMat;

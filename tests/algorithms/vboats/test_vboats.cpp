@@ -1,5 +1,4 @@
 #include "sensors/camera_d4xx.h"
-#include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
 #include "utilities/plot_utils.h"
 #include "algorithms/vboats/vboats.h"

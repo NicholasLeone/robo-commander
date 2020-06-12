@@ -1,12 +1,12 @@
+#include "algorithms/vboats/vboats.h"
 #include <math.h>       /* ceil, cos, sin, sqrt */
 #include <chrono>
 #include <string>
 
 #include "base/definitions.h"
 #include "utilities/utils.h"
-#include "utilities/cv_utils.h"
 #include "utilities/image_utils.h"
-#include "algorithms/vboats/vboats.h"
+#include "algorithms/vboats/uvmap_utils.h"
 
 #define VERBOSE_OBS_SEARCH false
 #define VIZ_OBS_SEARCH false
@@ -92,302 +92,14 @@ void Obstacle::update(bool depth_based, float cam_baseline, float cam_dscale, fl
      this->angle = theta;
 }
 
-
 VBOATS::VBOATS(){}
 VBOATS::~VBOATS(){}
 
 void VBOATS::init(){}
 void VBOATS::update(){}
 
-void VBOATS::get_uv_map(cv::Mat image, cv::Mat* umap, cv::Mat* vmap,
-     bool verbose, bool debug, bool timing)
-{
-     double t = 0.0, dt = 0.0;
-     if(timing) t = (double)cv::getTickCount();
-
-     double minVal, maxVal;
-     cv::minMaxLoc(image, &minVal, &maxVal);
-     int dmax = (int) maxVal + 1;
-     if(verbose) printf("dmax = %d, min, max = %.2f, %.2f, h = %d, w = %d\r\n",dmax,minVal, maxVal,image.rows,image.cols);
-
-     cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
-     /** Size Temporarily transposed for ease of for-loop copying (Target size = h x dmax)*/
-     cv::Mat vmapMat = cv::Mat::zeros(dmax, image.rows, CV_8UC1);
-     // cv::Mat vmapMat = cv::Mat::zeros(image.rows, dmax, CV_8UC1); /** Original */
-
-     int channels[] = {0};
-     int histSize[] = {dmax};
-     float sranges[] = { 0, dmax };
-     const float* ranges[] = { sranges };
-
-     /** Non-parallized Umap */
-     cv::MatND histU;
-	for(int i = 0; i < image.cols; i++){
-		cv::Mat uscan = image.col(i);
-		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-		if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
-		histU.col(0).copyTo(umapMat.col(i));
-	}
-
-     /** Non-parallized Vmap */
-     cv::MatND histV;
-	for(int j = 0; j < image.rows; j++){
-		cv::Mat vscan = image.row(j);
-		cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-		cv::Mat histrow = histV.t();
-		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",j, histrow.rows, histrow.cols);
-          histV.col(0).copyTo(vmapMat.col(j));
-	}
-     /** Correct generated vmap's dimensions */
-     vmapMat = vmapMat.t();
-
-     // cv::Mat _umap, _vmap;
-     // if(dmax != 256){
-     //      printf("Adding uvmap buffers\r\n");
-     //      // yoffset = 256 - dmax;
-     //      // int xoffset = 0, yoffset = 0;
-     //      int offset = 256 - dmax;
-     //      cv::Mat umapBuf = cv::Mat::zeros(offset, image.cols, CV_8UC1);
-     // 	cv::Mat vmapBuf = cv::Mat::zeros(image.rows, offset, CV_8UC1);
-     //      // cv::vconcat(umapBuf, umapMat, _umap);
-     //      // cv::hconcat(vmapBuf, vmapMat, _vmap);
-     //      cv::vconcat(umapMat, umapBuf, _umap);
-     //      cv::hconcat(vmapMat, vmapBuf, _vmap);
-     // } else{
-     //      _umap = umapMat;
-     //      _vmap = vmapMat;
-     // }
-
-     if(umap) *umap = umapMat;
-     if(vmap) *vmap = vmapMat;
-     // if(umap) *umap = _umap;
-     // if(vmap) *vmap = _vmap;
-
-     if(timing){
-          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-          printf("[INFO] VBOATS::get_uv_map() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
-     }
-     /** TODO: Move this section into an independent utility function
-     if(visualize){
-          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
-          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
-          cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strU, _umap);
-          cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strV, _vmap);
-
-          // if(image.type() != CV_8UC1){
-          //      cv::Mat _umap8, _vmap8;
-          //      std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
-          //      std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
-          //      cv::namedWindow(strU8.c_str(), cv::WINDOW_NORMAL );
-          //      cv::namedWindow(strV8.c_str(), cv::WINDOW_NORMAL );
-          //      _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
-          //      _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
-          //      cv::imshow(strU8, _umap8);
-          //      cv::imshow(strV8, _vmap8);
-          // }
-     }
-     */
-}
-
-void VBOATS::get_uv_map_parallel(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double nThreads, bool verbose, bool timing){
-     // double t = 0.0, dt = 0.0;
-     // if(timing) t = (double)cv::getTickCount();
-
-     double minVal, maxVal;
-     cv::minMaxLoc(image, &minVal, &maxVal);
-     int dmax = (int) maxVal + 1;
-     // if(verbose) printf("dmax = %d, min, max = %.2f, %.2f, h = %d, w = %d\r\n",dmax,minVal, maxVal,image.rows,image.cols);
-
-     cv::Mat umapMat = cv::Mat::zeros(dmax, image.cols, CV_8UC1);
-     /** Size Temporarily transposed for ease of for-loop copying (Target size = h x dmax)*/
-     cv::Mat vmapMat = cv::Mat::zeros(dmax, image.rows, CV_8UC1);
-
-     int channels[] = {0};
-     int histSize[] = {dmax};
-     float sranges[] = { 0, dmax };
-     const float* ranges[] = { sranges };
-
-     /** Parallized Umap */
-     cv::parallel_for_(cv::Range(0,image.cols), [&](const cv::Range& range){
-          cv::MatND histU;
-          for(int i = range.start; i < range.end; i++){
-               cv::Mat uscan = image.col(i);
-               cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-               histU.col(0).copyTo(umapMat.col(i));
-          }
-     },nThreads);
-
-     /** Parallized Vmap */
-     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
-          cv::MatND histV;
-          for(int j = range.start; j < range.end; j++){
-               cv::Mat vscan = image.row(j);
-               cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
-               histV.col(0).copyTo(vmapMat.col(j));
-          }
-     },nThreads);
-     /** Correct generated vmap's dimensions */
-     // vmapMat = vmapMat.t();
-     cv::Mat vmapTrans = vmapMat.t();
-
-     // cv::Mat _umap, _vmap;
-     // if(dmax != 256){
-     //      printf("Adding uvmap buffers\r\n");
-     //      // yoffset = 256 - dmax;
-     //      // int xoffset = 0, yoffset = 0;
-     //      int offset = 256 - dmax;
-     //      cv::Mat umapBuf = cv::Mat::zeros(offset, image.cols, CV_8UC1);
-     // 	cv::Mat vmapBuf = cv::Mat::zeros(image.rows, offset, CV_8UC1);
-     //      // cv::vconcat(umapBuf, umapMat, _umap);
-     //      // cv::hconcat(vmapBuf, vmapMat, _vmap);
-     //      cv::vconcat(umapMat, umapBuf, _umap);
-     //      cv::hconcat(vmapMat, vmapBuf, _vmap);
-     // } else{
-     //      _umap = umapMat;
-     //      _vmap = vmapMat;
-     // }
-
-     if(umap) *umap = umapMat;
-     if(vmap) *vmap = vmapTrans;
-     // if(umap) *umap = _umap;
-     // if(vmap) *vmap = _vmap;
-
-     // if(timing){
-     //      dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-     //      printf("[INFO] VBOATS::get_uv_map_parallel() ---- took %.4lf ms (%.2lf Hz)\r\n", dt*1000.0, (1.0/dt));
-     // }
-     /** TODO: Move this section into an independent utility function
-     if(visualize){
-          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
-          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
-          cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strU, _umap);
-          cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL ); cv::imshow(strV, _vmap);
-
-          // if(image.type() != CV_8UC1){
-          //      cv::Mat _umap8, _vmap8;
-          //      std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
-          //      std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
-          //      cv::namedWindow(strU8.c_str(), cv::WINDOW_NORMAL );
-          //      cv::namedWindow(strV8.c_str(), cv::WINDOW_NORMAL );
-          //      _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
-          //      _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
-          //      cv::imshow(strU8, _umap8);
-          //      cv::imshow(strV8, _vmap8);
-          // }
-     }
-     */
-}
-
-float VBOATS::get_uv_map_scaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale,
-     bool visualize, std::string dispId, bool verbose, bool debug, bool timing)
-{
-     float dt = -1.0;
-     high_resolution_clock::time_point prev_time, now;
-     if(timing) prev_time = high_resolution_clock::now();
-
-     int w = image.cols;
-     int h = image.rows;
-     double minVal, maxVal;
-     // cv::Mat scaledImage = cv::Mat_<uchar>(image*scale);
-     cv::Mat scaledImage = image;
-     cv::minMaxLoc(scaledImage, &minVal, &maxVal);
-     if(verbose) printf("min, max = %.2f, %.2f, h = %d, w = %d\r\n",minVal, maxVal,h,w);
-     int dmax = (int) maxVal + 1;
-
-	int hu = dmax; int wu = w; int hv = h; int wv = dmax;
-	// cv::Mat _umap = cv::Mat::zeros(dmax, w, image.type());
-	// cv::Mat _vmap = cv::Mat::zeros(h, dmax, image.type());
-	cv::Mat _umap = cv::Mat::zeros(dmax, w, CV_8UC1);
-	cv::Mat _vmap = cv::Mat::zeros(h, dmax, CV_8UC1);
-
-
-	// cv::Mat _umapNorm = cv::Mat::zeros(dmax, w, CV_8UC1);
-	// cv::Mat _vmapNorm = cv::Mat::zeros(h, dmax, CV_8UC1);
-     if(verbose) printf("%s\r\n",cvStrSize("Initialized Umap",_umap).c_str());
-
-     int channels[] = {0};
-     int histSize[] = {dmax};
-	float sranges[] = { 0, dmax };
-	const float* ranges[] = { sranges };
-     #pragma omp parallel for
-	for(int i = 0; i < w; i++){
-          cv::MatND histU;
-		cv::Mat uscan = scaledImage.col(i);
-		cv::calcHist(&uscan, 1, channels, cv::Mat(), histU, 1, histSize, ranges);
-		if(debug) printf("Umap Column %d: h = %d, w = %d\r\n",i, histU.rows, histU.cols);
-		histU.col(0).copyTo(_umap.col(i));
-	}
-     // printf("%s\r\n",cvStrSize("Genereated Umap",_umap).c_str());
-     #pragma omp parallel for
-	for(int i = 0; i < h; i++){
-		cv::MatND hist;
-		cv::Mat vscan = scaledImage.row(i);
-		cv::calcHist(&vscan, 1, channels, cv::Mat(), hist, 1, histSize, ranges);
-		cv::Mat histrow = hist.t();
-		if(debug) printf("VMap Row %d: h = %d, w = %d\r\n",i, histrow.rows, histrow.cols);
-		histrow.row(0).copyTo(_vmap.row(i));
-	}
-     // printf("%s\r\n",cvStrSize("Genereated Vmap",_vmap).c_str());
-     cv::Mat _umap8, _vmap8;
-     cv::Mat spreadUmap, spreadVmap;
-     if(maxVal < 255.0){
-          double spreadRatio = 256.0 / (maxVal+1.0);
-          printf("spread ratio = %.4f\r\n",spreadRatio);
-          spread_image(_umap, &spreadUmap, 1.0, spreadRatio, nullptr);
-          spread_image(_vmap, &spreadVmap, spreadRatio, 1.0, nullptr);
-          cvinfo(_umap,"raw umap");
-          cvinfo(_vmap,"raw vmap");
-          cvinfo(spreadUmap,"Spread umap");
-          cvinfo(spreadVmap,"Spread vmap");
-          cv::imshow("raw Umap", _umap);
-          cv::imshow("raw Vmap", _vmap);
-          cv::imshow("spread umap", spreadUmap);
-          cv::imshow("spread vmap", spreadVmap);
-          cv::waitKey(0);
-     } else{
-          spreadUmap = _umap.clone();
-          spreadVmap = _vmap.clone();
-     }
-     if(visualize){
-          std::string strU = format("UMap[%s] %s", cvtype2str(_umap.type()).c_str(), dispId.c_str());
-          std::string strV = format("VMap[%s] %s", cvtype2str(_vmap.type()).c_str(), dispId.c_str());
-          std::string strU8 = format("UMap[CV_8UC1] %s", dispId.c_str());
-          std::string strV8 = format("VMap[CV_8UC1] %s", dispId.c_str());
-          cv::namedWindow(strU.c_str(), cv::WINDOW_NORMAL );
-          cv::namedWindow(strV.c_str(), cv::WINDOW_NORMAL );
-          cv::imshow(strU, _umap);
-          cv::imshow(strV, _vmap);
-          if(scaledImage.type() != CV_8UC1){
-               cv::namedWindow(strU8.c_str(), cv::WINDOW_NORMAL );
-               cv::namedWindow(strV8.c_str(), cv::WINDOW_NORMAL );
-               _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
-               _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
-               cv::imshow(strU8, _umap8);
-               cv::imshow(strV8, _vmap8);
-          }
-          cv::waitKey(0);
-     }
-     if(scaledImage.type() != CV_8UC1){
-          printf("UVMap Generator --- Converting uv map data type to uint8...\r\n");
-          _umap.convertTo(_umap8, CV_8UC1, (255.0/65535.0));
-          _vmap.convertTo(_vmap8, CV_8UC1, (255.0/65535.0));
-          *umap = _umap8;
-          *vmap = _vmap8;
-     }else{
-          *umap = _umap;
-          *vmap = _vmap;
-     }
-
-     if(timing){
-          // duration<float> time_span = duration_cast<duration<float>>(now - _prev_time);
-          // dt = time_span.count();
-          now = high_resolution_clock::now();
-          dt = duration_cast<duration<float>>(now - prev_time).count();
-     }
-     return dt;
-}
-
 void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool debug, bool visualize){
+     if(input.empty()) return;
      // if(verbose) printf("%s\r\n",cvStrSize("Vmap Filtering Input",input).c_str());
      vector<float> threshs;
      vector<float> default_threshs = {0.15,0.15,0.01,0.01};
@@ -396,7 +108,7 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
 
      if(verbose){
           std::string threshStr = vector_str(threshs, ", ");
-          printf("[INFO] VBOATS::filter_disparity_vmap() --- Using %d thresholds = [%s]\r\n", threshs.size(), threshStr.c_str());
+          printf("[INFO] VBOATS::filter_disparity_vmap() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
      }
 
      int err;
@@ -456,7 +168,7 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
           // cv::imshow("input image w/ thresholded portion", imgCopy);
           // cv::waitKey(0);
      }
-*/
+     */
      int idx = 0;
      cv::Scalar cvMean, cvStddev;
      std::vector<cv::Mat> strips;
@@ -513,6 +225,7 @@ void VBOATS::filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector
      if(output) *output = filtered;
 }
 void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose, bool debug, bool visualize){
+     if(input.empty()) return;
      // if(verbose) printf("%s\r\n",cvStrSize("Umap Filtering Input",input).c_str());
      vector<float> threshs;
      vector<float> default_threshs = {0.25,0.15,0.35,0.35};
@@ -521,7 +234,7 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
 
      if(verbose){
           std::string threshStr = vector_str(threshs, ", ");
-          printf("[INFO] VBOATS::filter_disparity_umap() --- Using %d thresholds = [%s]\r\n", threshs.size(), threshStr.c_str());
+          printf("[INFO] VBOATS::filter_disparity_umap() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
      }
      int err;
      cv::Mat filtered;
@@ -604,7 +317,9 @@ void VBOATS::filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector
      if(output) *output = filtered;
 }
 
+bool VBOATS::is_ground_present(){return this->_is_ground_present;}
 int VBOATS::find_ground_lines(const cv::Mat& vmap, cv::Mat* found_lines, int hough_thresh, bool verbose){
+     if(vmap.empty()) return -1;
      cv::Mat _lines;
      cv::HoughLines(vmap, _lines, 1, CV_PI/180, hough_thresh);
      int n = _lines.size().height;
@@ -615,6 +330,7 @@ int VBOATS::find_ground_lines(const cv::Mat& vmap, cv::Mat* found_lines, int hou
      return n;
 }
 int VBOATS::find_ground_lines(const cv::Mat& vmap, cv::Mat* rhos, cv::Mat* thetas, int hough_thresh, bool verbose){
+     if(vmap.empty()) return -1;
      cv::Mat _lines;
      cv::HoughLines(vmap, _lines, 1, CV_PI/180, hough_thresh);
      int n = _lines.size().height;
@@ -627,13 +343,13 @@ int VBOATS::find_ground_lines(const cv::Mat& vmap, cv::Mat* rhos, cv::Mat* theta
      cv::Mat out[] = { rs, angs };
      int from_to[] = { 0,0, 1,1};
      cv::mixChannels( &_lines, 1, out, 2, from_to, 2 );
-     // std::cout << "test: " << out[0] << std::endl;
 
      if(rhos) *rhos = out[0];
      if(thetas) *thetas = out[1];
      return n;
 }
 int VBOATS::find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh, bool verbose){
+     if(vmap.empty()) return -1;
      vector<cv::Vec2f> _lines;
      cv::HoughLines(vmap, _lines, 1, CV_PI/180, hough_thresh);
      int n = _lines.size();
@@ -641,7 +357,6 @@ int VBOATS::find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_line
      if(found_lines) *found_lines = _lines;
      return n;
 }
-
 void VBOATS::get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept){
      float a = cos(theta),    b = sin(theta);
      float x0 = a*rho,        y0 = b*rho;
@@ -656,7 +371,6 @@ void VBOATS::get_hough_line_params(const float& rho, const float& theta, float* 
      if(slope) *slope = _m;
      if(intercept) *intercept = _intercept;
 }
-
 int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope,
      int* best_intercept, float* worst_slope, int* worst_intercept, double gnd_deadzone,
      double minDeg, double maxDeg, bool verbose, bool debug_timing)
@@ -678,7 +392,6 @@ int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slo
      for(int i = 0; i < nLines; i++){
           tmpRho = lines[i][0];
           tmpAng = lines[i][1];
-          // tmpAng = lines[i][1] - (CV_PI/2.0);
           if(verbose){
                if(tmpAng > 0)
                     printf("[INFO] estimate_ground_line() ---- \tFiltering Line[%d] -- Angle=%.2f (deg)\r\n", i, tmpAng*M_RAD2DEG);
@@ -723,7 +436,7 @@ int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slo
           intercept = worstB;
           otherSlope = bestM;
           otherIntercept = bestB;
-     } else{ //if(bestValid && !worstValid){
+     } else{
           slope = bestM;
           intercept = bestB;
           otherSlope = worstM;
@@ -736,16 +449,15 @@ int VBOATS::estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slo
      if(worst_intercept) *worst_intercept = otherIntercept;
      return num;
 }
-
 bool VBOATS::find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
      double minDeg, double maxDeg, int hough_thresh, double gnd_deadzone, bool verbose, bool debug_timing, bool visualize)
 {
+     if(vmap.empty()) return false;
      cv::Mat rs, angs;
      std::vector<cv::Vec2f> lines;
 
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
-     // int nLines = find_ground_lines(vmap, &rs, &angs, hough_thresh);
      int nLines = find_ground_lines(vmap, &lines, hough_thresh);
      if(nLines <= 0) return false;
 
@@ -774,12 +486,21 @@ bool VBOATS::find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_
      return true;
 }
 
-bool VBOATS::is_ground_present(){return this->_is_ground_present;}
+void VBOATS::extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose){
+     // printf("extract_contour_bounds() --- %d\r\n", contour.size());
+     cv::Rect tmpRect = cv::boundingRect(contour);
+     // std::cout << "tmpRect: " << tmpRect << std::endl;
+     vector<int> _xbounds = {tmpRect.x, tmpRect.x + tmpRect.width};
+     vector<int> _dbounds = {tmpRect.y, tmpRect.y + tmpRect.height};
 
+     if(xbounds) *xbounds = _xbounds;
+     if(dbounds) *dbounds = _dbounds;
+}
 void VBOATS::find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
      int filter_method, float min_threshold, int* offsets, float max_threshold,
      bool verbose, bool visualize, bool debug, bool debug_timing)
 {
+     if(umap.empty()) return;
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
 
@@ -846,21 +567,11 @@ void VBOATS::find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found
      if(found_contours) *found_contours = filtered_contours;
 }
 
-void VBOATS::extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose){
-     // printf("extract_contour_bounds() --- %d\r\n", contour.size());
-     cv::Rect tmpRect = cv::boundingRect(contour);
-     // std::cout << "tmpRect: " << tmpRect << std::endl;
-     vector<int> _xbounds = {tmpRect.x, tmpRect.x + tmpRect.width};
-     vector<int> _dbounds = {tmpRect.y, tmpRect.y + tmpRect.height};
-
-     if(xbounds) *xbounds = _xbounds;
-     if(dbounds) *dbounds = _dbounds;
-}
-
 int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
-     int* pixel_thresholds, int* window_size, float* line_params,
+     int* pixel_thresholds, int* window_size, std::vector<float> line_params, vector<cv::Rect>* obs_windows,
      bool verbose, bool visualize, bool debug, bool debug_timing)
 {
+     if(vmap.empty()) return -1;
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
 
@@ -870,6 +581,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
 
      vector<int> _yLimits;
      vector<vector<cv::Point>> windows;
+     vector<cv::Rect> obstacle_windows;
      cv::Mat img, display;
      if(vmap.channels() < 3) img = vmap;
      else cv::cvtColor(vmap, img, cv::COLOR_BGR2GRAY);
@@ -891,7 +603,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
      int dWy = 10, dWx = abs(xmid - xmin);
      int yf = h;
 
-     if(line_params){
+     if(!line_params.empty()){
           yf = (int)(xmid * line_params[0] + line_params[1]);
           // printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
      }
@@ -910,7 +622,6 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
           if(debug) printf("New xk = %d\r\n", xk);
      }
 
-
      if(debug){
           printf("Input Image [%d x %d]\r\n", w,h);
           printf("X limits = [%d, %d] --- Y limits = [%d, %d] --- Pixel limits = [%d, %d] --- Window Size = [%d, %d]\r\n", xmin,xmax,yk, yf,pxlMin,pxlMax,dWx,dWy);
@@ -923,7 +634,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
                flag_hit_limits = true;
                if(debug) printf("[INFO] Reached max image width.\r\n");
           }
-          if((yk >= yf) and (line_params)){
+          if((yk >= yf) and (!line_params.empty())){
                flag_hit_limits = true;
                if(debug) printf("[INFO] Reached Estimated Ground line at y = %d.\r\n", yk);
           } else if(yk + dWy >= h){
@@ -974,6 +685,7 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
                _yLimits.push_back(yk);
                if(visualize) cv::circle(display,cv::Point(xmid,yk),3,cv::Scalar(255,0,255),-1);
           }
+          obstacle_windows.push_back(searchRoi);
           if(visualize){
                cv::rectangle(display, searchRoi, cv::Scalar(0, 255, 255), 1);
                if(debug){
@@ -998,34 +710,41 @@ int VBOATS::obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xL
           cv::waitKey(0);
      }
      if(yLimits) *yLimits = _yLimits;
+     if(obs_windows) *obs_windows = obstacle_windows;
      return nWindows;
 }
-
-int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, vector<Obstacle>* found_obstacles, float* line_params, bool verbose, bool debug_timing){
+int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
+     vector<Obstacle>* found_obstacles, std::vector<float> line_params, vector< vector<cv::Rect> >* obstacle_windows,
+     bool verbose, bool debug_timing)
+{
+     if(vmap.empty()) return -1;
      int nObs = 0;
      bool gndPresent;
      vector<int> xLims;
      vector<int> dLims;
      vector<int> yLims;
      vector<Obstacle> obs;
-     double t;
-     if(debug_timing) t = (double)cv::getTickCount();
+     vector< vector<cv::Rect> > windows;
+     double t = (double)cv::getTickCount();
 
-     if(line_params){
+     if(!line_params.empty()){
           if(verbose) printf("Ground Line Coefficients - slope = %.2f, intercept = %d\r\n", line_params[0], (int)line_params[1]);
           gndPresent = true;
      } else{
           if(verbose) printf("No Ground Found\r\n");
           gndPresent = false;
      }
-     // #pragma omp parallel for private(xLims,dLims,yLims)
-     // #pragma omp parallel for
+
      int nCnts = contours.size();
      for(int i = 0; i < nCnts; i++){
+          vector<cv::Rect> obWindows;
           vector<cv::Point> contour = contours[i];
           extract_contour_bounds(contour,&xLims, &dLims);
           // int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, true);
-          int nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
+          int nWins;
+          if(obstacle_windows) nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, &obWindows, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
+          else nWins = obstacle_search_disparity(vmap,dLims, &yLims, nullptr, nullptr, line_params, nullptr, VERBOSE_OBS_SEARCH, VIZ_OBS_SEARCH);
+
           if(nWins == 0) continue;
           if((yLims.size() <= 2) && (gndPresent)){
                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
@@ -1037,24 +756,27 @@ int VBOATS::find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv
                if(verbose) printf("[INFO] Found obstacle with zero height. Skipping...\r\n");
                continue;
           }else{
-               if(verbose) printf("[INFO] Adding Obstacle (%d y limits)...\r\n",yLims.size());
+               if(verbose) printf("[INFO] Adding Obstacle (%d y limits)...\r\n", (int)yLims.size());
                // cv::Point(xLims[0],yLims[0]);
                // cv::Point(xLims[1],yLims.back());
                vector<cv::Point> pts = {cv::Point(xLims[0],yLims[0]), cv::Point(xLims[1],yLims.back())};
                obs.push_back(Obstacle(pts,dLims));
+               if(obstacle_windows) windows.push_back(obWindows);
                nObs++;
           }
           if(verbose) printf(" --------------------------- \r\n");
      }
      if(debug_timing){
           t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-          printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), obs.size());
+          printf("[INFO] find_obstacles() ---- took %.4lf ms (%.2lf Hz) to find %d obstacles\r\n", t*1000.0, (1.0/t), (int)obs.size());
      }
      if(found_obstacles) *found_obstacles = obs;
+     if(obstacle_windows) *obstacle_windows = windows;
      return nObs;
 }
 
 int VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles, cv::Mat* uMorphElement, bool verbose, bool debug_timing, bool visualize){
+     if(vmap.empty() || umap.empty() || disparity.empty()) return -1;
      double t0, tmpT,tmpT1, tmpDt, dt1, dt2, dt3;
      if(debug_timing) t0 = (double)cv::getTickCount();
      // vector<float> vthreshs = {0.15,0.15,0.01,0.01};
@@ -1117,14 +839,14 @@ int VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, co
      }
 
      if(debug_timing) tmpT = (double)cv::getTickCount();
-     float* line_params;
+     std::vector<float> line_params;
      float gndM; int gndB;
      bool gndPresent = find_ground_line(sobelV, &gndM,&gndB);
      // bool gndPresent = find_ground_line(vProcessed, &gndM,&gndB);
      if(gndPresent){
-          float tmpParams[] = {gndM, (float) gndB};
-          line_params = &tmpParams[0];
-     }else line_params = nullptr;
+          line_params.push_back(gndM);
+          line_params.push_back((float) gndB);
+     }
      this->_is_ground_present = gndPresent;
 
      if(debug_timing){
@@ -1152,16 +874,6 @@ int VBOATS::pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, co
           printf("[INFO] Obstacle detection --- took %.4lf ms (%.2lf Hz)\r\n", dt3*1000.0, (1.0/dt3));
      }
      if(obstacles) *obstacles = _obstacles;
-     if(visualize){
-          // cv::namedWindow("obstacles", cv::WINDOW_AUTOSIZE ); cv::imshow("obstacles", clone);
-          // cv::applyColorMap(uProcessed, uProcessed, cv::COLORMAP_JET);
-          // cv::applyColorMap(vProcessed, vProcessed, cv::COLORMAP_JET);
-          // // cv::applyColorMap(sobelV, sobelV, cv::COLORMAP_JET);
-          // cv::namedWindow("processed vmap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed vmap", vProcessed);
-          // cv::namedWindow("processed umap", cv::WINDOW_AUTOSIZE ); cv::imshow("processed umap", uProcessed);
-          // // cv::namedWindow("sobel vmap", cv::WINDOW_NORMAL ); cv::imshow("sobel vmap", sobelV);
-          // // cv::applyColorMap(sobelU, sobelU, cv::COLORMAP_JET);
-          // // cv::namedWindow("sobel umap", cv::WINDOW_NORMAL ); cv::imshow("sobel umap", sobelU);
-     }
+
      return nObs;
 }
