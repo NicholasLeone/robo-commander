@@ -184,9 +184,18 @@ void genUVMapScaled(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double scale, b
 
 /** Visualization Helpers */
 void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title, bool colorize, bool autoSize){
+     if(umap.empty()){
+          printf("[WARN] displayUVMaps() --- Input umap image is empty, not generating display image.\r\n");
+          return;
+     }
+     if(vmap.empty()){
+          printf("[WARN] displayUVMaps() --- Input vmap image is empty, not generating display image.\r\n");
+          return;
+     }
      cv::Mat dispU, dispV;
-     std::string lblU, lblV;
-     if(!title) title = "Title";
+     std::string lblU, lblV, lblTitle;
+     if(!title) lblTitle = "Title";
+     else lblTitle = title;
      if(colorize){
           /** Check uv maps for proper data type before colorizing */
           cv::Mat umap8, vmap8;
@@ -201,12 +210,12 @@ void displayUVMaps(const cv::Mat& umap, const cv::Mat& vmap, char* title, bool c
           cv::applyColorMap(umap8, dispU, cv::COLORMAP_JET);
           cv::applyColorMap(vmap8, dispV, cv::COLORMAP_JET);
 
-          lblU = format("UMap[CV_8UC1] %s",title);
-          lblV = format("VMap[CV_8UC1] %s",title);
+          lblU = format("UMap[CV_8UC1] %s",lblTitle.c_str());
+          lblV = format("VMap[CV_8UC1] %s",lblTitle.c_str());
      } else{
           dispU = umap; dispV = vmap;
-          lblU = format("UMap[%s] %s", cvtype2str(dispU.type()).c_str(),title);
-          lblV = format("VMap[%s] %s", cvtype2str(dispV.type()).c_str(),title);
+          lblU = format("UMap[%s] %s", cvtype2str(dispU.type()).c_str(),lblTitle.c_str());
+          lblV = format("VMap[%s] %s", cvtype2str(dispV.type()).c_str(),lblTitle.c_str());
      }
 
      if(autoSize){

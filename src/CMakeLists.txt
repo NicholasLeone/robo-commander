@@ -5,13 +5,13 @@ set(CMAKE_CXX_STANDARD 11)
 # ===========================
 #     Set Build Options
 # ===========================
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing -Wno-write-strings -Wno-format -Wno-conversion-null")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing -Wno-write-strings -Wno-format -Wno-conversion-null")
+add_definitions(-std=c++11)
 # =========================================
 #          Build Common Libraries
 # =========================================
 add_library(utils SHARED utilities/utils.cpp)
-target_link_libraries(utils PUBLIC ${OpenCV_LIBS} ${EXTERNAL_PACKAGE_LIBRARIES})
 set(RoboCommander_LIBRARIES utils)
 
 add_library(image_utils SHARED utilities/image_utils.cpp)

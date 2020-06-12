@@ -98,6 +98,74 @@ int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral){
      return (int) pulse;
 }
 
+static inline bool is_base64(unsigned char c) { return (isalnum(c) || (c == '+') || (c == '/'));}
+std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {
+     std::string ret;
+     int i = 0;
+     int j = 0;
+     unsigned char char_array_3[3];
+     unsigned char char_array_4[4];
+     while(in_len--){
+          char_array_3[i++] = *(bytes_to_encode++);
+          if(i == 3){
+               char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+               char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+               char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+               char_array_4[3] = char_array_3[2] & 0x3f;
+
+               for(i = 0; (i <4) ; i++){ ret += base64_chars[char_array_4[i]]; }
+               i = 0;
+          }
+     }
+
+     if(i){
+          for(j = i; j < 3; j++){ char_array_3[j] = '\0'; }
+
+          char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+          char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+          char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+          char_array_4[3] = char_array_3[2] & 0x3f;
+
+          for(j = 0; (j < i + 1); j++){ ret += base64_chars[char_array_4[j]]; }
+          while((i++ < 3)){ ret += '='; }
+     }
+     return ret;
+}
+std::string base64_decode(std::string const& encoded_string) {
+     size_t in_len = encoded_string.size();
+     size_t i = 0;
+     size_t j = 0;
+     int in_ = 0;
+     unsigned char char_array_4[4], char_array_3[3];
+     std::string ret;
+
+     while(in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_])){
+          char_array_4[i++] = encoded_string[in_]; in_++;
+          if(i ==4){
+               for(i = 0; i <4; i++){ char_array_4[i] = static_cast<unsigned char>(base64_chars.find(char_array_4[i])); }
+
+               char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+               char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+               char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+               for(i = 0; (i < 3); i++){ ret += char_array_3[i]; }
+               i = 0;
+          }
+     }
+     if(i){
+          for(j = i; j <4; j++){ char_array_4[j] = 0; }
+          for(j = 0; j <4; j++){ char_array_4[j] = static_cast<unsigned char>(base64_chars.find(char_array_4[j])); }
+
+          char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+          char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+          char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+          for(j = 0; (j < i - 1); j++){ ret += char_array_3[j]; }
+     }
+
+     return ret;
+}
+
 void LoadInitialVariables(const string &fileName, map<string, float> &variables){
      variables.clear();
      char name[256];
@@ -185,7 +253,6 @@ vector<float> parseFloat(string s, string delimiter){
      }
      return tmpData;
 }
-
 vector<int> get_csv_size(const string &file){
      ifstream  csv(file);
      string line, field;
@@ -276,7 +343,6 @@ std::string rtrim(const std::string& s){
      return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 std::string trim(const std::string& s){ return rtrim(ltrim(s)); }
-
 std::vector<float> extractFloatStringList(std::string inputString, std::string delimiter){
      size_t pos = 0;
      std::string token;
@@ -304,7 +370,6 @@ template<typename T> void print_vector(string header, vector<T> vec){
      for(int i = 0;i<n;i++){ cout << vec.at(i) << ", ";}
      cout << endl;
 }
-
 template<typename T> void print_vectors(string header, vector< vector<T> > vecs){
      int n = vecs.size();
      int m = vecs.at(0).size();
@@ -324,7 +389,6 @@ void attach_CtrlC(void_int_fun func2call){
      sigIntHandler.sa_flags = 0;
      sigaction(SIGINT, &sigIntHandler, NULL);
 }
-
 void attach_CtrlZ(void_int_fun func2call){
      struct sigaction sigUpHandler;
      sigUpHandler.sa_handler = func2call;

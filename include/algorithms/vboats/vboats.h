@@ -10,6 +10,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
 
+#include "utilities/image_utils.h"
+
 using namespace std;
 
 class Obstacle{

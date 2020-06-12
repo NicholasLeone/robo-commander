@@ -130,6 +130,7 @@ std::string cvStrSize(const char* name, const cv::Mat& mat);
 void cvinfo(const cv::Mat& mat, const char* label);
 void print_cvmat(std::string header, const cv::Mat& mat, std::string rsep = "  ");
 
+/** Image Maniuplation Functions */
 int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5,
      bool cut_horizontally = true, bool visualize=false, bool verbose=false
 );
