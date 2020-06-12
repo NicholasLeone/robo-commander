@@ -15,7 +15,7 @@ template<typename dtype> struct ForEachNaiveDepthConverter{
      dtype m_gain;
      ForEachNaiveDepthConverter(dtype gain){ m_gain = gain; }
      void operator()(dtype& pixel, const int * idx) const {
-          if(pixel != 0.0){ pixel = m_gain / pixel;}
+          if((std::isfinite(pixel)) && (pixel != 0.0)){ pixel = m_gain / pixel; }
      }
 };
 
