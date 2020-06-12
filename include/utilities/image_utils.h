@@ -10,6 +10,15 @@
 
 using namespace std;
 
+/** Templated struct for fast conversion of a depth image into disparity using naive method */
+template<typename dtype> struct ForEachNaiveDepthConverter{
+     dtype m_gain;
+     ForEachNaiveDepthConverter(dtype gain){ m_gain = gain; }
+     void operator()(dtype& pixel, const int * idx) const {
+          if(pixel != 0.0){ pixel = m_gain / pixel;}
+     }
+};
+
 /** Templated struct for fast conversion of depth image into disparity */
 template<typename dtype> struct ForEachDepthConverter{
      const dtype m_gain;

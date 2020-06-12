@@ -555,7 +555,7 @@ cv::Mat CameraD4XX::convert_to_disparity_test(const cv::Mat depth, double* conve
           // }
      }
 
-     ForEachOperator<float> initializer((float)gain);
+     ForEachNaiveDepthConverter<float> initializer((float)gain);
      tmpMat.forEach<float>(initializer);
 
      if(conversion_gain) *conversion_gain = gain;
