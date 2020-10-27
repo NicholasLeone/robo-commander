@@ -346,15 +346,18 @@ bool WaypointFollower::isGoalReached(vector<float> cur_pose2d){
 }
 
 void WaypointFollower::plot_paths(){
+	#ifdef WITH_MATPLOTLIB
 	fmat traj = this->_reference_path;
 	vector<float> xs, ys;
 	xs = conv_to<vecf_t>::from(traj.col(0));
 	ys = conv_to<vecf_t>::from(traj.col(1));
 	plt::plot(xs,ys,"b");
 	plt::show();
+	#endif
 }
 
 void WaypointFollower::plot_pose_w_paths(fmat pose_2d){
+	#ifdef WITH_MATPLOTLIB
 	fmat traj = this->_reference_path;
 	fmat goal = this->_goal;
 	vecf_t xs, ys, px, py, gx, gy;
@@ -367,9 +370,11 @@ void WaypointFollower::plot_pose_w_paths(fmat pose_2d){
 
 	plt::plot(xs,ys,"b", px, py, "r+", gx, gy, "gs");
 	plt::show();
+	#endif
 }
 
 void WaypointFollower::plot_pose_w_paths(vector<float> pose_2d){
+	#ifdef WITH_MATPLOTLIB
 	fmat traj = this->_reference_path;
 	fmat goal = this->_goal;
 	vecf_t xs, ys, px, py, p, gx, gy;
@@ -385,4 +390,5 @@ void WaypointFollower::plot_pose_w_paths(vector<float> pose_2d){
 
 	plt::plot(xs,ys,"b", px, py, "r+", gx, gy, "gs");
 	plt::show();
+	#endif
 }

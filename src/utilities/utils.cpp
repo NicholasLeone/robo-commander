@@ -329,7 +329,7 @@ void attach_CtrlZ(void_int_fun func2call){
      sigaction(SIGTSTP, &sigUpHandler, NULL);
 }
 
-#ifdef GTSAM_LIBRARY_INCLUDED
+#ifdef GTSAM_FOUND
 #define foreach BOOST_FOREACH
 void writeResults(Values &results, string outputFile){
      ofstream resultFile(outputFile.c_str());
