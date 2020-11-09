@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "base/definitions.h"
-#include "base/matplotlibcpp.h"
+#include "utilities/matplotlibcpp.h"
 #include "controllers/waypoint_follower.h"
 
 namespace plt = matplotlibcpp;

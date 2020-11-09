@@ -1,11 +1,19 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(RoboCommander)
+project(robocommander)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
-set(RoboCommander_VERSION_MAJOR 1 CACHE STRING "major version" FORCE)
-set(RoboCommander_VERSION_MINOR 0 CACHE STRING "minor version" FORCE)
-set(RoboCommander_VERSION ${RoboCommander_VERSION_MAJOR}.${RoboCommander_VERSION_MINOR} CACHE STRING "version" FORCE)
+set(robocommander_VERSION_MAJOR 1 CACHE STRING "major version" FORCE)
+set(robocommander_VERSION_MINOR 0 CACHE STRING "minor version" FORCE)
+set(robocommander_VERSION_PATCH 0 CACHE STRING "patch version" FORCE)
+set(robocommander_VERSION ${robocommander_VERSION_MAJOR}.${robocommander_VERSION_MINOR}.${robocommander_VERSION_PATCH} CACHE STRING "version" FORCE)
+
+SET(PROJECT_VERSION "${robocommander_VERSION}")
+SET(PROJECT_VERSION_MAJOR ${robocommander_VERSION_MAJOR})
+SET(PROJECT_VERSION_MINOR ${robocommander_VERSION_MINOR})
+SET(PROJECT_VERSION_PATCH ${robocommander_VERSION_PATCH})
+SET(PROJECT_SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 # ===========================
 #       Set Build Options
@@ -58,20 +66,23 @@ foreach(p LIB BIN INCLUDE CMAKE)
 endforeach()
 
 # set(CMAKE_INSTALL_PREFIX "outputs")
+set(EXTRA_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 
 # ============================================
 #       Find & Include Dependencies
 # ============================================
 # Find Boost Libraries
 find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Eigen3 REQUIRED)
 find_package(Threads)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
+
+list(APPEND EXTRA_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
+
 # Find OpenCV libraries
 if(WITH_OPENCV)
-     ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
-     find_package(OpenCV 4.2 REQUIRED)
-     # find_package(OpenCV 3.4 REQUIRED)
+     find_package(OpenCV 4 REQUIRED)
 endif(WITH_OPENCV)
 
 # Find Armadillo
@@ -108,22 +119,21 @@ if(WITH_GTSAM)
      list(APPEND EXTERNAL_PACKAGE_LIBRARIES gtsam)
 endif(WITH_GTSAM)
 
-# Find OpenCV libraries
-if(WITH_OPENCV)
-     ## To prevent possibility of ROS's precompiled version of Opencv overwriting any custom built version of Opencv
-     find_package(OpenCV 4 REQUIRED)
-     # find_package(OpenCV 3.4.1 REQUIRED)
-endif(WITH_OPENCV)
-
 if(WITH_LIBREALSENSE)
      find_package(realsense2 REQUIRED)
      if(NOT realsense2_FOUND)
           message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
+     else()
+          list(APPEND EXTRA_INCLUDE_DIRS ${realsense2_INCLUDE_DIR})
      endif()
 endif(WITH_LIBREALSENSE)
 
 # Matplotlib-cpp
-find_package(PythonLibs 2.7)
+find_package(PythonLibs 2.7 REQUIRED)
+list(APPEND EXTRA_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+list(APPEND EXTRA_INCLUDE_DIRS "/usr/local/lib/python2.7/dist-packages/numpy/core/include")
+set(Matplotlib_LIBS ${PYTHON_LIBRARIES})
+list(APPEND Matplotlib_LIBS python2.7)
 
 include_directories(
      include
@@ -132,23 +142,20 @@ include_directories(
      ${OpenCV_INCLUDE_DIRS}
      ${pigpio_INCLUDE_DIR}
      ${EXTERNAL_PACKAGE_INCLUDES}
-     # For PurePursuit Controller
-     ${PYTHON_INCLUDE_DIRS}
-     /usr/local/lib/python2.7/dist-packages/numpy/core/include
-     ${realsense2_INCLUDE_DIR}
+     ${EXTRA_INCLUDE_DIRS}
 )
 
-set( RoboCommander_EXTERNAL_LIBRARIES
+set( ${PROJECT_NAME}_EXTERNAL_LIBRARIES
      ${Boost_LIBRARIES}
      ${OpenCV_LIBRARY_DIRS}
      ${pigpiod_if2_LIBRARY}
      ${CMAKE_THREAD_LIBS_INIT}
      ${EXTERNAL_PACKAGE_LIBRARIES}
-     ${PYTHON_LIBRARIES}
+     ${Matplotlib_LIBS}
      ${OpenCV_LIBS}
 )
 
-set( RoboCommander_INCLUDE_DIRS
+list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
      "${INCS_DIR}/actuators"
      "${INCS_DIR}/algorithms"
      "${HOME_DIR}/external/TinyEKF/src"
@@ -159,9 +166,10 @@ set( RoboCommander_INCLUDE_DIRS
      "${INCS_DIR}/sensors"
      "${INCS_DIR}/utilities"
      "${INCS_DIR}/vehicle_profiles"
+     ${EXTRA_INCLUDE_DIRS}
 )
 
-file(GLOB RoboCommander_HEADERS
+file(GLOB ${PROJECT_NAME}_HEADERS
      "${INCS_DIR}/actuators/*.h"
      "${INCS_DIR}/algorithms/*.h"
      "${INCS_DIR}/communication/*.h"
@@ -214,11 +222,10 @@ endif(BUILD_TESTS)
 # ===========================
 #     Install Targets
 # ===========================
-export(
-     TARGETS ${RoboCommander_LIBRARIES}
-     FILE "${PROJECT_BINARY_DIR}/RoboCommanderTargets.cmake"
+export( TARGETS ${${PROJECT_NAME}_LIBRARIES}
+        FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
 )
-export(PACKAGE RoboCommander)
+export(PACKAGE ${PROJECT_NAME})
 
 # Create the RoboCommanderConfig.cmake and RoboCommanderConfigVersion files
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
@@ -227,33 +234,18 @@ file(RELATIVE_PATH REL_LIB_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_LIB_DIR}")
 # ... for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${INC_DEST_DIR}" "${PRJOECT_LIB_DEST}")
 set(CONF_DEST_DIRS "${EXEC_DEST_DIR}" "${INC_DEST_DIR}" "${PRJOECT_LIB_DEST}" "${PRJOECT_CMAKE_DEST}")
-
 set(CONF_LOCAL_SRC_ROOT "${PROJECT_SOURCE_DIR}")
 set(CONF_INC_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${INC_DEST_DIR}")
 set(CONF_LIB_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${PRJOECT_LIB_DEST}")
 set(CONF_CMAKE_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${PRJOECT_CMAKE_DEST}")
 set(CONF_EXEC_DEST_DIR "${CMAKE_INSTALL_PREFIX}/${EXEC_DEST_DIR}")
-set(CONF_LIBRARIES "${RoboCommander_LIBRARIES}")
-set(CONF_HEADERS "${RoboCommander_HEADERS}")
-set(CONF_INCLUDES "${RoboCommander_INCLUDE_DIRS}")
-configure_file(cmake/RoboCommanderConfig.cmake.in "${PROJECT_BINARY_DIR}/RoboCommanderConfig.cmake" @ONLY)
+set(CONF_LIBRARIES "${${PROJECT_NAME}_LIBRARIES}")
+set(CONF_HEADERS "${${PROJECT_NAME}_HEADERS}")
+set(CONF_INCLUDES "${${PROJECT_NAME}_INCLUDE_DIRS}")
 
-# ... for the install tree
-# set(CONF_INCLUDE_DIRS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-# set(CONF_INCLUDE_DIRS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}/RoboCommander")
-# set(CONF_LIBRARIES "\${RoboCommander_CMAKE_DIR}/${REL_LIB_DIR}/RoboCommander")
-# set(CONF_HEADERS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-# set(CONF_INCLUDES "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}/RoboCommander")
-# set(CONF_LOCAL_SRC_ROOT "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-# set(CONF_DEST_DIRS "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-# set(CONF_CMAKE_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-# set(CONF_LIB_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_LIB_DIR}/RoboCommander")
-# set(CONF_INC_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-# set(CONF_EXEC_DEST_DIR "\${RoboCommander_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-configure_file(cmake/RoboCommanderConfig.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RoboCommanderConfig.cmake" @ONLY)
-
-# ... for both
-configure_file(cmake/RoboCommanderConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/RoboCommanderConfigVersion.cmake" @ONLY)
+configure_file(cmake/${PROJECT_NAME}Config.cmake.in "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" @ONLY)
+configure_file(cmake/${PROJECT_NAME}Config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}Config.cmake" @ONLY)
+configure_file(cmake/${PROJECT_NAME}ConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake" @ONLY)
 
 # Install the RoboCommanderConfig.cmake and RoboCommanderConfigVersion.cmake
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
@@ -261,16 +253,52 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURR
 
 install(
      FILES
-          "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/RoboCommanderConfig.cmake"
-          "${PROJECT_BINARY_DIR}/RoboCommanderConfigVersion.cmake"
+          "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}Config.cmake"
+          "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
      DESTINATION "${PRJOECT_CMAKE_DEST}"
 )
 
-install(EXPORT RoboCommanderTargets
-     DESTINATION "${PRJOECT_CMAKE_DEST}"
-)
+install(EXPORT ${PROJECT_NAME}Targets DESTINATION "${PRJOECT_CMAKE_DEST}")
 # -----------------------------------------------------------------------------
 
+#######################
+# CPACK (Packaging)
+#######################
+# IF(BUILD_AS_BUNDLE)
+#   INCLUDE(InstallRequiredSystemLibraries)
+# ENDIF(BUILD_AS_BUNDLE)
+# INCLUDE(InstallRequiredSystemLibraries)
+
+SET(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+SET(CPACK_PACKAGE_VENDOR "${PROJECT_NAME} project")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "All the tools you'd for DIY robot development.")
+#SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Description.txt")
+#SET(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.txt")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+#SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
+#SET(CPACK_PACKAGE_EXECUTABLES "")
+#SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+SET(CPACK_PACKAGE_CONTACT "hunter.lw.young@gmail.com")
+set(CPACK_INSTALL_PREFIX "/home/hunter/debs")
+set(CPACK_SOURCE_IGNORE_FILES
+  "\\\\.svn/"
+  "\\\\.settings/"
+  "${PROJECT_SOURCE_DIR}/build/[a-zA-Z0-9_]+"
+  "~$"
+  "${PROJECT_SOURCE_DIR}/bin/.*${PROJECT_PREFIX}"
+  "${PROJECT_SOURCE_DIR}/bin/.*${PROJECT_NAME}"
+  "${PROJECT_SOURCE_DIR}/bin/.*[tT]est"
+  "${PROJECT_SOURCE_DIR}/bin/.*[eE]xample"
+  "${PROJECT_SOURCE_DIR}/bin/.*uresourcegenerator"
+  "\\\\.DS_Store"
+)
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_SOURCE_GENERATOR "ZIP")
+INCLUDE(CPack)
+
+# -----------------------------------------------------------------------------
 # message(STATUS "REL_INCLUDE_DIR ------ ${REL_INCLUDE_DIR}")
 # message(STATUS "REL_LIB_DIR ------ ${REL_LIB_DIR}")
 # message(STATUS "PROJECT_SOURCE_DIR ------ ${PROJECT_SOURCE_DIR}")
@@ -292,7 +320,7 @@ install(EXPORT RoboCommanderTargets
 # endforeach()
 #
 # message(STATUS "Libraries to install ------")
-# foreach(dir ${RoboCommander_LIBRARIES})
+# foreach(dir ${${PROJECT_NAME}_LIBRARIES})
 #      message(STATUS "         included='${dir}'")
 # endforeach()
 #

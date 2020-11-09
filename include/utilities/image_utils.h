@@ -1,14 +1,59 @@
 #ifndef ROBOCOMMANDER_UTILITIES_IMAGE_UTILS_H_
 #define ROBOCOMMANDER_UTILITIES_IMAGE_UTILS_H_
 
-#include <string.h>
 #include <vector>
+#include <string.h>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#define WITH_OPENCV
+#include "utilities/matplotlibcpp.h"
+
 using namespace std;
+
+std::string cvtype2str(int type);
+std::string cvtype2str(cv::Mat mat);
+std::string cvStrSize(const char* name, const cv::Mat& mat);
+void cvinfo(const cv::Mat& mat, const char* label);
+void print_cvmat(std::string header, const cv::Mat& mat, std::string rsep = "  ");
+
+/** Image Maniuplation Functions */
+int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5,
+     bool cut_horizontally = true, bool visualize=false, bool verbose=false
+);
+int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged,
+     bool merge_horizontally = true, bool visualize=false, bool verbose=false
+);
+
+void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
+     double* fx, double* fy, bool verbose = false
+);
+void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
+     cv::Size* new_size, bool verbose = false
+);
+
+void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
+     double* fx, double* fy, bool verbose = false
+);
+void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
+     cv::Size* new_size, bool verbose = false
+);
+cv::Mat rotate_image(const cv::Mat& input, double angle = 0.0);
+
+/** Visualization and plotting utility functions */
+cv::Mat imCvtCmap(const cv::Mat& img);
+int imshowCmap(const cv::Mat& img, std::string title);
+
+int pplot(cv::Mat image, std::string title, bool blocking = false);
+int pplots(std::vector<cv::Mat> images, long cols, long rows, std::string title, bool blocking = false);
+
+/** Encoding / Decoding utility functions */
+std::string img_to_str_simple(cv::Mat image, std::string encoding = "jpg");
+std::string img_to_str(cv::Mat image, double* min = nullptr, double* max = nullptr, float* scale = nullptr, bool preprocess = true, std::string encoding = "jpg");
+
 
 /** Templated struct for fast conversion of a depth image into disparity using naive method */
 template<typename dtype> struct ForEachNaiveDepthConverter{
@@ -99,19 +144,21 @@ template<typename dtype> struct ForEachSaturateDepthLimits{
      }
 };
 
-/** Templated structure for fast generation of object segmentation mask */
+/** Templated structure for fast generation of object segmentation mask.
+* Creates a binary LUT using nonzero pixel values in the input vmap
+*/
 struct ForEachObsMaskGenerator{
      int ** m_table;
      const size_t m_rows;
      const size_t m_cols;
-     ForEachObsMaskGenerator(const cv::Mat& input_mask, int num_rows, int num_cols) : m_rows(num_rows), m_cols(num_cols){
+     ForEachObsMaskGenerator(const cv::Mat& vmap_reference, int num_rows, int num_cols) : m_rows(num_rows), m_cols(num_cols){
           cv::Mat nonzero;
           m_table = new int*[num_rows]();
           for(int v = 0; v < num_rows; v++){
                if(m_table[v]) delete[] m_table[v];
                m_table[v] = new int[num_cols]();
                memset(m_table[v], 0, num_cols*sizeof(int));
-               cv::Mat refRow = input_mask.row(v);
+               cv::Mat refRow = vmap_reference.row(v);
                cv::findNonZero(refRow, nonzero);
                for(int u = 0; u < nonzero.total(); ++u){
                     int tmpx = nonzero.at<cv::Point>(u).x;
@@ -133,39 +180,5 @@ struct ForEachObsMaskGenerator{
      }
 };
 
-std::string cvtype2str(int type);
-std::string cvtype2str(cv::Mat mat);
-std::string cvStrSize(const char* name, const cv::Mat& mat);
-void cvinfo(const cv::Mat& mat, const char* label);
-void print_cvmat(std::string header, const cv::Mat& mat, std::string rsep = "  ");
-
-/** Image Maniuplation Functions */
-int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5,
-     bool cut_horizontally = true, bool visualize=false, bool verbose=false
-);
-int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged,
-     bool merge_horizontally = true, bool visualize=false, bool verbose=false
-);
-
-void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
-     double* fx, double* fy, bool verbose = false
-);
-void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
-     cv::Size* new_size, bool verbose = false
-);
-
-void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
-     double* fx, double* fy, bool verbose = false
-);
-void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
-     cv::Size* new_size, bool verbose = false
-);
-cv::Mat imCvtCmap(const cv::Mat& img);
-int imshowCmap(const cv::Mat& img, std::string title);
-
-cv::Mat rotate_image(const cv::Mat& input, double angle = 0.0);
-
-std::string img_to_str_simple(cv::Mat image, std::string encoding = "jpg");
-std::string img_to_str(cv::Mat image, double* min = nullptr, double* max = nullptr, float* scale = nullptr, bool preprocess = true, std::string encoding = "jpg");
 
 #endif // ROBOCOMMANDER_UTILITIES_IMAGE_UTILS_H_

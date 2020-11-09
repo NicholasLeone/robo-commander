@@ -1,6 +1,4 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-set(CMAKE_CXX_STANDARD 11)
-# set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # ===========================
 #     Set Build Options
@@ -12,35 +10,35 @@ add_definitions(-std=c++11)
 #          Build Common Libraries
 # =========================================
 add_library(utils SHARED utilities/utils.cpp)
-set(RoboCommander_LIBRARIES utils)
+set(${PROJECT_NAME}_LIBRARIES utils)
 
 add_library(image_utils SHARED utilities/image_utils.cpp)
 target_link_libraries(image_utils PUBLIC utils ${OpenCV_LIBS})
-list(APPEND RoboCommander_LIBRARIES image_utils)
+list(APPEND ${PROJECT_NAME}_LIBRARIES image_utils)
 
 add_library(plot_utils SHARED utilities/plot_utils.cpp)
 target_link_libraries(plot_utils PUBLIC ${OpenCV_LIBS})
-list(APPEND RoboCommander_LIBRARIES plot_utils)
+list(APPEND ${PROJECT_NAME}_LIBRARIES plot_utils)
 
 # =========================================
 #      Build Communication Libraries
 # =========================================
 add_library(serial SHARED communication/serial.cpp)
 target_link_libraries(serial PUBLIC ${Boost_LIBRARIES})
-list(APPEND RoboCommander_LIBRARIES serial)
+list(APPEND ${PROJECT_NAME}_LIBRARIES serial)
 
 # i2c
 add_library(i2c SHARED communication/i2c.cpp)
 target_link_libraries(i2c PUBLIC ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES i2c)
+list(APPEND ${PROJECT_NAME}_LIBRARIES i2c)
 
 # UDP
 add_library(udp SHARED communication/udp.cpp)
-list(APPEND RoboCommander_LIBRARIES udp)
+list(APPEND ${PROJECT_NAME}_LIBRARIES udp)
 
 # UART
 add_library(uart SHARED communication/uart.cpp)
-list(APPEND RoboCommander_LIBRARIES uart)
+list(APPEND ${PROJECT_NAME}_LIBRARIES uart)
 
 # =========================================
 #         Build Actuator Libraries
@@ -49,12 +47,12 @@ list(APPEND RoboCommander_LIBRARIES uart)
 # DC Motor
 add_library(dcmotor SHARED actuators/dc_motor.cpp)
 target_link_libraries(dcmotor PUBLIC utils ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES dcmotor)
+list(APPEND ${PROJECT_NAME}_LIBRARIES dcmotor)
 
 # Servo
 add_library(servo SHARED actuators/servo.cpp)
 target_link_libraries(servo PUBLIC ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES servo)
+list(APPEND ${PROJECT_NAME}_LIBRARIES servo)
 
 # =========================================
 #         Build Sensor Libraries
@@ -63,32 +61,32 @@ list(APPEND RoboCommander_LIBRARIES servo)
 # Encoder
 add_library(encoder SHARED sensors/encoder.cpp)
 target_link_libraries(encoder PUBLIC ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES encoder)
+list(APPEND ${PROJECT_NAME}_LIBRARIES encoder)
 
 # IMU
 add_library(rtimu SHARED sensors/generic_rtimu.cpp)
 target_link_libraries(rtimu PUBLIC ${RTIMULib})
-list(APPEND RoboCommander_LIBRARIES rtimu)
+list(APPEND ${PROJECT_NAME}_LIBRARIES rtimu)
 
 # MPU-9250
 add_library(mpu9250 SHARED sensors/mpu9250.cpp)
 target_link_libraries(mpu9250 PUBLIC utils serial ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES mpu9250)
+list(APPEND ${PROJECT_NAME}_LIBRARIES mpu9250)
 
 # BNO-055 - Serial (UART)
 add_library(bno055_uart SHARED sensors/bno055.cpp)
 target_link_libraries(bno055_uart PUBLIC uart)
-list(APPEND RoboCommander_LIBRARIES bno055_uart)
+list(APPEND ${PROJECT_NAME}_LIBRARIES bno055_uart)
 # BNO-055 - I2C
 add_library(bno055_i2c SHARED sensors/bno055_i2c.cpp)
 target_link_libraries(bno055_i2c PUBLIC i2c tca9548a)
-list(APPEND RoboCommander_LIBRARIES bno055_i2c)
+list(APPEND ${PROJECT_NAME}_LIBRARIES bno055_i2c)
 
 # Camera - D415
 if(WITH_LIBREALSENSE)
      add_library(camera_d4xx SHARED sensors/camera_d4xx.cpp)
      target_link_libraries(camera_d4xx PUBLIC image_utils ${OpenCV_LIBS} ${realsense2_LIBRARY})
-     list(APPEND RoboCommander_LIBRARIES camera_d4xx)
+     list(APPEND ${PROJECT_NAME}_LIBRARIES camera_d4xx)
 endif(WITH_LIBREALSENSE)
 
 # =========================================
@@ -97,16 +95,17 @@ endif(WITH_LIBREALSENSE)
 
 # PID
 add_library(pid SHARED controllers/pid.cpp)
-list(APPEND RoboCommander_LIBRARIES pid)
+list(APPEND ${PROJECT_NAME}_LIBRARIES pid)
 
 # Pure Pursuit
 add_library(purepursuit SHARED controllers/waypoint_follower.cpp)
-list(APPEND RoboCommander_LIBRARIES purepursuit)
+target_link_libraries(purepursuit PUBLIC ${ARMADILLO_LIBRARIES} ${Matplotlib_LIBS})
+list(APPEND ${PROJECT_NAME}_LIBRARIES purepursuit)
 
 # Camera Gimbal Controller
 add_library(camera_gimbal SHARED devices/camera_gimbal.cpp)
 target_link_libraries(camera_gimbal PUBLIC pid bno055_uart bno055_i2c pca9685)
-list(APPEND RoboCommander_LIBRARIES camera_gimbal)
+list(APPEND ${PROJECT_NAME}_LIBRARIES camera_gimbal)
 # =========================================
 #      Build Algorithm Libraries
 # =========================================
@@ -114,20 +113,24 @@ list(APPEND RoboCommander_LIBRARIES camera_gimbal)
 # EKF
 add_library(ekf SHARED algorithms/ekf.cpp)
 target_link_libraries(ekf PUBLIC ${ARMADILLO_LIBRARIES})
-list(APPEND RoboCommander_LIBRARIES ekf)
+list(APPEND ${PROJECT_NAME}_LIBRARIES ekf)
 
 # # iSAM
 # add_library(isam SHARED algorithms/isam.cpp)
 # target_link_libraries(isam PUBLIC ${LIBS})
 
 # VBOATS - RGBD Obstacle Avoidance
-add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
-target_link_libraries(uvmap_utils PUBLIC utils image_utils ${OpenCV_LIBS})
-list(APPEND RoboCommander_LIBRARIES uvmap_utils)
+add_library(vboats_utils SHARED algorithms/vboats/vboats_utils.cpp)
+target_link_libraries(vboats_utils PUBLIC utils image_utils)# ${OpenCV_LIBS})
+list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_utils)
+
+# add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
+# target_link_libraries(uvmap_utils PUBLIC utils image_utils ${OpenCV_LIBS})
+# list(APPEND ${PROJECT_NAME}_LIBRARIES uvmap_utils)
 
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC utils image_utils ${OpenCV_LIBS})
-list(APPEND RoboCommander_LIBRARIES vboats)
+target_link_libraries(vboats PUBLIC utils image_utils vboats_utils)
+list(APPEND ${PROJECT_NAME}_LIBRARIES vboats)
 
 # =========================================
 #      Build Device Libraries
@@ -136,17 +139,21 @@ list(APPEND RoboCommander_LIBRARIES vboats)
 # RoboClaw
 add_library(roboclaw SHARED devices/roboclaw.cpp)
 target_link_libraries(roboclaw PUBLIC ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES roboclaw)
+list(APPEND ${PROJECT_NAME}_LIBRARIES roboclaw)
+
+add_library(roboclaw_px4 SHARED devices/roboclaw_px4.cpp)
+target_link_libraries(roboclaw PUBLIC ${pigpiod_if2_LIBRARY})
+list(APPEND ${PROJECT_NAME}_LIBRARIES roboclaw_px4)
 
 # PWM Driver - PCA-9685
 add_library(pca9685 SHARED devices/pca9685.cpp)
 target_link_libraries(pca9685 PUBLIC i2c ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES pca9685)
+list(APPEND ${PROJECT_NAME}_LIBRARIES pca9685)
 
 # I2C Multiplexer - TCA9548A
 add_library(tca9548a SHARED devices/tca9548a.cpp)
 target_link_libraries(tca9548a PUBLIC i2c)
-list(APPEND RoboCommander_LIBRARIES tca9548a)
+list(APPEND ${PROJECT_NAME}_LIBRARIES tca9548a)
 
 # =========================================
 #      Build Interface Libraries
@@ -155,7 +162,7 @@ list(APPEND RoboCommander_LIBRARIES tca9548a)
 # Android app interface
 add_library(android_app_interface SHARED interfaces/android_app_interface.cpp)
 target_link_libraries(android_app_interface PUBLIC udp)
-list(APPEND RoboCommander_LIBRARIES android_app_interface)
+list(APPEND ${PROJECT_NAME}_LIBRARIES android_app_interface)
 
 # =========================================
 #         Build Drivetrain Profiles
@@ -164,7 +171,7 @@ list(APPEND RoboCommander_LIBRARIES android_app_interface)
 # 4-wheel drive robot using two roboclaws
 add_library(dualclaw SHARED drivetrains/dual_roboclaw.cpp)
 target_link_libraries(dualclaw PUBLIC utils roboclaw ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES dualclaw)
+list(APPEND ${PROJECT_NAME}_LIBRARIES dualclaw)
 
 # =========================================
 #         Build Robot Profiles
@@ -173,19 +180,19 @@ list(APPEND RoboCommander_LIBRARIES dualclaw)
 # Swanson V2
 add_library(swansonV2 SHARED robots/swansonV2.cpp)
 target_link_libraries(swansonV2 PUBLIC dualclaw android_app_interface rtimu ${pigpiod_if2_LIBRARY})
-list(APPEND RoboCommander_LIBRARIES swansonV2)
+list(APPEND ${PROJECT_NAME}_LIBRARIES swansonV2)
 
 # =========================================
 #  Combine everthing into single variable
 # =========================================
-set(RoboCommander_LIBRARIES ${RoboCommander_LIBRARIES} PARENT_SCOPE)
+set(${PROJECT_NAME}_LIBRARIES ${${PROJECT_NAME}_LIBRARIES} PARENT_SCOPE)
 
 # ===========================
 #          INSTALL
 # ===========================
 install(
-     TARGETS ${RoboCommander_LIBRARIES}
-     EXPORT RoboCommanderTargets
+     TARGETS ${${PROJECT_NAME}_LIBRARIES}
+     EXPORT ${PROJECT_NAME}Targets
      DESTINATION "${PRJOECT_LIB_DEST}"
 )
 
@@ -204,7 +211,7 @@ install(
 # endforeach()
 
 # message(STATUS "Libraries to install ------")
-# foreach(dir ${RoboCommander_LIBRARIES})
+# foreach(dir ${${PROJECT_NAME}_LIBRARIES})
 #      message(STATUS "         included='${dir}'")
 # endforeach()
 
