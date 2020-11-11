@@ -44,7 +44,8 @@ public:
 
      cv::Mat remove_umap_deadzones(const cv::Mat& umap);
      cv::Mat remove_vmap_deadzones(const cv::Mat& vmap);
-
+     cv::Mat generate_disparity_from_depth(const cv::Mat& depth);
+	
      void set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose = false);
      void set_camera_orientation(double roll, double pitch, double yaw, bool verbose = false);
      void set_camera_orientation(double x, double y, double z, double w, bool verbose = false);
@@ -68,7 +69,7 @@ private:
      int _cam_info_count = 0;
 
      // TODO: Section Name
-     float _hard_min_depth = 0.1;
+     float _hard_min_depth = 0.01;
      float _hard_max_depth = 20.0;
 
      // TODO: Section Name
@@ -86,7 +87,7 @@ private:
      double _cam_pitch   = 0.0;
      double _cam_yaw     = 0.0;
      double _cam_angle_offset     = 0.0;
-	int _filtered_depth_denoising_size = 2;
+     int _filtered_depth_denoising_size = 2;
 
      // TODO: Section Name
      cv::Mat _cur_depth;
