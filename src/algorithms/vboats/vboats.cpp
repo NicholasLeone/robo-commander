@@ -69,6 +69,29 @@ cv::Mat Vboats::remove_vmap_deadzones(const cv::Mat& vmap){
      cv::fillPoly(processed, deadzoneAreas, cv::Scalar(0));
      return processed;
 }
+cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
+     cv::Mat output;
+     if(depth.empty()) return output;
+     if(!this->_have_cam_info) return output;
+
+     cv::Mat image;
+     float gain = this->_depth2disparityFactor;
+     if(depth.type() == CV_16UC1){
+          depth.convertTo(image, CV_32F, this->_depth_scale);
+          gain = gain * this->_depth_scale;
+     } else if(depth.type() != CV_32F) depth.convertTo(image, CV_32F);
+     else image = depth.clone();
+
+     ForEachDepthConverter<float> d2dconverter(gain, (float) this->_hard_min_depth, (float) this->_hard_max_depth);
+     image.forEach<float>(d2dconverter);
+
+     if(image.type() != CV_8UC1){
+          double minVal, maxVal;
+          cv::minMaxLoc(image, &minVal, &maxVal);
+          image.convertTo(output, CV_8UC1, (255.0/maxVal) );
+     } else output = image.clone();
+     return output.clone();
+}
 
 void Vboats::set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose){
      if(this->_cam_info_count <= 10){
