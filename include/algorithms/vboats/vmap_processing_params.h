@@ -45,7 +45,7 @@ public:
      void set_ground_line_search_min_angle(double value){ this->gnd_line_search_min_deg = value; }
      void set_ground_line_search_max_angle(double value){ this->gnd_line_search_max_deg = value; }
      void set_ground_line_search_deadzone(double value){ this->gnd_line_search_deadzone = value; }
-     void set_depth_filtering_ground_line_intercepty_offset(int value){ this->depth_filtering_gnd_line_intercept_offset = value; }
+     void set_depth_filtering_ground_line_intercept_offset(int value){ this->depth_filtering_gnd_line_intercept_offset = value; }
 };
 
 class VmapProcessingDebugObjects{
