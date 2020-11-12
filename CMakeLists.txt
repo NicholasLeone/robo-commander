@@ -51,6 +51,7 @@ set(EXEC_DEST_DIR "bin/${PROJECT_NAME}")
 set(INC_DEST_DIR "include/${PROJECT_NAME}")
 set(PRJOECT_LIB_DEST "lib/${PROJECT_NAME}")
 set(PRJOECT_CMAKE_DEST "lib/cmake/${PROJECT_NAME}")
+set(robocommander_CMAKE_DIR ${PRJOECT_CMAKE_DEST})
 
 set(INSTALL_LIB_DIR lib) # CACHE PATH "Installation directory for libraries")
 set(INSTALL_BIN_DIR bin) # CACHE PATH "Installation directory for executables")
@@ -156,6 +157,7 @@ set( ${PROJECT_NAME}_EXTERNAL_LIBRARIES
 )
 
 list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
+     "${INCS_DIR}/base"
      "${INCS_DIR}/actuators"
      "${INCS_DIR}/algorithms"
      "${HOME_DIR}/external/TinyEKF/src"

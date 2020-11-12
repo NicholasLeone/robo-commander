@@ -96,9 +96,9 @@ cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
 void Vboats::set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose){
      if(this->_cam_info_count <= 10){
           this->_fx = (float)K.at<double>(0);
-     	this->_fy = (float)K.at<double>(4);
-     	this->_px = (float)K.at<double>(2);
-     	this->_py = (float)K.at<double>(5);
+          this->_fy = (float)K.at<double>(4);
+          this->_px = (float)K.at<double>(2);
+          this->_py = (float)K.at<double>(5);
           this->_baseline = baseline;
           this->_depth_scale = depth_scale;
           this->_Tx = (float)(this->_fx * baseline);
@@ -143,29 +143,59 @@ void Vboats::set_camera_orientation(double x, double y, double z, double w, bool
 void Vboats::set_camera_angle_offset(double offset_degrees){ this->_cam_angle_offset = offset_degrees * M_DEG2RAD; }
 void Vboats::set_depth_denoising_kernel_size(int size){ this->_filtered_depth_denoising_size = size; }
 
-int Vboats::process(){
-     cv::Mat depth, disparity, umap, vmap;
+int Vboats::process(const cv::Mat& depth){
      if(depth.empty()){
-          printf("[WARNING] %s::process() --- Depth input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
+          printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
           return -1;
      }
-     if(disparity.empty()){
-          printf("[WARNING] %s::process() --- Disparity input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
+     if(!this->_have_cam_info){
+          printf("[WARNING] %s::process() --- Camera Information Unknown.\r\n", this->classLbl.c_str());
           return -2;
-     }
-     if(umap.empty()){
-          printf("[WARNING] %s::process() --- Umap input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
-          return -3;
-     }
-     if(vmap.empty()){
-          printf("[WARNING] %s::process() --- Vmap input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
-          return -4;
      }
 
      cv::Mat depthRaw = depth.clone();
+     cv::Mat disparity = this->generate_disparity_from_depth(depthRaw);
+     if(disparity.empty()){
+          printf("[WARNING] %s::process() --- Disparity input is empty.\r\n", this->classLbl.c_str());
+          return -3;
+     }
      cv::Mat disparityRaw = disparity.clone();
+
+     cv::Mat depthInput, disparityInput;
+     double correctionAngle = -this->_cam_roll - this->_cam_angle_offset;
+     if(this->_do_angle_correction){
+          cv::Mat warpedDepth = rotate_image(depthRaw, correctionAngle);
+          cv::Mat warpeddDisparity = rotate_image(disparityRaw, correctionAngle);
+
+          if(!warpedDepth.empty() && !warpeddDisparity.empty()){
+               depthInput = warpedDepth.clone();
+               disparityInput = warpeddDisparity.clone();
+               this->_angle_correction_performed = true;
+          } else{
+               depthInput = depthRaw;
+               disparityInput = disparityRaw;
+               this->_angle_correction_performed = false;
+          }
+     } else{
+          depthInput = depthRaw;
+          disparityInput = disparityRaw;
+          this->_angle_correction_performed = false;
+     }
+
+     cv::Mat umap, vmap;
+     genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
+
+     if(umap.empty()){
+          printf("[WARNING] %s::process() --- Umap input is empty.\r\n", this->classLbl.c_str());
+          return -4;
+     }
+     if(vmap.empty()){
+          printf("[WARNING] %s::process() --- Vmap input is empty.\r\n", this->classLbl.c_str());
+          return -5;
+     }
      cv::Mat umapRaw = umap.clone();
      cv::Mat vmapRaw = vmap.clone();
+
      // cv::Mat umapDisplay = umap.clone();
      // cv::Mat vmapDisplay = vmap.clone();
      // cv::Mat depthDisplay = depth.clone();
@@ -246,7 +276,7 @@ int Vboats::process(){
      // Filter the original depth image using all the useful data encoded within
      // the resulting processed UV-Maps
      cv::Mat filtered_image;
-     int err = filter_depth_using_object_candidate_regions(depthRaw, disparityRaw,
+     int err = filter_depth_using_object_candidate_regions(depthInput, disparityInput,
           vProcessed, filtered_contours, &filtered_image, line_params,
           this->vmapParams.depth_filtering_gnd_line_intercept_offset,
           nullptr,  // keep_mask visualization
@@ -255,7 +285,7 @@ int Vboats::process(){
      );
 
      cv::Mat filtered_depth;
-     err = filter_depth_using_ground_line(filtered_image, disparityRaw,
+     err = filter_depth_using_ground_line(filtered_image, disparityInput,
           vProcessed, line_params, &filtered_depth,
           std::vector<int>{this->vmapParams.depth_filtering_gnd_line_intercept_offset},
           nullptr   // keep_mask visualization
@@ -272,6 +302,8 @@ int Vboats::process(){
           final_depth = morphedDepth.clone();
      } else final_depth = filtered_depth.clone();
 
+     if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
+
      // Return Output images if requested before visualization
      // if(obstacles) *obstacles = obstacles_;
      // if(filtered) *filtered = filtered_depth.clone();
@@ -282,162 +314,6 @@ int Vboats::process(){
 }
 
 /**
-int VboatsHandler::process(const cv::Mat& depth, const cv::Mat& disparity,
-     const cv::Mat& umap, const cv::Mat& vmap, vector<Obstacle>* obstacles,
-     cv::Mat* filtered, cv::Mat* processed_umap, cv::Mat* processed_vmap)
-{
-     int nObs = 0;
-     vector<Obstacle> _obstacles;
-     cv::Mat tmpDepth, tmpDisparity, uTmp;
-     cv::Mat depthCopy, disparityCopy, umapCopy, vmapCopy;
-     if(depth.empty()){
-          printf("[WARNING] %s::process() --- Depth input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
-          return -1;
-     }
-     if(disparity.empty()){
-          printf("[WARNING] %s::process() --- Disparity input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
-          return -2;
-     }
-     if(umap.empty()){
-          printf("[WARNING] %s::process() --- Umap input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
-          return -3;
-     }
-     if(vmap.empty()){
-          printf("[WARNING] %s::process() --- Vmap input is empty, skipping ground removal.\r\n", this->classLbl.c_str());
-          return -4;
-     }
-
-     uTmp = umap.clone();
-     umapCopy = umap.clone();
-     vmapCopy = vmap.clone();
-     tmpDepth = depth.clone();
-     tmpDisparity = disparity.clone();
-     depthCopy = depth.clone();
-     disparityCopy = disparity.clone();
-     if(this->_debug) printf("[INFO] %s::process() --- Pre-filtering Umap.\r\n", this->classLbl.c_str());
-
-     float Tx = (float)(this->_fx * this->_baseline);
-     int maxDisparity = (int) ceil(Tx / 0.3);
-     int minDisparity = (int) ceil(Tx / 10.0);
-
-     // Pre-filter Umap
-     cv::Mat uProcessed;
-     vector<vector<cv::Point>> deadzoneUmap;
-     vector<cv::Point> deadzonePtsUmap = {
-          cv::Point(0,0),
-          cv::Point(umap.cols,0),
-          cv::Point(umap.cols,minDisparity),
-          cv::Point(0,minDisparity),
-          cv::Point(0,0)
-     };
-     deadzoneUmap.push_back(deadzonePtsUmap);
-     cv::fillPoly(uTmp, deadzoneUmap, cv::Scalar(0));
-     cv::boxFilter(uTmp,uTmp,-1, cv::Size(2,2));
-
-     if(this->_do_custom_umap_filtering){
-          uProcessed = this->preprocess_umap(uTmp);
-     } else{
-          vector<float> threshsU{0.3,0.295,0.275,0.3};
-          this->vb->filter_disparity_umap(uTmp, &uProcessed, &threshsU);
-     }
-
-     if(this->_debug) printf("[INFO] %s::process() --- Finding contours in filtered Umap.\r\n", this->classLbl.c_str());
-     // Find contours in Umap needed later for obstacle filtering
-     vector<vector<cv::Point>> contours;
-     vector<cv::Vec4i> hierarchies;
-     int umap_cnt_filter_type;
-     if(strcmp(this->_umap_contour_filter_method.c_str(), "perimeter") == 0) umap_cnt_filter_type = 1;
-     else if(strcmp(this->_umap_contour_filter_method.c_str(), "area") == 0) umap_cnt_filter_type = 2;
-     else umap_cnt_filter_type = 1;
-     bool debug_contours = false;
-     this->vb->find_contours(uProcessed, &contours, &hierarchies, umap_cnt_filter_type, this->_umap_contour_filter_min_thresh, nullptr, -1, debug_contours, false);
-
-     if(this->_debug) printf("[INFO] %s::process() --- Pre-filtering Vmap.\r\n", this->classLbl.c_str());
-     // Pre-filter Vmap: Approach 1
-     // cv::Mat vProcessed;
-     cv::Mat vTmp = vmapCopy.clone();
-     vector<vector<cv::Point>> deadzoneVmap;
-     vector<cv::Point> deadzonePtsVmap = {
-          cv::Point(0,0),
-          cv::Point(0,vmap.rows),
-          cv::Point(minDisparity,vmap.rows),
-          cv::Point(minDisparity,0),
-          cv::Point(0,0)
-     };
-     vector<cv::Point> deadzonePts2Vmap = {
-          cv::Point(vmap.cols, 0),
-          cv::Point(vmap.cols, vmap.rows),
-          cv::Point(maxDisparity,vmap.rows),
-          cv::Point(maxDisparity,0),
-          cv::Point(vmap.cols,0)
-     };
-     deadzoneVmap.push_back(deadzonePtsVmap);
-     deadzoneVmap.push_back(deadzonePts2Vmap);
-     cv::fillPoly(vTmp, deadzoneVmap, cv::Scalar(0));
-     // vector<float> threshsV(this->_vThreshs);
-     // this->vb->filter_disparity_vmap(vTmp, &vProcessed, &threshsV);
-     if(this->_debug) printf("[INFO] %s::process() --- Creating Sobelized Vmap.\r\n", this->classLbl.c_str());
-     // Pre-filter Vmap: Approach 2 - better highlight useful line
-     cv::Mat preprocessedVmap;
-     preprocessedVmap = this->preprocess_vmap(vTmp);
-
-     if(this->_debug) printf("[INFO] %s::process() --- Looking for Ground line.\r\n", this->classLbl.c_str());
-
-     // Extract ground line parameters (if ground is present)
-     float gndM; int gndB;
-     bool gndPresent = this->vb->find_ground_line(preprocessedVmap, &gndM,&gndB,
-          (double) this->_gnd_line_min_ang, (double) this->_gnd_line_max_ang
-     );
-     std::vector<float> line_params;
-     if(gndPresent){
-          line_params.push_back(gndM);
-          line_params.push_back((float) gndB);
-          // printf("[INFO] %s::process() --- Found Ground Line w/ y = mx + b = %f*x + %f.\r\n", this->classLbl.c_str(), gndM, (float) gndB);
-     } else printf("[INFO] %s::process() --- Unable to detect Ground Line.\r\n", this->classLbl.c_str());
-     if(this->_debug) printf("[INFO] %s::process() --- Creating Segmentation Mask.\r\n", this->classLbl.c_str());
-
-     cv::Mat vProcessed;
-     vProcessed = this->postprocess_vmap(vTmp, preprocessedVmap);
-     // imshowCmap(uTmp, "raw umap");
-     // imshowCmap(uProcessed, "pre-processed umap");
-     // imshowCmap(vTmp, "raw vmap");
-     // imshowCmap(preprocessedVmap, "pre-processed vmap");
-     // imshowCmap(vProcessed, "post-processed vmap");
-     if(this->_debug) printf("[INFO] %s::process() --- Performing Obstacle Segmentation.\r\n", this->classLbl.c_str());
-
-     int err;
-     cv::Mat noGndImg, noObsImg, filtered_image, filtered_depth;
-     // cvinfo(depth, "VboatsHandler::process() --- Depth before ground segmentation: ");
-     // cvinfo(vProcessed, "VboatsHandler::process() --- Vmap input before ground segmentation: ");
-
-     err = this->remove_objects(vProcessed, tmpDisparity, tmpDepth, contours, line_params, &noObsImg);
-     if((err >= 0) && (!noObsImg.empty()) ) filtered_image = noObsImg.clone();
-     else filtered_image = tmpDepth.clone();
-
-     if(gndPresent){
-          err = this->remove_ground(tmpDisparity, vProcessed, filtered_image, line_params, &noGndImg);
-          if((err >= 0) && (!noGndImg.empty()) ) filtered_image = noGndImg.clone();
-          else printf("[WARNING] %s::process() --- Unable to filter ground from depth image, skipping pointcloud generation.\r\n", this->classLbl.c_str());
-     }
-
-     cv::Mat morphedDepth;
-     cv::Mat morphElement = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size(2, 2));
-     cv::morphologyEx(filtered_image, morphedDepth, cv::MORPH_OPEN, morphElement);
-     filtered_depth = morphedDepth.clone();
-
-     // Obstacle data extraction
-     std::vector< std::vector<cv::Rect> > objectsWindows;
-     if(this->_do_individual_obstacle_detection){
-          if(this->_visualize_obstacle_windows) nObs = this->vb->find_obstacles_disparity(vProcessed, contours, &_obstacles, line_params, &objectsWindows);
-          else nObs = this->vb->find_obstacles_disparity(vProcessed, contours, &_obstacles, line_params);
-     }
-
-     // Return Output images if requested before visualization
-     if(obstacles) *obstacles = _obstacles;
-     if(filtered) *filtered = filtered_depth.clone();
-     if(processed_umap) *processed_umap = uProcessed.clone();
-     if(processed_vmap) *processed_vmap = vProcessed.clone();
-
      if(this->_do_cv_wait_key){
           // if(this->_visualize_gnd_mask) imshowCmap(gndMask, "Ground-Line Mask");
           // if(this->_visualize_obj_mask) imshowCmap(objMask, "Object Mask");
