@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include "obstacle.h"
 
 class VboatsProcessingImages{
 public:
@@ -56,22 +57,37 @@ public:
      // </custom-fold>
 
      // <custom-fold Mid-level debugging identifiers
+     bool visualize_angle_corrected_depth    = false;
      bool visualize_umap_keep_mask           = false;
      bool visualize_vmap_post_keep_mask      = false;
      bool visualize_gnd_line_keep_mask       = false;
      bool visualize_obj_candidate_keep_mask  = false;
      bool visualize_vmap_candidates_img      = false;
+     void enable_angle_corrected_depth_visualization(bool flag = true){ this->visualize_angle_corrected_depth = flag; }
      void enable_umap_keep_mask_visualization(bool flag = true){ this->visualize_umap_keep_mask = flag; }
      void enable_vmap_post_keep_mask_visualization(bool flag = true){ this->visualize_vmap_post_keep_mask = flag; }
      void enable_obj_candidate_keep_mask_visualization(bool flag = true){ this->visualize_obj_candidate_keep_mask = flag; }
      void enable_gnd_line_keep_mask_visualization(bool flag = true){ this->visualize_gnd_line_keep_mask = flag; }
      void enable_vmap_candidates_img_visualization(bool flag = true){ this->visualize_vmap_candidates_img = flag; }
 
+     cv::Mat angle_corrected_depth_img;
+     cv::Mat gnd_line_filtering_keep_mask;
+     cv::Mat obj_candidate_filtering_keep_mask;
      cv::Mat umap_keep_mask;
      cv::Mat vmap_postproc_keep_mask;
      cv::Mat vmap_object_candidates_img;
-     cv::Mat obj_candidate_filtering_keep_mask;
-     cv::Mat gnd_line_filtering_keep_mask;
+     void set_angle_corrected_depth_image(const cv::Mat& image){
+          if(!this->visualize_angle_corrected_depth) this->angle_corrected_depth_img = cv::Mat();
+          else this->angle_corrected_depth_img = image.clone();
+     }
+     void set_gnd_line_filtering_keep_mask(const cv::Mat& image){
+          if(!this->visualize_gnd_line_keep_mask) this->gnd_line_filtering_keep_mask = cv::Mat();
+          else this->gnd_line_filtering_keep_mask = image.clone();
+     }
+     void set_obj_candidate_filtering_keep_mask(const cv::Mat& image){
+          if(!this->visualize_obj_candidate_keep_mask) this->obj_candidate_filtering_keep_mask = cv::Mat();
+          else this->obj_candidate_filtering_keep_mask = image.clone();
+     }
      void set_umap_sobelized_keep_mask(const cv::Mat& image){
           if(!this->visualize_umap_keep_mask) this->umap_keep_mask = cv::Mat();
           else this->umap_keep_mask = image.clone();
@@ -79,14 +95,6 @@ public:
      void set_vmap_sobelized_postprocessed_keep_mask(const cv::Mat& image){
           if(!this->visualize_vmap_post_keep_mask) this->vmap_postproc_keep_mask = cv::Mat();
           else this->vmap_postproc_keep_mask = image.clone();
-     }
-     void set_obj_candidate_filtering_keep_mask(const cv::Mat& image){
-          if(!this->visualize_obj_candidate_keep_mask) this->obj_candidate_filtering_keep_mask = cv::Mat();
-          else this->obj_candidate_filtering_keep_mask = image.clone();
-     }
-     void set_gnd_line_filtering_keep_mask(const cv::Mat& image){
-          if(!this->visualize_gnd_line_keep_mask) this->gnd_line_filtering_keep_mask = cv::Mat();
-          else this->gnd_line_filtering_keep_mask = image.clone();
      }
      void set_vmap_object_candidates_image(const cv::Mat& image){
           if(!this->visualize_vmap_candidates_img) this->vmap_object_candidates_img = cv::Mat();
@@ -211,6 +219,22 @@ public:
                cv::drawContours(display, this->filtered_umap_contours, i, cv::Scalar(0,255,0), 2, cv::LINE_AA, this->filtered_umap_hierarchies, 0, cv::Point(0,0));
           }
 
+          return display;
+     }
+     cv::Mat overlay_obstacle_bounding_boxes(const cv::Mat& image, std::vector<Obstacle> obstacles){
+          cv::Mat display;
+          if(image.empty()) return display;
+          if( (obstacles.empty()) || (obstacles.size() <= 0) ) return display;
+          if(image.type() == CV_8UC3) display = image.clone();
+          else{
+               double minVal, maxVal;
+               cv::minMaxLoc(image, &minVal, &maxVal);
+               image.convertTo(display, CV_8UC1, (255.0/maxVal) );
+               cv::cvtColor(display, display, cv::COLOR_GRAY2BGR);
+          }
+          // TODO: Hardcoded for now
+          cv::Scalar box_color = cv::Scalar(0, 255, 255);
+          for(Obstacle obj : obstacles){ cv::rectangle(display, obj.minXY, obj.maxXY, box_color, 3); }
           return display;
      }
      // TODO: Blend keep mask into original image

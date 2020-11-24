@@ -17,8 +17,12 @@ public:
     double angle;
     float distance;
     cv::Point3f location;
+    // void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0,
+    //      float* cam_focal = nullptr, float* cam_principal_point = nullptr,
+    //      float dtype_gain = 0, float aux_dist_factor = 0, bool verbose = true
+    // ){
     void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0,
-         float* cam_focal = nullptr, float* cam_principal_point = nullptr,
+         std::vector<float> cam_focal = {}, std::vector<float> cam_principal_point = {},
          float dtype_gain = 0, float aux_dist_factor = 0, bool verbose = true
     ){
           /** Default params for (Intel D415):
@@ -29,12 +33,12 @@ public:
              baseline  - 0.014732
           */
           float fx = 596.39, fy = 596.39;
-          if(cam_focal){
+          if(!cam_focal.empty()){
                fx = (float)cam_focal[0];
                fy = (float)cam_focal[1];
           }
           float ppx = 423.74, ppy = 242.01;
-          if(cam_principal_point){
+          if(!cam_principal_point.empty()){
                ppx = (float)cam_principal_point[0];
                ppy = (float)cam_principal_point[1];
           }

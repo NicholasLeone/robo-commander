@@ -54,7 +54,8 @@ public:
 
 	int process(const cv::Mat& depth, cv::Mat* filtered_input,
 		std::vector<Obstacle>* found_obstacles = nullptr, cv::Mat* disparity_output = nullptr,
-		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr
+		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr,
+		bool verbose_obstacles = false
 	);
 
 	// Runtime Setters
@@ -84,6 +85,7 @@ public:
 	bool is_angle_correction_performed();
 	double get_depth_absolute_min();
 	double get_depth_absolute_max();
+	double get_correction_angle(bool in_degrees = false);
 
 private:
 	std::string classLbl = txt_bold_magenta() + "Vboats" + txt_reset_color();

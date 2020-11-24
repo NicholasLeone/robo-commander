@@ -223,7 +223,7 @@ void Vboats::set_depth_denoising_kernel_size(int size){ this->_filtered_depth_de
 
 int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      std::vector<Obstacle>* found_obstacles, cv::Mat* disparity_output,
-     cv::Mat* umap_output, cv::Mat* vmap_output
+     cv::Mat* umap_output, cv::Mat* vmap_output, bool verbose_obstacles
 ){
      if(depth.empty()){
           printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
@@ -241,10 +241,9 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           return -3;
      }
      cv::Mat disparityRaw = disparity.clone();
-     if(disparity_output) *disparity_output = disparity.clone();
 
      cv::Mat depthInput, disparityInput;
-     double correctionAngle = -this->_cam_roll - this->_cam_angle_offset;
+     double correctionAngle = this->get_correction_angle(true);
      if(this->_do_angle_correction){
           cv::Mat warpedDepth = rotate_image(depthRaw, correctionAngle);
           cv::Mat warpeddDisparity = rotate_image(disparityRaw, correctionAngle);
@@ -253,16 +252,20 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                depthInput = warpedDepth.clone();
                disparityInput = warpeddDisparity.clone();
                this->_angle_correction_performed = true;
+               this->processingDebugger.set_angle_corrected_depth_image(warpedDepth);
           } else{
                depthInput = depthRaw;
                disparityInput = disparityRaw;
                this->_angle_correction_performed = false;
+               this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
           }
      } else{
           depthInput = depthRaw;
           disparityInput = disparityRaw;
           this->_angle_correction_performed = false;
+          this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
      }
+     if(disparity_output) *disparity_output = disparityInput.clone();
 
      cv::Mat umap, vmap;
      genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
@@ -410,6 +413,16 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      } else final_depth = filtered_depth.clone();
 
      if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
+
+     if( (this->_do_obstacle_data_extraction) && (!obstacles_.empty()) ){
+          for(Obstacle obj : obstacles_){
+               obj.update(false, this->_baseline, this->_depth_scale,
+                    std::vector<float>{this->_fx, this->_fy},
+                    std::vector<float>{this->_px, this->_py},
+                    1.0, 1.0, verbose_obstacles
+               );
+          }
+     }
 
      // Return Output images if requested before visualization
      if(found_obstacles) *found_obstacles = obstacles_;
@@ -626,6 +639,17 @@ bool Vboats::is_depth_denoising_performed(){ return this->_denoise_filtered_dept
 bool Vboats::is_angle_correction_performed(){ return this->_do_angle_correction; }
 double Vboats::get_depth_absolute_min(){ return (double) this->_hard_min_depth; }
 double Vboats::get_depth_absolute_max(){ return (double) this->_hard_max_depth; }
+double Vboats::get_correction_angle(bool in_degrees){
+     double output;
+     // Get the angle according to which axis we are correcting on
+     if(this->_angleCorrectionType == ROLL_CORRECTION)           output = -this->_cam_roll - this->_cam_angle_offset;
+     else if(this->_angleCorrectionType == PITCH_CORRECTION)     output = -this->_cam_pitch - this->_cam_angle_offset;
+     else if(this->_angleCorrectionType == YAW_CORRECTION)       output = -this->_cam_yaw - this->_cam_angle_offset;
+     else output = 0.0;
+     // Convert to degrees if necessary
+     if(in_degrees) output = output * M_RAD2DEG;
+     return output;
+}
 
 void Vboats::enable_angle_correction(bool flag){ this->_do_angle_correction = flag; }
 void Vboats::enable_filtered_depth_denoising(bool flag){ this->_denoise_filtered_depth = flag; }
