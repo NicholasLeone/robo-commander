@@ -7,6 +7,7 @@
 
 #include "utilities/image_utils.h"
 #include "algorithms/vboats/obstacle.h"
+#include "algorithms/vboats/vboats_processing_images.h"
 
 using namespace std;
 
@@ -33,6 +34,11 @@ cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel = 15
      cv::Mat* keep_mask = nullptr, cv::Mat* sobel_raw = nullptr, cv::Mat* sobel_preprocessed = nullptr,
      cv::Mat* sobel_dilated = nullptr, cv::Mat* sobel_blurred = nullptr
 );
+cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel = 15,
+     int thresh_sobel_preprocess = 10, int thresh_sobel_postprocess = 2,
+     int dilate_size = 1, int blur_size = 3, vector<int> kernel_multipliers = {},
+     VboatsProcessingImages* image_debugger = nullptr
+);
 cv::Mat preprocess_vmap_sobelized(const cv::Mat& vmap,
      int thresh_sobel = 35, int blur_size = 5, vector<int> kernel_multipliers = {}
 );
@@ -40,6 +46,10 @@ cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preproces
      int thresh_preprocess = 40, int thresh_postprocess = 15, int blur_size = 7,
      vector<int> kernel_multipliers = {}, cv::Mat* sobel_threshed = nullptr,
      cv::Mat* sobel_blurred = nullptr, cv::Mat* keep_mask = nullptr
+);
+cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preprocessed_sobel,
+     int thresh_preprocess = 40, int thresh_postprocess = 15, int blur_size = 7,
+     vector<int> kernel_multipliers = {}, VboatsProcessingImages* image_debugger = nullptr
 );
 
 /** Ground Line Extraction */
@@ -82,6 +92,12 @@ int find_obstacles_disparity(const cv::Mat& vmap,
      std::vector< std::vector<cv::Rect> >* obstacle_windows = nullptr,
      bool verbose = false, bool debug_timing = false
 );
+int find_obstacles_disparity(const cv::Mat& vmap,
+     const std::vector< std::vector<cv::Point> >& contours,
+     std::vector<float> line_params, std::vector<Obstacle>* found_obstacles,
+     VboatsProcessingImages* image_debugger = nullptr,
+     bool verbose = false, bool debug_timing = false
+);
 
 /** Depth Filtering Strategies */
 
@@ -94,10 +110,20 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
      std::vector<int> line_intercept_offsets = {}, cv::Mat* keep_mask = nullptr,
      bool verbose = false, bool debug_timing = false
 );
+int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
+     const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
+     std::vector<int> line_intercept_offsets = {}, VboatsProcessingImages* image_debugger = nullptr,
+     bool verbose = false, bool debug_timing = false
+);
 int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::Mat& disparity,
      const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, cv::Mat* filtered_image,
      std::vector<float> line_params, int gnd_line_offset = 0, cv::Mat* keep_mask = nullptr,
      cv::Mat* vmap_objects = nullptr, std::vector<cv::Rect>* vmap_search_regions = nullptr,
+     bool verbose = false, bool debug = false, bool debug_img_info = false, bool debug_timing = false
+);
+int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::Mat& disparity,
+     const cv::Mat& vmap, const vector<vector<cv::Point>>& contours, cv::Mat* filtered_image,
+     std::vector<float> line_params, int gnd_line_offset = 0, VboatsProcessingImages* image_debugger = nullptr,
      bool verbose = false, bool debug = false, bool debug_img_info = false, bool debug_timing = false
 );
 

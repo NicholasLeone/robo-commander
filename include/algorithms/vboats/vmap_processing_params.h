@@ -31,6 +31,8 @@ public:
           this->stripping_threshs.clear();
           this->stripping_threshs.assign(values.begin(), values.end());
      }
+     void set_sobelize_kernel_x_multiplier(int value){ this->sobel_kernel_multipliers.at(0) = value; }
+     void set_sobelize_kernel_y_multiplier(int value){ this->sobel_kernel_multipliers.at(1) = value; }
      void set_sobelize_kernel_multipliers(int x, int y){
           this->sobel_kernel_multipliers.at(0) = x;
           this->sobel_kernel_multipliers.at(1) = y;
@@ -46,14 +48,6 @@ public:
      void set_ground_line_search_max_angle(double value){ this->gnd_line_search_max_deg = value; }
      void set_ground_line_search_deadzone(double value){ this->gnd_line_search_deadzone = value; }
      void set_depth_filtering_ground_line_intercept_offset(int value){ this->depth_filtering_gnd_line_intercept_offset = value; }
-};
-
-class VmapProcessingDebugObjects{
-public:
-    VmapProcessingDebugObjects(){};
-
-    cv::Mat preprocessing_keep_mask;
-    void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0){}
 };
 
 #endif // VBOATS_VMAP_PROCESSING_PARAMS_H_

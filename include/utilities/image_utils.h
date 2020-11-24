@@ -4,13 +4,13 @@
 #include <vector>
 #include <string.h>
 
-#include <opencv2/opencv.hpp>
+// #include <opencv/opencv.hpp>
 #include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-
-#define WITH_OPENCV
-#include "utilities/matplotlibcpp.h"
+// #include <opencv2/opencv.hpp>
+#include <opencv2/core/types.hpp> /* For OpenCV backwards compatibility */
+#include <opencv2/core.hpp> /* For OpenCV backwards compatibility */
+// #include <opencv2/imgproc.hpp>
+// #include <opencv2/highgui.hpp>
 
 using namespace std;
 

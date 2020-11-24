@@ -1,5 +1,9 @@
 #include "base/definitions.h"
 #include "utilities/utils.h"
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include "utilities/image_utils.h"
 #include "algorithms/vboats/vboats_utils.h"
 
 using namespace std;
@@ -295,6 +299,66 @@ cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel,
      threshold(output, output, float(thresh_sobel_postprocess), 255, cv::THRESH_TOZERO);
      return output.clone();
 }
+cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel,
+     int thresh_sobel_preprocess, int thresh_sobel_postprocess, int dilate_size,
+     int blur_size, vector<int> kernel_multipliers, VboatsProcessingImages* image_debugger)
+{
+     cv::Mat processed;
+     if(image_debugger){
+          cv::Mat* debug_image = nullptr;
+          cv::Mat* debug_image2 = nullptr;
+          cv::Mat* debug_image3 = nullptr;
+          cv::Mat* debug_image4 = nullptr;
+          cv::Mat* debug_image5 = nullptr;
+          if(image_debugger->visualize_umap_keep_mask) debug_image = new cv::Mat();
+          if(image_debugger->visualize_umap_sobel_raw) debug_image2 = new cv::Mat();
+          if(image_debugger->visualize_umap_sobel_preprocessed) debug_image3 = new cv::Mat();
+          if(image_debugger->visualize_umap_sobel_dilated) debug_image4 = new cv::Mat();
+          if(image_debugger->visualize_umap_sobel_blurred) debug_image5 = new cv::Mat();
+
+          processed = preprocess_umap_sobelized(umap, thresh_pre_sobel,
+               thresh_sobel_preprocess, thresh_sobel_postprocess,
+               dilate_size, blur_size, kernel_multipliers,
+               debug_image,  // keep_mask visualization
+               debug_image2,  // sobel_raw visualization
+               debug_image3,  // sobel_preprocessed visualization
+               debug_image4,  // sobel_dilated visualization
+               debug_image5   // sobel_blurred visualization
+          );
+
+          if(image_debugger->visualize_umap_keep_mask){
+               image_debugger->set_umap_sobelized_keep_mask(*debug_image);
+               delete debug_image;
+          }
+          if(image_debugger->visualize_umap_sobel_raw){
+               image_debugger->set_umap_sobelized_raw(*debug_image2);
+               delete debug_image2;
+          }
+          if(image_debugger->visualize_umap_sobel_preprocessed){
+               image_debugger->set_umap_sobelized_pre_filtering(*debug_image3);
+               delete debug_image3;
+          }
+          if(image_debugger->visualize_umap_sobel_dilated){
+               image_debugger->set_umap_sobelized_dilated(*debug_image4);
+               delete debug_image4;
+          }
+          if(image_debugger->visualize_umap_sobel_blurred){
+               image_debugger->set_umap_sobelized_blurred(*debug_image5);
+               delete debug_image5;
+          }
+     } else{
+          processed = preprocess_umap_sobelized(umap, thresh_pre_sobel,
+               thresh_sobel_preprocess, thresh_sobel_postprocess,
+               dilate_size, blur_size, kernel_multipliers,
+               nullptr,  // keep_mask visualization
+               nullptr,  // sobel_raw visualization
+               nullptr,  // sobel_preprocessed visualization
+               nullptr,  // sobel_dilated visualization
+               nullptr   // sobel_blurred visualization
+          );
+     }
+     return processed;
+}
 cv::Mat preprocess_vmap_sobelized(const cv::Mat& vmap, int thresh_sobel, int blur_size, vector<int> kernel_multipliers){
      cv::Mat output;
      if(vmap.empty()) return output;
@@ -354,6 +418,49 @@ cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preproces
      vmap.copyTo(output, keepMask);
      threshold(output, output, float(thresh_postprocess), 255, cv::THRESH_TOZERO);
      return output.clone();
+}
+cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preprocessed_sobel,
+     int thresh_preprocess, int thresh_postprocess, int blur_size, vector<int> kernel_multipliers,
+     VboatsProcessingImages* image_debugger
+){
+     cv::Mat processed;
+     if(image_debugger){
+          cv::Mat* debug_image = nullptr;
+          cv::Mat* debug_image2 = nullptr;
+          cv::Mat* debug_image3 = nullptr;
+          if(image_debugger->visualize_vmap_post_sobel_threshed) debug_image = new cv::Mat();
+          if(image_debugger->visualize_vmap_post_sobel_blurred) debug_image2 = new cv::Mat();
+          if(image_debugger->visualize_vmap_post_keep_mask) debug_image3 = new cv::Mat();
+
+          processed = postprocess_vmap_sobelized(vmap, preprocessed_sobel,
+               thresh_preprocess, thresh_postprocess, blur_size, kernel_multipliers,
+               debug_image,  // sobel_threshed visualization
+               debug_image2,  // sobel_blurred visualization
+               debug_image3   // keep_mask visualization
+          );
+
+          if(image_debugger->visualize_vmap_post_sobel_threshed){
+               image_debugger->set_vmap_sobelized_thresholded(*debug_image);
+               delete debug_image;
+          }
+          if(image_debugger->visualize_vmap_post_sobel_blurred){
+               image_debugger->set_vmap_sobelized_postprocessed_blurred(*debug_image2);
+               delete debug_image2;
+          }
+          if(image_debugger->visualize_vmap_post_keep_mask){
+               image_debugger->set_vmap_sobelized_postprocessed_keep_mask(*debug_image3);
+               delete debug_image3;
+          }
+     } else{
+          processed = postprocess_vmap_sobelized(vmap, preprocessed_sobel,
+               thresh_preprocess, thresh_postprocess, blur_size, kernel_multipliers,
+               nullptr,  // sobel_threshed visualization
+               nullptr,  // sobel_blurred visualization
+               nullptr   // keep_mask visualization
+          );
+     }
+     return processed;
+
 }
 
 /** =========================
@@ -799,6 +906,26 @@ int find_obstacles_disparity(const cv::Mat& vmap,
      if(obstacle_windows) *obstacle_windows = windows;
      return nObs;
 }
+int find_obstacles_disparity(const cv::Mat& vmap,
+     const std::vector< std::vector<cv::Point> >& contours, std::vector<float> line_params,
+     std::vector<Obstacle>* found_obstacles, VboatsProcessingImages* image_debugger,
+     bool verbose, bool debug_timing)
+{
+     int err = 0;
+     if(image_debugger && image_debugger->visualize_extracted_object_windows){
+          VboatsProcessingImages debugger = (*image_debugger);
+          err = find_obstacles_disparity(vmap, contours, line_params, found_obstacles,
+               &debugger.vmap_object_search_regions,
+               verbose, debug_timing
+          );
+     } else{
+          std::vector< vector<cv::Rect> >* obstacle_windows = nullptr;
+          err = find_obstacles_disparity(vmap, contours, line_params, found_obstacles,
+               obstacle_windows, verbose, debug_timing
+          );
+     }
+     return err;
+}
 
 /** =========================
 *  Depth Filtering Strategies
@@ -914,6 +1041,32 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
 
      if(filtered_image) *filtered_image = filtered_depth.clone();
      return 0;
+}
+int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
+     const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
+     std::vector<int> line_intercept_offsets, VboatsProcessingImages* image_debugger,
+     bool verbose, bool debug_timing)
+{
+     int err = 0;
+     if(image_debugger && image_debugger->visualize_gnd_line_keep_mask){
+          cv::Mat debug_image;
+          err = filter_depth_using_ground_line(depth, disparity,
+               vmap, line_params, filtered_image,
+               line_intercept_offsets,
+               &debug_image,   // keep_mask visualization
+               verbose, debug_timing
+          );
+          image_debugger->set_gnd_line_filtering_keep_mask(debug_image);
+     } else{
+          cv::Mat* debug_image = nullptr;
+          err = filter_depth_using_ground_line(depth, disparity,
+               vmap, line_params, filtered_image,
+               line_intercept_offsets,
+               debug_image,   // keep_mask visualization
+               verbose, debug_timing
+          );
+     }
+     return err;
 }
 
 int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::Mat& disparity, const cv::Mat& vmap,
@@ -1046,6 +1199,44 @@ int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::
      }
 
      if(filtered_image) *filtered_image = filteredDepth.clone();
-     if(vmap_search_regions) *vmap_search_regions = filteredDepth.clone();
+     if(vmap_search_regions) *vmap_search_regions = std::vector<cv::Rect>{searchRois.begin(), searchRois.end()};
      return 0;
+}
+int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::Mat& disparity, const cv::Mat& vmap,
+     const vector<vector<cv::Point>>& contours, cv::Mat* filtered_image,
+     std::vector<float> line_params, int gnd_line_offset,
+     VboatsProcessingImages* image_debugger,
+     bool verbose, bool debug, bool debug_img_info, bool debug_timing)
+{
+     int err = 0;
+     if(image_debugger){
+          cv::Mat* debug_image = nullptr;
+          cv::Mat* debug_image2 = nullptr;
+          if(image_debugger->visualize_obj_candidate_keep_mask) debug_image = new cv::Mat();
+          if(image_debugger->visualize_vmap_candidates_img) debug_image2 = new cv::Mat();
+          err = filter_depth_using_object_candidate_regions(depth, disparity,
+               vmap, contours, filtered_image, line_params, gnd_line_offset,
+               debug_image,  // keep_mask visualization
+               debug_image2,  // vmap_objects visualization
+               nullptr,  // vmap_search_regions visualization
+               verbose, debug, debug_img_info, debug_timing
+          );
+          if(image_debugger->visualize_obj_candidate_keep_mask){
+               image_debugger->set_vmap_object_candidates_image(*debug_image);
+               delete debug_image;
+          }
+          if(image_debugger->visualize_vmap_candidates_img){
+               image_debugger->set_obj_candidate_filtering_keep_mask(*debug_image2);
+               delete debug_image2;
+          }
+     } else{
+          err = filter_depth_using_object_candidate_regions(depth, disparity,
+               vmap, contours, filtered_image, line_params, gnd_line_offset,
+               nullptr,  // keep_mask visualization
+               nullptr,  // vmap_objects visualization
+               nullptr,  // vmap_search_regions visualization
+               verbose, debug, debug_img_info, debug_timing
+          );
+     }
+     return err;
 }

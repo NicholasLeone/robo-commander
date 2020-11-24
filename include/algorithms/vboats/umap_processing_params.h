@@ -38,6 +38,8 @@ public:
           this->stripping_threshs.clear();
           this->stripping_threshs.assign(values.begin(), values.end());
      }
+     void set_sobelize_kernel_x_multiplier(int value){ this->sobel_kernel_multipliers.at(0) = value; }
+     void set_sobelize_kernel_y_multiplier(int value){ this->sobel_kernel_multipliers.at(1) = value; }
      void set_sobelize_kernel_multipliers(int x, int y){
           this->sobel_kernel_multipliers.at(0) = x;
           this->sobel_kernel_multipliers.at(1) = y;
@@ -46,18 +48,6 @@ public:
           this->contour_filtering_offset.x = x;
           this->contour_filtering_offset.y = y;
      }
-};
-
-class UmapProcessingDebugObjects{
-public:
-    UmapProcessingDebugObjects(){};
-
-    cv::Mat preprocessing_keep_mask;
-    std::vector< std::vector<cv::Point> > filtered_contours;
-    std::vector< std::vector<cv::Point> > all_contours;
-    std::vector< cv::Vec4i > filtered_hierarchies;
-    std::vector< cv::Vec4i > all_hierarchies;
-    void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0){}
 };
 
 #endif // VBOATS_UMAP_PROCESSING_PARAMS_H_

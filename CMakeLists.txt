@@ -136,6 +136,13 @@ list(APPEND EXTRA_INCLUDE_DIRS "/usr/local/lib/python2.7/dist-packages/numpy/cor
 set(Matplotlib_LIBS ${PYTHON_LIBRARIES})
 list(APPEND Matplotlib_LIBS python2.7)
 
+find_package(PCL 1.7 REQUIRED COMPONENTS common)
+if(PCL_FOUND)
+     add_definitions(${PCL_DEFINITIONS})
+     link_directories(${PCL_LIBRARY_DIRS})
+     list(APPEND EXTRA_INCLUDE_DIRS ${PCL_INCLUDE_DIRS})
+endif(PCL_FOUND)
+
 include_directories(
      include
      ${CMAKE_CURRENT_BINARY_DIR}
@@ -157,7 +164,6 @@ set( ${PROJECT_NAME}_EXTERNAL_LIBRARIES
 )
 
 list(APPEND ${PROJECT_NAME}_INCLUDE_DIRS
-     "${INCS_DIR}/base"
      "${INCS_DIR}/actuators"
      "${INCS_DIR}/algorithms"
      "${HOME_DIR}/external/TinyEKF/src"

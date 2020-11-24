@@ -69,6 +69,33 @@ cv::Mat Vboats::remove_vmap_deadzones(const cv::Mat& vmap){
      cv::fillPoly(processed, deadzoneAreas, cv::Scalar(0));
      return processed;
 }
+
+/** void VboatsRos::depth_to_disparity(const cv::Mat& depth, cv::Mat* disparity, float gain){
+     if(depth.empty()) return;
+     cv::Mat image, disparityOut;
+     if(depth.type() == CV_16UC1){
+          depth.convertTo(image, CV_32F, this->_dscale);
+          gain = gain * this->_dscale;
+     } else if(depth.type() != CV_32F) depth.convertTo(image, CV_32F);
+     else image = depth.clone();
+     if(this->_debug_disparity_generation){
+          printf("[DEBUG] VboatsRos::depth_to_disparity() --- Using conversion gain = %f.\r\n", gain);
+          cvinfo(image, "VboatsRos::depth_to_disparity() --- Input Depth Image: ");
+     }
+     // Depth2DisparityConverter<float> d2dconverter(gain);
+     ForEachDepthConverter<float> d2dconverter(gain, (float) this->_disparity_hard_min, (float) this->_disparity_hard_max);
+     image.forEach<float>(d2dconverter);
+     if(this->_debug_disparity_generation) cvinfo(image, "VboatsRos::depth_to_disparity() --- Disparity image before uint8 conversion: ");
+
+     if(image.type() != CV_8UC1){
+          double minVal, maxVal;
+          cv::minMaxLoc(image, &minVal, &maxVal);
+          image.convertTo(disparityOut, CV_8UC1, (255.0/maxVal) );
+     } else disparityOut = image;
+     if(this->_debug_disparity_generation) cvinfo(disparityOut, "VboatsRos::depth_to_disparity() --- Output Disparity: ");
+     if(disparity) *disparity = disparityOut.clone();
+}
+*/
 cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
      cv::Mat output;
      if(depth.empty()) return output;
@@ -92,6 +119,41 @@ cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
      } else output = image.clone();
      return output.clone();
 }
+cloudxyz_t::Ptr Vboats::generate_pointcloud_from_depth(const cv::Mat& depth, bool debug_timing){
+     cloudxyz_t::Ptr tmpCloud(new cloudxyz_t);
+     // Return early with empty cloud object if input depth image is empty
+     // or the necessary camera information was never recevied
+     if( (depth.empty()) || (!this->_have_cam_info) ) return tmpCloud;
+     // Convert input image to proper data type needed for cloud generation
+     cv::Mat tmpDepth = depth.clone();
+     if(depth.type() == CV_16UC1) tmpDepth.convertTo(tmpDepth, CV_32F, this->_depth_scale);
+     else if(depth.type() != CV_32F) tmpDepth.convertTo(tmpDepth, CV_32F);
+
+     double t;
+     if(debug_timing) t = (double)cv::getTickCount();
+     // Loop through depth image and generate cloud XYZ points using depth information
+     float* ptrP;
+     pcl::PointXYZ pt;
+     for(int y = 0; y < tmpDepth.rows; y+=4){
+          ptrP = tmpDepth.ptr<float>(y);
+          for(int x = 0; x < tmpDepth.cols; x+=4){
+               float depthVal = (float) ptrP[x];
+               if(depthVal > 0){
+                    pt.x = ((float)x - this->_px) * depthVal / this->_fx;
+                    pt.y = ((float)y - this->_py) * depthVal / this->_fy;
+                    pt.z = depthVal;
+                    tmpCloud->points.push_back(pt);
+               }
+          }
+     }
+     tmpCloud->height = 1;
+     tmpCloud->width = tmpCloud->points.size();
+     if(debug_timing){
+          t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[INFO] %s::generate_pointcloud_from_depth() ---- took %.4lf ms (%.2lf Hz) to generate a pointcloud from a depth image\r\n", this->classLbl.c_str(), t*1000.0, (1.0/t));
+     }
+     return tmpCloud;
+}
 
 void Vboats::set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose){
      if(this->_cam_info_count <= 10){
@@ -99,6 +161,22 @@ void Vboats::set_camera_info(cv::Mat K, float depth_scale, float baseline, bool 
           this->_fy = (float)K.at<double>(4);
           this->_px = (float)K.at<double>(2);
           this->_py = (float)K.at<double>(5);
+          this->_baseline = baseline;
+          this->_depth_scale = depth_scale;
+          this->_Tx = (float)(this->_fx * baseline);
+          this->_depth2disparityFactor = this->_Tx / this->_depth_scale;
+
+          if(verbose) printf("[INFO] %s::set_camera_info() ---- DepthScale = %.4f, Baseline = %.6f,  Focals = [%.2f, %.2f],  Principles = [%.2f, %.2f]\r\n", this->classLbl.c_str(), this->_depth_scale, this->_baseline, this->_fx, this->_fy, this->_px, this->_py);
+          this->_have_cam_info = true;
+     }
+     this->_cam_info_count++;
+}
+void Vboats::set_camera_info(float fx, float fy, float px, float py, float depth_scale, float baseline, bool verbose){
+     if(this->_cam_info_count <= 10){
+          this->_fx = fx;
+          this->_fy = fy;
+          this->_px = px;
+          this->_py = py;
           this->_baseline = baseline;
           this->_depth_scale = depth_scale;
           this->_Tx = (float)(this->_fx * baseline);
@@ -143,7 +221,10 @@ void Vboats::set_camera_orientation(double x, double y, double z, double w, bool
 void Vboats::set_camera_angle_offset(double offset_degrees){ this->_cam_angle_offset = offset_degrees * M_DEG2RAD; }
 void Vboats::set_depth_denoising_kernel_size(int size){ this->_filtered_depth_denoising_size = size; }
 
-int Vboats::process(const cv::Mat& depth){
+int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
+     std::vector<Obstacle>* found_obstacles, cv::Mat* disparity_output,
+     cv::Mat* umap_output, cv::Mat* vmap_output
+){
      if(depth.empty()){
           printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
           return -1;
@@ -160,6 +241,204 @@ int Vboats::process(const cv::Mat& depth){
           return -3;
      }
      cv::Mat disparityRaw = disparity.clone();
+     if(disparity_output) *disparity_output = disparity.clone();
+
+     cv::Mat depthInput, disparityInput;
+     double correctionAngle = -this->_cam_roll - this->_cam_angle_offset;
+     if(this->_do_angle_correction){
+          cv::Mat warpedDepth = rotate_image(depthRaw, correctionAngle);
+          cv::Mat warpeddDisparity = rotate_image(disparityRaw, correctionAngle);
+
+          if(!warpedDepth.empty() && !warpeddDisparity.empty()){
+               depthInput = warpedDepth.clone();
+               disparityInput = warpeddDisparity.clone();
+               this->_angle_correction_performed = true;
+          } else{
+               depthInput = depthRaw;
+               disparityInput = disparityRaw;
+               this->_angle_correction_performed = false;
+          }
+     } else{
+          depthInput = depthRaw;
+          disparityInput = disparityRaw;
+          this->_angle_correction_performed = false;
+     }
+
+     cv::Mat umap, vmap;
+     genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
+
+     if(umap.empty()){
+          printf("[WARNING] %s::process() --- Umap input is empty.\r\n", this->classLbl.c_str());
+          return -4;
+     }
+     if(vmap.empty()){
+          printf("[WARNING] %s::process() --- Vmap input is empty.\r\n", this->classLbl.c_str());
+          return -5;
+     }
+     cv::Mat umapRaw = umap.clone();
+     cv::Mat vmapRaw = vmap.clone();
+     this->processingDebugger.set_umap_raw(umapRaw);
+     this->processingDebugger.set_vmap_raw(vmapRaw);
+
+     // Pre-process Umap
+     cv::Mat uProcessed = this->remove_umap_deadzones(umapRaw);
+     if(this->_umapFiltMeth == SOBELIZED_METHOD){
+          uProcessed = preprocess_umap_sobelized(uProcessed,
+               this->umapParams.sobel_thresh_pre_sobel,
+               this->umapParams.sobel_thresh_sobel_preprocess,
+               this->umapParams.sobel_thresh_sobel_postprocess,
+               this->umapParams.sobel_dilate_size, this->umapParams.sobel_blur_size,
+               this->umapParams.sobel_kernel_multipliers,
+               &this->processingDebugger
+          );
+          // uProcessed = preprocess_umap_sobelized(uProcessed,
+          //      this->umapParams.sobel_thresh_pre_sobel,
+          //      this->umapParams.sobel_thresh_sobel_preprocess,
+          //      this->umapParams.sobel_thresh_sobel_postprocess,
+          //      this->umapParams.sobel_dilate_size, this->umapParams.sobel_blur_size,
+          //      this->umapParams.sobel_kernel_multipliers,
+          //      nullptr,  // keep_mask visualization
+          //      nullptr,  // sobel_raw visualization
+          //      nullptr,  // sobel_preprocessed visualization
+          //      nullptr,  // sobel_dilated visualization
+          //      nullptr   // sobel_blurred visualization
+          // );
+     } else if(this->_umapFiltMeth == STRIPPING_METHOD) uProcessed = preprocess_umap_stripping(uProcessed, &this->umapParams.stripping_threshs);
+
+     // Find contours in Umap needed later for obstacle filtering
+     vector<vector<cv::Point>> filtered_contours;
+     find_contours(uProcessed, &filtered_contours, (int) this->_contourFiltMeth,
+          this->umapParams.contour_filtering_thresh_min,
+          this->umapParams.contour_filtering_thresh_max,
+          &this->umapParams.contour_filtering_offset,
+          &this->processingDebugger.filtered_umap_hierarchies,  // filtered contours visualization
+          nullptr,  // all_contours visualization
+          nullptr   // all_hierarchies visualization
+     );
+     this->processingDebugger.set_filtered_umap_contours(filtered_contours);
+
+     // Pre-process Vmap
+     cv::Mat preprocessedVmap = this->remove_vmap_deadzones(vmapRaw);
+     if(this->_vmapFiltMeth == SOBELIZED_METHOD){
+          preprocessedVmap = preprocess_vmap_sobelized(preprocessedVmap,
+               this->vmapParams.sobel_preprocessing_thresh_sobel,
+               this->vmapParams.sobel_preprocessing_blur_size,
+               this->vmapParams.sobel_kernel_multipliers
+          );
+     } else if(this->_vmapFiltMeth == STRIPPING_METHOD) preprocessedVmap = preprocess_vmap_stripping(preprocessedVmap, &this->vmapParams.stripping_threshs);
+     this->processingDebugger.set_vmap_sobelized_preprocessed(preprocessedVmap);
+
+     // Extract ground line parameters (if ground is present)
+     std::vector<float> line_params;
+     bool gndPresent = find_ground_line(preprocessedVmap, &line_params,
+          this->vmapParams.gnd_line_search_min_deg,
+          this->vmapParams.gnd_line_search_max_deg,
+          this->vmapParams.gnd_line_search_deadzone,
+          this->vmapParams.gnd_line_search_hough_thresh
+     );
+     if(!gndPresent){
+          printf("[INFO] %s::process() --- Unable to detect Ground Line.\r\n", this->classLbl.c_str());
+          this->processingDebugger.set_gnd_line_coefficients(std::vector<float>{});
+     } else this->processingDebugger.set_gnd_line_coefficients(line_params);
+
+     // Finish V-map processing starting from the pre-processed vmap
+     cv::Mat vProcessed = preprocessedVmap.clone();
+     if(this->_vmapFiltMeth == SOBELIZED_METHOD){
+          vProcessed = postprocess_vmap_sobelized(vmapRaw, preprocessedVmap,
+               this->vmapParams.sobel_postprocessing_thresh_prefiltering,
+               this->vmapParams.sobel_postprocessing_thresh_postfiltering,
+               this->vmapParams.sobel_postprocessing_blur_size,
+               this->vmapParams.sobel_kernel_multipliers,
+               &this->processingDebugger
+          );
+          // vProcessed = postprocess_vmap_sobelized(vmapRaw, preprocessedVmap,
+          //      this->vmapParams.sobel_postprocessing_thresh_prefiltering,
+          //      this->vmapParams.sobel_postprocessing_thresh_postfiltering,
+          //      this->vmapParams.sobel_postprocessing_blur_size,
+          //      this->vmapParams.sobel_kernel_multipliers,
+          //      nullptr,  // sobel_threshed visualization
+          //      nullptr,  // sobel_blurred visualization
+          //      nullptr   // keep_mask visualization
+          // );
+     }
+     if(umap_output) *umap_output = uProcessed.clone();
+     if(vmap_output) *vmap_output = vProcessed.clone();
+
+     // Obstacle data extraction
+     int nObs = 0;
+     std::vector<Obstacle> obstacles_;
+     std::vector< std::vector<cv::Rect> > obstacleRegions;
+     if(this->_do_obstacle_data_extraction){
+          nObs = find_obstacles_disparity(vProcessed, filtered_contours, line_params, &obstacles_,
+               &obstacleRegions    // obstacle regions visualization
+          );
+     }
+     this->processingDebugger.set_vmap_object_search_regions(obstacleRegions);
+
+     // Filter the original depth image using all the useful data encoded within
+     // the resulting processed UV-Maps
+     cv::Mat filtered_image;
+     int err = filter_depth_using_object_candidate_regions(depthInput, disparityInput,
+          vProcessed, filtered_contours, &filtered_image, line_params,
+          this->vmapParams.depth_filtering_gnd_line_intercept_offset, &this->processingDebugger
+     );
+     // int err = filter_depth_using_object_candidate_regions(depthInput, disparityInput,
+     //      vProcessed, filtered_contours, &filtered_image, line_params,
+     //      this->vmapParams.depth_filtering_gnd_line_intercept_offset,
+     //      nullptr,  // keep_mask visualization
+     //      nullptr,  // vmap_objects visualization
+     //      nullptr   // vmap_search_regions visualization
+     // );
+     this->processingDebugger.set_gnd_line_intercept_offset(this->vmapParams.depth_filtering_gnd_line_intercept_offset);
+
+     cv::Mat filtered_depth;
+     err = filter_depth_using_ground_line(filtered_image, disparityInput,
+          vProcessed, line_params, &filtered_depth,
+          std::vector<int>{this->vmapParams.depth_filtering_gnd_line_intercept_offset},
+          &this->processingDebugger   // keep_mask visualization
+     );
+
+     // Attempt to remove any noise (speckles) from the resulting filtered depth image
+     cv::Mat final_depth;
+     if(this->_denoise_filtered_depth){
+          cv::Mat morphElement = cv::getStructuringElement(cv::MORPH_ELLIPSE,
+               cv::Size(this->_filtered_depth_denoising_size, this->_filtered_depth_denoising_size)
+          );
+          cv::Mat morphedDepth;
+          cv::morphologyEx(filtered_depth, morphedDepth, cv::MORPH_OPEN, morphElement);
+          final_depth = morphedDepth.clone();
+     } else final_depth = filtered_depth.clone();
+
+     if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
+
+     // Return Output images if requested before visualization
+     if(found_obstacles) *found_obstacles = obstacles_;
+     if(filtered_input) *filtered_input = final_depth.clone();
+
+     return (int) obstacles_.size();
+}
+/**
+int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
+     std::vector<Obstacle>* found_obstacles, cv::Mat* disparity_output,
+     cv::Mat* umap_output, cv::Mat* vmap_output
+){
+     if(depth.empty()){
+          printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
+          return -1;
+     }
+     if(!this->_have_cam_info){
+          printf("[WARNING] %s::process() --- Camera Information Unknown.\r\n", this->classLbl.c_str());
+          return -2;
+     }
+
+     cv::Mat depthRaw = depth.clone();
+     cv::Mat disparity = this->generate_disparity_from_depth(depthRaw);
+     if(disparity.empty()){
+          printf("[WARNING] %s::process() --- Disparity input is empty.\r\n", this->classLbl.c_str());
+          return -3;
+     }
+     cv::Mat disparityRaw = disparity.clone();
+     if(disparity_output) *disparity_output = disparity.clone();
 
      cv::Mat depthInput, disparityInput;
      double correctionAngle = -this->_cam_roll - this->_cam_angle_offset;
@@ -196,11 +475,6 @@ int Vboats::process(const cv::Mat& depth){
      cv::Mat umapRaw = umap.clone();
      cv::Mat vmapRaw = vmap.clone();
 
-     // cv::Mat umapDisplay = umap.clone();
-     // cv::Mat vmapDisplay = vmap.clone();
-     // cv::Mat depthDisplay = depth.clone();
-     // cv::Mat disparityDisplay = disparity.clone();
-
      // Pre-process Umap
      cv::Mat uProcessed = this->remove_umap_deadzones(umapRaw);
      if(this->_umapFiltMeth == SOBELIZED_METHOD){
@@ -224,7 +498,7 @@ int Vboats::process(const cv::Mat& depth){
           this->umapParams.contour_filtering_thresh_min,
           this->umapParams.contour_filtering_thresh_max,
           &this->umapParams.contour_filtering_offset,
-          &this->_umap_debugger.filtered_hierarchies,  // filtered contours visualization
+          &this->processingDebugger.filtered_umap_hierarchies,  // filtered contours visualization
           nullptr,  // all_contours visualization
           nullptr   // all_hierarchies visualization
      );
@@ -262,6 +536,8 @@ int Vboats::process(const cv::Mat& depth){
                nullptr   // keep_mask visualization
           );
      }
+     if(umap_output) *umap_output = uProcessed.clone();
+     if(vmap_output) *vmap_output = vProcessed.clone();
 
      // Obstacle data extraction
      int nObs = 0;
@@ -288,7 +564,7 @@ int Vboats::process(const cv::Mat& depth){
      err = filter_depth_using_ground_line(filtered_image, disparityInput,
           vProcessed, line_params, &filtered_depth,
           std::vector<int>{this->vmapParams.depth_filtering_gnd_line_intercept_offset},
-          nullptr   // keep_mask visualization
+          &this->processingDebugger   // keep_mask visualization
      );
 
      // Attempt to remove any noise (speckles) from the resulting filtered depth image
@@ -305,230 +581,10 @@ int Vboats::process(const cv::Mat& depth){
      if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
 
      // Return Output images if requested before visualization
-     // if(obstacles) *obstacles = obstacles_;
-     // if(filtered) *filtered = filtered_depth.clone();
-     // if(processed_umap) *processed_umap = uProcessed.clone();
-     // if(processed_vmap) *processed_vmap = vProcessed.clone();
+     if(found_obstacles) *found_obstacles = obstacles_;
+     if(filtered_input) *filtered_input = final_depth.clone();
 
      return (int) obstacles_.size();
-}
-
-/**
-     if(this->_do_cv_wait_key){
-          // if(this->_visualize_gnd_mask) imshowCmap(gndMask, "Ground-Line Mask");
-          // if(this->_visualize_obj_mask) imshowCmap(objMask, "Object Mask");
-          // if(this->_visualize_gnd_filter_img) imshowCmap(noGndImg, "Ground-Line Filtered Image");
-          // if(this->_visualize_generated_disparity) imshowCmap(disparityCopy, "Proc. Input Disparity");
-          if(this->_do_misc_viz){
-               cv::Mat tmpDepthDisp;
-               std::vector<cv::Mat> depthDisps;
-               if(this->_visualize_procinput_depth && (!depthCopy.empty()) ){
-                    tmpDepthDisp = imCvtCmap(depthCopy);
-                    cv::putText(tmpDepthDisp, "Raw Depth", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    depthDisps.push_back(tmpDepthDisp);
-               }
-               if(this->_visualize_filtered_depth && (!filtered_depth.empty()) ){
-                    tmpDepthDisp = imCvtCmap(filtered_depth);
-                    cv::putText(tmpDepthDisp, "Filtered Depth", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    depthDisps.push_back(tmpDepthDisp);
-               }
-               cv::Mat depthsMerged;
-               if(depthDisps.size() > 0){
-                    long nrows = 1;
-                    long ncols = (long) depthDisps.size();
-                    if(this->_viz_pause_on_misc) pplots(depthDisps, ncols, nrows, "Depths", true);
-                    else{
-                         pplots(depthDisps, ncols, nrows, "Depths");
-                         // if(this->_viz_sleep_secs <= 0) plt::pause(0.001);
-                         // else plt::pause(this->_viz_sleep_secs);
-                    }
-                    // cv::hconcat(depthDisps, depthsMerged);
-                    // if(!depthsMerged.empty()){
-                    //      cv::namedWindow("Depths", cv::WINDOW_NORMAL);
-                    //      cv::imshow("Depths", depthsMerged);
-                    // }
-               }
-          }
-
-          if(this->_do_vmap_viz){
-               std::vector<cv::Mat> vmapsDisps;
-               if(this->_visualize_vmap_raw || this->_visualize_vmap_raw_w_lines){
-                    cv::Mat vmapCmap = imCvtCmap(vmapCopy);
-                    if(this->_visualize_vmap_raw && (!vmapCmap.empty()) ){
-                         cv::putText(vmapCmap, "Proc. Input Vmap", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                         vmapsDisps.push_back(vmapCmap);
-                    }
-                    // if(this->_visualize_vmap_raw_w_lines && (!vmapCmap.empty()) && gndPresent ){
-                    //      cv::Mat lineDisplay = vmapCopy.clone();
-                    //      cv::cvtColor(lineDisplay, lineDisplay, cv::COLOR_GRAY2BGR);
-                    //      int yk = int(vmapCmap.cols * gndM) + gndB;
-                    //      int yu = int(vmapCmap.cols * gndM) + (gndB-this->_gnd_line_upper_offset);
-                    //      int yl = int(vmapCmap.cols * gndM) + (gndB+this->_gnd_line_lower_offset);
-                    //      cv::line(lineDisplay, cv::Point(0, gndB), cv::Point(vmapCmap.cols, yk), cv::Scalar(0,255,0), 2, cv::LINE_AA);
-                    //      cv::line(lineDisplay, cv::Point(0, (gndB-this->_gnd_line_upper_offset)), cv::Point(vmapCmap.cols, yu), cv::Scalar(255,0,0), 2, cv::LINE_AA);
-                    //      cv::line(lineDisplay, cv::Point(0, (gndB+this->_gnd_line_lower_offset)), cv::Point(vmapCmap.cols, yl), cv::Scalar(0,0,255), 2, cv::LINE_AA);
-                    //      cv::putText(lineDisplay, "Ground Lines", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    //      vmapsDisps.push_back(lineDisplay);
-                    // }
-               }
-               cv::Mat tmpVmapDisp;
-
-               // if(this->_visualize_vmap_blurred && (!blurSobel.empty())){
-               //      tmpVmapDisp = imCvtCmap(blurSobel);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Vmap Blurred", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-               // if(this->_visualize_vmap_dilated && (!dilatedSobel.empty())){
-               //      tmpVmapDisp = imCvtCmap(dilatedSobel);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Vmap Dilated", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-
-               if(this->_visualize_vmap_sobel_raw && (!preprocessedVmap.empty()) ){
-                    tmpVmapDisp = imCvtCmap(preprocessedVmap);
-                    if(!tmpVmapDisp.empty()){
-                         cv::putText(tmpVmapDisp, "Pre-Proc. Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                         vmapsDisps.push_back(tmpVmapDisp);
-                    }
-               }
-
-               // if(this->_visualize_vmap_thresh && (!sobelThresh.empty()) ){
-               //      tmpVmapDisp = imCvtCmap(sobelThresh);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Vmap Thresholded", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-               // if(this->_visualize_vmap_sec_thresh && (!sobelSecThresh.empty()) ){
-               //      tmpVmapDisp = imCvtCmap(sobelSecThresh);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Sobel Secondary Thresholding", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-               // if(this->_visualize_vmap_sec_dilated && (!sobelSecDilate.empty()) ){
-               //      tmpVmapDisp = imCvtCmap(sobelSecDilate);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Sobel Secondary Dilate", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-               // if(this->_visualize_vmap_sec_blur && (!sobelSecBlur.empty()) ){
-               //      tmpVmapDisp = imCvtCmap(sobelSecBlur);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Sobel Secondary Blurring", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-               // if(this->_visualize_vmap_mask && (!segMask.empty()) ){
-               //      tmpVmapDisp = imCvtCmap(segMask);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Vmap Mask", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-
-               if(this->_visualize_process_input_vmap || this->_visualize_vmap_sobel_filtered || this->_visualize_obstacle_windows){
-                    cv::Mat vmapProcDisp = imCvtCmap(vProcessed);
-                    if( (this->_visualize_process_input_vmap || this->_visualize_vmap_sobel_filtered) && (!vmapProcDisp.empty()) ){
-                         cv::Mat tmpDisp = vmapProcDisp.clone();
-                         cv::putText(tmpDisp, "Post-Proc. Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                         vmapsDisps.push_back(tmpDisp);
-                    }
-                    if(this->_visualize_obstacle_windows && (!vmapProcDisp.empty()) && (objectsWindows.size() != 0) ){
-                         cv::Mat windowDisplay = vmapProcDisp.clone();
-                         for(auto objWindows : objectsWindows){
-                              for(cv::Rect window : objWindows){
-                                   cv::rectangle(windowDisplay, window, cv::Scalar(0, 255, 255), 1);
-                              }
-                         }
-                         if(this->_visualize_vmap_raw_w_lines && (!vProcessed.empty()) && gndPresent ){
-                              int yk = int(windowDisplay.cols * gndM) + gndB;
-                              int yu = int(windowDisplay.cols * gndM) + (gndB-this->_gnd_line_upper_offset);
-                              int yl = int(windowDisplay.cols * gndM) + (gndB+this->_gnd_line_lower_offset);
-                              cv::line(windowDisplay, cv::Point(0, gndB), cv::Point(windowDisplay.cols, yk), cv::Scalar(0,255,0), 1, cv::LINE_AA);
-                              cv::line(windowDisplay, cv::Point(0, (gndB-this->_gnd_line_upper_offset)), cv::Point(windowDisplay.cols, yu), cv::Scalar(0,0,255), 1, cv::LINE_AA);
-                              cv::line(windowDisplay, cv::Point(0, (gndB+this->_gnd_line_lower_offset)), cv::Point(windowDisplay.cols, yl), cv::Scalar(255,0,255), 1, cv::LINE_AA);
-                         }
-                         vmapsDisps.push_back(windowDisplay);
-                    }
-               }
-
-               // if(this->_visualize_obj_detection_vmap){
-               //      tmpVmapDisp = imCvtCmap(obsSearchVmap);
-               //      if(!tmpVmapDisp.empty()){
-               //           cv::putText(tmpVmapDisp, "Object Detection Vmap", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-               //           vmapsDisps.push_back(tmpVmapDisp);
-               //      }
-               // }
-
-               cv::Mat vmapsMerged;
-               if(vmapsDisps.size() > 0){
-                    long nrows = 1;
-                    long ncols = (long) vmapsDisps.size();
-                    if(this->_viz_pause_on_vmap) pplots(vmapsDisps, ncols, nrows, "Vmaps", true);
-                    else{
-                         pplots(vmapsDisps, ncols, nrows, "Vmaps");
-                         // if(this->_viz_sleep_secs <= 0) plt::pause(0.001);
-                         // else plt::pause(this->_viz_sleep_secs);
-                    }
-
-                    // plt::pause(0.01);
-                    // cv::hconcat(vmapsDisps, vmapsMerged);
-                    // if(!vmapsMerged.empty()){
-                    //      cv::namedWindow("Vmaps", cv::WINDOW_NORMAL);
-                    //      cv::imshow("Vmaps", vmapsMerged);
-                    // }
-               }
-          }
-          if(this->_do_umap_viz){
-               std::vector<cv::Mat> umapsDisps;
-               cv::Mat tmpUmapDisp;
-               if(this->_visualize_umap_raw && (!umapCopy.empty()) ){
-                    tmpUmapDisp = imCvtCmap(umapCopy);
-                    if(this->_visualize_umap_contours && (contours.size() > 0) ){
-                         for(int i = 0; i < int(contours.size()); i++){ cv::drawContours(tmpUmapDisp, contours, i, cv::Scalar(0,255,0), 1, cv::LINE_AA, hierarchies, 0, cv::Point(0,0)); }
-                    }
-                    cv::putText(tmpUmapDisp, "Raw Umap", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    umapsDisps.push_back(tmpUmapDisp);
-               }
-               if(this->_visualize_umap_filtered && (!uProcessed.empty()) ){
-                    tmpUmapDisp = imCvtCmap(uProcessed);
-                    if(this->_visualize_umap_contours && (contours.size() > 0) ){
-                         for(int i = 0; i < int(contours.size()); i++){ cv::drawContours(tmpUmapDisp, contours, i, cv::Scalar(0,255,0), 1, cv::LINE_AA, hierarchies, 0, cv::Point(0,0)); }
-                    }
-                    cv::putText(tmpUmapDisp, "Filtered Umap", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    umapsDisps.push_back(tmpUmapDisp);
-               }
-               cv::Mat umapsMerged;
-               if(umapsDisps.size() > 0){
-                    long ncols = 1; long nrows = (long) umapsDisps.size();
-                    if(this->_viz_pause_on_umap) pplots(umapsDisps, ncols, nrows, "Umaps", true);
-                    else{ pplots(umapsDisps, ncols, nrows, "Umaps");
-                         // if(this->_viz_sleep_secs <= 0) plt::pause(0.001);
-                         // else plt::pause(this->_viz_sleep_secs);
-                    }
-
-                    // plt::pause(0.01);
-                    // cv::vconcat(umapsDisps, umapsMerged);
-                    // if(!umapsMerged.empty()){
-                    //      cv::namedWindow("Umaps", cv::WINDOW_NORMAL);
-                    //      cv::imshow("Umaps", umapsMerged);
-                    // }
-               }
-          }
-     }
-     if(this->_do_cv_wait_key){
-          // cv::waitKey(this->_viz_sleep_ms);
-          if(this->_viz_sleep_secs <= 0) plt::pause(0.001);
-          else plt::pause(this->_viz_sleep_secs);
-     }
-
-     return (int) _obstacles.size();
 }
 */
 
@@ -564,6 +620,12 @@ void Vboats::set_image_angle_correction_type(std::string method){
      else if(strcmp(method.c_str(), "Yaw") == 0) this->_angleCorrectionType = YAW_CORRECTION;
      else this->_angleCorrectionType = ROLL_CORRECTION;
 }
+
+bool Vboats::is_obstacle_data_extraction_performed(){ return this->_do_obstacle_data_extraction; }
+bool Vboats::is_depth_denoising_performed(){ return this->_denoise_filtered_depth; }
+bool Vboats::is_angle_correction_performed(){ return this->_do_angle_correction; }
+double Vboats::get_depth_absolute_min(){ return (double) this->_hard_min_depth; }
+double Vboats::get_depth_absolute_max(){ return (double) this->_hard_max_depth; }
 
 void Vboats::enable_angle_correction(bool flag){ this->_do_angle_correction = flag; }
 void Vboats::enable_filtered_depth_denoising(bool flag){ this->_denoise_filtered_depth = flag; }

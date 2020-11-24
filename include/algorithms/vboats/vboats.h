@@ -6,11 +6,17 @@
 
 #include "base/definitions.h"
 #include "utilities/image_utils.h"
+#include "algorithms/vboats/obstacle.h"
 #include "algorithms/vboats/umap_processing_params.h"
 #include "algorithms/vboats/vmap_processing_params.h"
-// #include "algorithms/vboats/image_processing_debugging.h"
+#include "algorithms/vboats/vboats_processing_images.h"
+
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 using namespace std;
+
+typedef pcl::PointCloud<pcl::PointXYZ> cloudxyz_t;
 
 typedef enum ContourFilterMethod{
 	PERIMETER_BASED = 1,
@@ -31,7 +37,7 @@ class Vboats{
 public:
 	UmapProcessingParams umapParams;
 	VmapProcessingParams vmapParams;
-
+	VboatsProcessingImages processingDebugger;
 public:
 	/** Constructors */
 	Vboats();
@@ -40,28 +46,44 @@ public:
 	/** Startup - Shutdown - Initialization Functions */
 	void init();
 	void update();
-	int process(const cv::Mat& depth);
 
 	cv::Mat remove_umap_deadzones(const cv::Mat& umap);
 	cv::Mat remove_vmap_deadzones(const cv::Mat& vmap);
 	cv::Mat generate_disparity_from_depth(const cv::Mat& depth);
+	cloudxyz_t::Ptr generate_pointcloud_from_depth(const cv::Mat& depth, bool debug_timing = false);
 
+	int process(const cv::Mat& depth, cv::Mat* filtered_input,
+		std::vector<Obstacle>* found_obstacles = nullptr, cv::Mat* disparity_output = nullptr,
+		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr
+	);
+
+	// Runtime Setters
 	void set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose = false);
+	void set_camera_info(float fx, float fy, float px, float py, float depth_scale, float baseline, bool verbose = false);
 	void set_camera_orientation(double roll, double pitch, double yaw, bool verbose = false);
 	void set_camera_orientation(double x, double y, double z, double w, bool verbose = false);
 	void set_camera_angle_offset(double offset_degrees);
 	void set_depth_denoising_kernel_size(int size);
-
 	void set_absolute_minimum_depth(float value);
 	void set_absolute_maximum_depth(float value);
+
+	// Config Setters
 	void set_contour_filtering_method(std::string method);
 	void set_umap_processing_method(std::string method);
 	void set_vmap_processing_method(std::string method);
 	void set_image_angle_correction_type(std::string method);
 
+	// Runtime Togglers
 	void enable_angle_correction(bool flag = true);
 	void enable_filtered_depth_denoising(bool flag = true);
 	void enable_obstacle_data_extraction(bool flag = true);
+
+	// Getters
+	bool is_obstacle_data_extraction_performed();
+	bool is_depth_denoising_performed();
+	bool is_angle_correction_performed();
+	double get_depth_absolute_min();
+	double get_depth_absolute_max();
 
 private:
 	std::string classLbl = txt_bold_magenta() + "Vboats" + txt_reset_color();
@@ -111,8 +133,6 @@ private:
 
 	// Debug Objects
 	bool _verbose = false;
-	UmapProcessingDebugObjects _umap_debugger;
-	VmapProcessingDebugObjects _vmap_debugger;
 };
 
 #endif // ROBOCOMMANDER_ALGORITHMS_VBOATS_H_

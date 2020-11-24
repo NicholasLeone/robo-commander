@@ -13,7 +13,7 @@ add_library(utils SHARED utilities/utils.cpp)
 set(${PROJECT_NAME}_LIBRARIES utils)
 
 add_library(image_utils SHARED utilities/image_utils.cpp)
-target_link_libraries(image_utils PUBLIC utils ${OpenCV_LIBS})
+target_link_libraries(image_utils PUBLIC utils ${OpenCV_LIBS} ${Matplotlib_LIBS})
 list(APPEND ${PROJECT_NAME}_LIBRARIES image_utils)
 
 add_library(plot_utils SHARED utilities/plot_utils.cpp)
@@ -121,7 +121,7 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES ekf)
 
 # VBOATS - RGBD Obstacle Avoidance
 add_library(vboats_utils SHARED algorithms/vboats/vboats_utils.cpp)
-target_link_libraries(vboats_utils PUBLIC utils image_utils)# ${OpenCV_LIBS})
+target_link_libraries(vboats_utils PUBLIC utils image_utils ${OpenCV_LIBS})
 list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_utils)
 
 # add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
@@ -129,7 +129,7 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_utils)
 # list(APPEND ${PROJECT_NAME}_LIBRARIES uvmap_utils)
 
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC utils image_utils vboats_utils)
+target_link_libraries(vboats PUBLIC utils image_utils vboats_utils ${PCL_LIBRARIES})
 list(APPEND ${PROJECT_NAME}_LIBRARIES vboats)
 
 # =========================================
@@ -201,20 +201,3 @@ install(
      DESTINATION "${INC_DEST_DIR}"
      FILES_MATCHING PATTERN "*.h"
 )
-
-# ===========================
-#          DEBUG
-# ===========================
-# message(STATUS "Headers to install ------")
-# foreach(dir ${RoboCommander_HEADERS})
-#      message(STATUS "         included='${dir}'")
-# endforeach()
-
-# message(STATUS "Libraries to install ------")
-# foreach(dir ${${PROJECT_NAME}_LIBRARIES})
-#      message(STATUS "         included='${dir}'")
-# endforeach()
-
-# foreach(dir ${LIBS})
-#      message(STATUS "         included='${dir}'")
-# endforeach()

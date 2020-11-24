@@ -4,7 +4,8 @@
 #include <math.h>                  /* for atan2, cos, sin, sqrt */
 #include <vector>
 #include <iostream>
-#include <opencv2/opencv.hpp>
+#include "base/definitions.h"
+#include <opencv2/core/types.hpp>
 
 class Obstacle{
 public:

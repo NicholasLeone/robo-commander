@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <iostream>
 
+#define WITH_OPENCV
+#include "utilities/matplotlibcpp.h"
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+
 #include "base/definitions.h"
 #include "utilities/utils.h"
 #include "utilities/image_utils.h"
