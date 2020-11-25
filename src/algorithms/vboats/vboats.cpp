@@ -1,9 +1,8 @@
-#include "algorithms/vboats/vboats.h"
-#include "utilities/utils.h"
-#include "algorithms/vboats/vboats_utils.h"
-
 #include <math.h>                  // For fabs, ceil
 #include <Eigen/Geometry>          // For Quaternion
+
+#include "algorithms/vboats/vboats.h"
+#include "algorithms/vboats/vboats_utils.h"
 
 using namespace std;
 
@@ -200,12 +199,14 @@ void Vboats::set_camera_orientation(double roll, double pitch, double yaw, bool 
      }
 }
 void Vboats::set_camera_orientation(double x, double y, double z, double w, bool verbose){
-     Eigen::Quaternion<double> quat(w, x, y, z);
-     Eigen::Vector3d euler = quat.toRotationMatrix().eulerAngles(0, 1, 2);
+     // Eigen::Quaternion<double> quat(w, x, y, z);
+     // Eigen::Vector3d euler = quat.toRotationMatrix().eulerAngles(0, 1, 2);
 
-     double roll  = (double) euler[0];
-     double pitch = (double) euler[1];
-     double yaw   = (double) euler[2];
+     std::vector<double> euler = quaternion_to_euler(x, y, z, w);
+     double roll, pitch, yaw;
+     roll  = (double) euler[0];
+     pitch = (double) euler[1];
+     yaw   = (double) euler[2];
 
      this->_cam_roll  = roll;
      this->_cam_pitch = pitch;
@@ -243,7 +244,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      cv::Mat disparityRaw = disparity.clone();
 
      cv::Mat depthInput, disparityInput;
-     double correctionAngle = this->get_correction_angle(true);
+     double correctionAngle = this->get_correction_angle(true, this->_flip_correction_angle_sign);
      if(this->_do_angle_correction){
           cv::Mat warpedDepth = rotate_image(depthRaw, correctionAngle);
           cv::Mat warpeddDisparity = rotate_image(disparityRaw, correctionAngle);
@@ -366,6 +367,8 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      }
      if(umap_output) *umap_output = uProcessed.clone();
      if(vmap_output) *vmap_output = vProcessed.clone();
+     this->processingDebugger.set_umap_processed(uProcessed);
+     this->processingDebugger.set_vmap_processed(vProcessed);
 
      // Obstacle data extraction
      int nObs = 0;
@@ -639,7 +642,7 @@ bool Vboats::is_depth_denoising_performed(){ return this->_denoise_filtered_dept
 bool Vboats::is_angle_correction_performed(){ return this->_do_angle_correction; }
 double Vboats::get_depth_absolute_min(){ return (double) this->_hard_min_depth; }
 double Vboats::get_depth_absolute_max(){ return (double) this->_hard_max_depth; }
-double Vboats::get_correction_angle(bool in_degrees){
+double Vboats::get_correction_angle(bool in_degrees, bool flip_sign){
      double output;
      // Get the angle according to which axis we are correcting on
      if(this->_angleCorrectionType == ROLL_CORRECTION)           output = -this->_cam_roll - this->_cam_angle_offset;
@@ -648,9 +651,11 @@ double Vboats::get_correction_angle(bool in_degrees){
      else output = 0.0;
      // Convert to degrees if necessary
      if(in_degrees) output = output * M_RAD2DEG;
+     if(flip_sign) output = -1.0 * output;
      return output;
 }
 
 void Vboats::enable_angle_correction(bool flag){ this->_do_angle_correction = flag; }
+void Vboats::enable_correction_angle_sign_flip(bool flag){ this->_flip_correction_angle_sign = flag; }
 void Vboats::enable_filtered_depth_denoising(bool flag){ this->_denoise_filtered_depth = flag; }
 void Vboats::enable_obstacle_data_extraction(bool flag){ this->_do_obstacle_data_extraction = flag; }

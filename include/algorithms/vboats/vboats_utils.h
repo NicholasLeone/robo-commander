@@ -5,11 +5,15 @@
 #include <string.h>
 #include <algorithm>          // for copy() and assign()
 
+#include "base/definitions.h"
+#include "utilities/utils.h"
 #include "utilities/image_utils.h"
 #include "algorithms/vboats/obstacle.h"
 #include "algorithms/vboats/vboats_processing_images.h"
 
 using namespace std;
+
+std::vector<double> quaternion_to_euler(double qx, double qy, double qz, double qw);
 
 /** UV-Map Generation */
 void genUVMap(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, bool verbose = false);

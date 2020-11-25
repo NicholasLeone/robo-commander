@@ -76,6 +76,7 @@ public:
 
 	// Runtime Togglers
 	void enable_angle_correction(bool flag = true);
+	void enable_correction_angle_sign_flip(bool flag = true);
 	void enable_filtered_depth_denoising(bool flag = true);
 	void enable_obstacle_data_extraction(bool flag = true);
 
@@ -85,7 +86,7 @@ public:
 	bool is_angle_correction_performed();
 	double get_depth_absolute_min();
 	double get_depth_absolute_max();
-	double get_correction_angle(bool in_degrees = false);
+	double get_correction_angle(bool in_degrees = false, bool flip_sign = false);
 
 private:
 	std::string classLbl = txt_bold_magenta() + "Vboats" + txt_reset_color();
@@ -132,6 +133,7 @@ private:
 	bool _denoise_filtered_depth = true;
 	bool _do_obstacle_data_extraction = true;
 	bool _angle_correction_performed = false;
+	bool _flip_correction_angle_sign = false;
 
 	// Debug Objects
 	bool _verbose = false;

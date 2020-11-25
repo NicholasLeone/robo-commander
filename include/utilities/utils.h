@@ -47,9 +47,8 @@ float unwrap_angle(float angle);
 std::string base64_encode(unsigned char const* , unsigned int len);
 std::string base64_decode(std::string const& s);
 
-
-float convertRadians2Degrees(float angle);
-float convertDegrees2Radians(float angle);
+// float convertRadians2Degrees(float angle);
+// float convertDegrees2Radians(float angle);
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral);
 
 std::string base64_encode(unsigned char const* , unsigned int len);

@@ -1,14 +1,19 @@
-#include "base/definitions.h"
-#include "utilities/utils.h"
+#include "algorithms/vboats/vboats_utils.h"
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-
-#include "utilities/image_utils.h"
-#include "algorithms/vboats/vboats_utils.h"
 
 using namespace std;
 
 #define VERBOSE_OBS_SEARCH false
+
+std::vector<double> quaternion_to_euler(double qx, double qy, double qz, double qw){
+     double y2 = qy * qy;
+     double rz = std::atan2(2*(qw*qz + qx*qy), (1 - 2*(y2 + qz*qz)));
+     double ry = std::asin( 2*(qw*qy - qz*qx));
+     double rx = std::atan2(2*(qw*qx + qy*qz), (1 - 2*(qx*qx + y2)));
+     return std::vector<double>{rx, ry, rz};
+}
 
 /** =========================
 *     UV-Map Generation
@@ -1174,9 +1179,8 @@ int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::
      // Convert the original disparity image into a "keep" mask, and store it  as a seperate variable for code readability
      if(debug_img_info) cvinfo(originalDisparity, "remove_objects() --- originalDisparity before forEach: ");
      originalDisparity.forEach<uchar>(masker);
-     keepMask = originalDisparity.clone();
      if(debug_img_info) cvinfo(originalDisparity, "remove_objects() --- originalDisparity after forEach: ");
-     masker.remove(); // ForEach operator Cleanup
+     keepMask = originalDisparity.clone();
 
      if(debug_timing){
           t0_masking_start = ((double)cv::getTickCount() - t0_masking_start)/cv::getTickFrequency();
@@ -1198,6 +1202,7 @@ int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::
           printf("[INFO] remove_objects() ---- took %.4lf ms (%.2lf Hz) to filter depth image using object candidate regions\r\n", t0*1000.0, (1.0/t0));
      }
 
+     masker.remove(); // ForEach operator Cleanup
      if(filtered_image) *filtered_image = filteredDepth.clone();
      if(vmap_search_regions) *vmap_search_regions = std::vector<cv::Rect>{searchRois.begin(), searchRois.end()};
      return 0;
@@ -1222,11 +1227,11 @@ int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::
                verbose, debug, debug_img_info, debug_timing
           );
           if(image_debugger->visualize_obj_candidate_keep_mask){
-               image_debugger->set_vmap_object_candidates_image(*debug_image);
+               image_debugger->set_obj_candidate_filtering_keep_mask(*debug_image);
                delete debug_image;
           }
           if(image_debugger->visualize_vmap_candidates_img){
-               image_debugger->set_obj_candidate_filtering_keep_mask(*debug_image2);
+               image_debugger->set_vmap_object_candidates_image(*debug_image2);
                delete debug_image2;
           }
      } else{

@@ -5,7 +5,6 @@ cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 # ===========================
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing -Wno-write-strings -Wno-format -Wno-conversion-null")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing -Wno-write-strings -Wno-format -Wno-conversion-null")
-add_definitions(-std=c++11)
 # =========================================
 #          Build Common Libraries
 # =========================================
@@ -121,7 +120,7 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES ekf)
 
 # VBOATS - RGBD Obstacle Avoidance
 add_library(vboats_utils SHARED algorithms/vboats/vboats_utils.cpp)
-target_link_libraries(vboats_utils PUBLIC utils image_utils ${OpenCV_LIBS})
+target_link_libraries(vboats_utils PUBLIC image_utils ${OpenCV_LIBS})
 list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_utils)
 
 # add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
@@ -129,7 +128,7 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_utils)
 # list(APPEND ${PROJECT_NAME}_LIBRARIES uvmap_utils)
 
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC utils image_utils vboats_utils ${PCL_LIBRARIES})
+target_link_libraries(vboats PUBLIC vboats_utils ${PCL_LIBRARIES}) # image_utils utils
 list(APPEND ${PROJECT_NAME}_LIBRARIES vboats)
 
 # =========================================

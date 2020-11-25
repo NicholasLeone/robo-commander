@@ -1,6 +1,7 @@
 #include "utilities/utils.h"
 
 #include <math.h>
+#include <vector>
 #include <fstream>
 #include <iostream>
 #include <signal.h>
@@ -92,6 +93,9 @@ float unwrap_angle(float angle){
      if(angle < 0) angle += 2*M_PI;
      return angle;
 }
+
+// float convertRadians2Degrees(float angle);
+// float convertDegrees2Radians(float angle);
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral){
      float dPulse = (max - min)/2;
      float pulse = (float) dPulse * spd_ratio + (float) neutral;
