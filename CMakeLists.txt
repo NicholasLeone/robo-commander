@@ -138,9 +138,11 @@ list(APPEND EXTRA_INCLUDE_DIRS "/usr/local/lib/python2.7/dist-packages/numpy/cor
 set(Matplotlib_LIBS ${PYTHON_LIBRARIES})
 list(APPEND Matplotlib_LIBS python2.7)
 
-find_package(PCL 1.7 REQUIRED COMPONENTS common)
+set(PCL_DIR "/usr/lib/x86_64-linux-gnu/cmake/pcl")
+# find_package(PCL 1.7 REQUIRED)
+find_package(PCL 1.7 REQUIRED COMPONENTS common sample_consensus filters geometry)
+# add_definitions(${PCL_DEFINITIONS})
 if(PCL_FOUND)
-     add_definitions(${PCL_DEFINITIONS})
      link_directories(${PCL_LIBRARY_DIRS})
      list(APPEND EXTRA_INCLUDE_DIRS ${PCL_INCLUDE_DIRS})
 endif(PCL_FOUND)

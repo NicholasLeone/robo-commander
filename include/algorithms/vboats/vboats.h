@@ -32,7 +32,6 @@ typedef enum ImageAngleCorrectionType{
 	YAW_CORRECTION = 2,
 }ImageAngleCorrectionType;
 
-
 class Vboats{
 public:
 	UmapProcessingParams umapParams;
