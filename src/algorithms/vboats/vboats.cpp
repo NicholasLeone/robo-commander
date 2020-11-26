@@ -123,8 +123,13 @@ cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
      if(image.type() != CV_8UC1){
           double minVal, maxVal;
           cv::minMaxLoc(image, &minVal, &maxVal);
-          image.convertTo(output, CV_8UC1, (255.0/maxVal) );
-     } else output = image.clone();
+          double normalize_gain = 255.0 / maxVal;
+          this->_depth_deproject_gain = 1.0 / normalize_gain;
+          image.convertTo(output, CV_8UC1, normalize_gain);
+     } else{
+          this->_depth_deproject_gain = 1.0;
+          output = image.clone();
+     }
      if(this->_debug_disparity_gen){
           std::string lbl1 = format("[DEBUG] %s --- Function Output = ", this->classLbl.c_str());
           cvinfo(output, lbl1.c_str());
@@ -234,7 +239,9 @@ void Vboats::set_depth_denoising_kernel_size(int size){ this->_filtered_depth_de
 
 int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      std::vector<Obstacle>* found_obstacles, cv::Mat* disparity_output,
-     cv::Mat* umap_output, cv::Mat* vmap_output, bool verbose_obstacles
+     cv::Mat* umap_output, cv::Mat* vmap_output,
+     cv::Mat* umap_input, cv::Mat* vmap_input,
+     bool verbose_obstacles
 ){
      if(depth.empty()){
           printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
@@ -263,18 +270,18 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                depthInput = warpedDepth.clone();
                disparityInput = warpeddDisparity.clone();
                this->_angle_correction_performed = true;
-               this->processingDebugger.set_angle_corrected_depth_image(warpedDepth);
+               // this->processingDebugger.set_angle_corrected_depth_image(warpedDepth);
           } else{
                depthInput = depthRaw;
                disparityInput = disparityRaw;
                this->_angle_correction_performed = false;
-               this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
+               // this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
           }
      } else{
           depthInput = depthRaw;
           disparityInput = disparityRaw;
           this->_angle_correction_performed = false;
-          this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
+          // this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
      }
      if(disparity_output) *disparity_output = disparityInput.clone();
 
@@ -291,8 +298,14 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      }
      cv::Mat umapRaw = umap.clone();
      cv::Mat vmapRaw = vmap.clone();
-     this->processingDebugger.set_umap_raw(umapRaw);
-     this->processingDebugger.set_vmap_raw(vmapRaw);
+     if(umap_input){
+          *umap_input = umapRaw.clone();
+          this->processingDebugger.set_umap_raw(umapRaw);
+     }
+     if(vmap_input){
+          *vmap_input = vmapRaw.clone();
+          this->processingDebugger.set_vmap_raw(vmapRaw);
+     }
 
      // Pre-process Umap
      cv::Mat uProcessed = this->remove_umap_deadzones(umapRaw);
@@ -305,18 +318,6 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                this->umapParams.sobel_kernel_multipliers,
                &this->processingDebugger
           );
-          // uProcessed = preprocess_umap_sobelized(uProcessed,
-          //      this->umapParams.sobel_thresh_pre_sobel,
-          //      this->umapParams.sobel_thresh_sobel_preprocess,
-          //      this->umapParams.sobel_thresh_sobel_postprocess,
-          //      this->umapParams.sobel_dilate_size, this->umapParams.sobel_blur_size,
-          //      this->umapParams.sobel_kernel_multipliers,
-          //      nullptr,  // keep_mask visualization
-          //      nullptr,  // sobel_raw visualization
-          //      nullptr,  // sobel_preprocessed visualization
-          //      nullptr,  // sobel_dilated visualization
-          //      nullptr   // sobel_blurred visualization
-          // );
      } else if(this->_umapFiltMeth == STRIPPING_METHOD) uProcessed = preprocess_umap_stripping(uProcessed, &this->umapParams.stripping_threshs);
 
      // Find contours in Umap needed later for obstacle filtering
@@ -365,20 +366,15 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                this->vmapParams.sobel_kernel_multipliers,
                &this->processingDebugger
           );
-          // vProcessed = postprocess_vmap_sobelized(vmapRaw, preprocessedVmap,
-          //      this->vmapParams.sobel_postprocessing_thresh_prefiltering,
-          //      this->vmapParams.sobel_postprocessing_thresh_postfiltering,
-          //      this->vmapParams.sobel_postprocessing_blur_size,
-          //      this->vmapParams.sobel_kernel_multipliers,
-          //      nullptr,  // sobel_threshed visualization
-          //      nullptr,  // sobel_blurred visualization
-          //      nullptr   // keep_mask visualization
-          // );
      }
-     if(umap_output) *umap_output = uProcessed.clone();
-     if(vmap_output) *vmap_output = vProcessed.clone();
-     this->processingDebugger.set_umap_processed(uProcessed);
-     this->processingDebugger.set_vmap_processed(vProcessed);
+     if(umap_output){
+          *umap_output = uProcessed.clone();
+          this->processingDebugger.set_umap_processed(uProcessed);
+     }
+     if(vmap_output){
+          *vmap_output = vProcessed.clone();
+          this->processingDebugger.set_vmap_processed(vProcessed);
+     }
 
      // Obstacle data extraction
      int nObs = 0;
@@ -398,20 +394,14 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           vProcessed, filtered_contours, &filtered_image, line_params,
           this->vmapParams.depth_filtering_gnd_line_intercept_offset, &this->processingDebugger
      );
-     // int err = filter_depth_using_object_candidate_regions(depthInput, disparityInput,
-     //      vProcessed, filtered_contours, &filtered_image, line_params,
-     //      this->vmapParams.depth_filtering_gnd_line_intercept_offset,
-     //      nullptr,  // keep_mask visualization
-     //      nullptr,  // vmap_objects visualization
-     //      nullptr   // vmap_search_regions visualization
-     // );
      this->processingDebugger.set_gnd_line_intercept_offset(this->vmapParams.depth_filtering_gnd_line_intercept_offset);
 
      cv::Mat filtered_depth;
      err = filter_depth_using_ground_line(filtered_image, disparityInput,
           vProcessed, line_params, &filtered_depth,
-          std::vector<int>{0, this->vmapParams.depth_filtering_gnd_line_intercept_offset},
+          this->vmapParams.depth_filtering_gnd_line_intercept_offset,
           &this->processingDebugger,   // keep_mask visualization
+          false
      );
 
      // Attempt to remove any noise (speckles) from the resulting filtered depth image
@@ -432,7 +422,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                obj.update(false, this->_baseline, this->_depth_scale,
                     std::vector<float>{this->_fx, this->_fy},
                     std::vector<float>{this->_px, this->_py},
-                    1.0, 1.0, verbose_obstacles
+                    this->_depth_deproject_gain, 1.0, verbose_obstacles
                );
           }
      }
@@ -440,179 +430,8 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      // Return Output images if requested before visualization
      if(found_obstacles) *found_obstacles = obstacles_;
      if(filtered_input) *filtered_input = final_depth.clone();
-
      return (int) obstacles_.size();
 }
-/**
-int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
-     std::vector<Obstacle>* found_obstacles, cv::Mat* disparity_output,
-     cv::Mat* umap_output, cv::Mat* vmap_output
-){
-     if(depth.empty()){
-          printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
-          return -1;
-     }
-     if(!this->_have_cam_info){
-          printf("[WARNING] %s::process() --- Camera Information Unknown.\r\n", this->classLbl.c_str());
-          return -2;
-     }
-
-     cv::Mat depthRaw = depth.clone();
-     cv::Mat disparity = this->generate_disparity_from_depth(depthRaw);
-     if(disparity.empty()){
-          printf("[WARNING] %s::process() --- Disparity input is empty.\r\n", this->classLbl.c_str());
-          return -3;
-     }
-     cv::Mat disparityRaw = disparity.clone();
-     if(disparity_output) *disparity_output = disparity.clone();
-
-     cv::Mat depthInput, disparityInput;
-     double correctionAngle = -this->_cam_roll - this->_cam_angle_offset;
-     if(this->_do_angle_correction){
-          cv::Mat warpedDepth = rotate_image(depthRaw, correctionAngle);
-          cv::Mat warpeddDisparity = rotate_image(disparityRaw, correctionAngle);
-
-          if(!warpedDepth.empty() && !warpeddDisparity.empty()){
-               depthInput = warpedDepth.clone();
-               disparityInput = warpeddDisparity.clone();
-               this->_angle_correction_performed = true;
-          } else{
-               depthInput = depthRaw;
-               disparityInput = disparityRaw;
-               this->_angle_correction_performed = false;
-          }
-     } else{
-          depthInput = depthRaw;
-          disparityInput = disparityRaw;
-          this->_angle_correction_performed = false;
-     }
-
-     cv::Mat umap, vmap;
-     genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
-
-     if(umap.empty()){
-          printf("[WARNING] %s::process() --- Umap input is empty.\r\n", this->classLbl.c_str());
-          return -4;
-     }
-     if(vmap.empty()){
-          printf("[WARNING] %s::process() --- Vmap input is empty.\r\n", this->classLbl.c_str());
-          return -5;
-     }
-     cv::Mat umapRaw = umap.clone();
-     cv::Mat vmapRaw = vmap.clone();
-
-     // Pre-process Umap
-     cv::Mat uProcessed = this->remove_umap_deadzones(umapRaw);
-     if(this->_umapFiltMeth == SOBELIZED_METHOD){
-          uProcessed = preprocess_umap_sobelized(uProcessed,
-               this->umapParams.sobel_thresh_pre_sobel,
-               this->umapParams.sobel_thresh_sobel_preprocess,
-               this->umapParams.sobel_thresh_sobel_postprocess,
-               this->umapParams.sobel_dilate_size, this->umapParams.sobel_blur_size,
-               this->umapParams.sobel_kernel_multipliers,
-               nullptr,  // keep_mask visualization
-               nullptr,  // sobel_raw visualization
-               nullptr,  // sobel_preprocessed visualization
-               nullptr,  // sobel_dilated visualization
-               nullptr   // sobel_blurred visualization
-          );
-     } else if(this->_umapFiltMeth == STRIPPING_METHOD) uProcessed = preprocess_umap_stripping(uProcessed, &this->umapParams.stripping_threshs);
-
-     // Find contours in Umap needed later for obstacle filtering
-     vector<vector<cv::Point>> filtered_contours;
-     find_contours(uProcessed, &filtered_contours, (int) this->_contourFiltMeth,
-          this->umapParams.contour_filtering_thresh_min,
-          this->umapParams.contour_filtering_thresh_max,
-          &this->umapParams.contour_filtering_offset,
-          &this->processingDebugger.filtered_umap_hierarchies,  // filtered contours visualization
-          nullptr,  // all_contours visualization
-          nullptr   // all_hierarchies visualization
-     );
-
-     // Pre-process Vmap
-     cv::Mat preprocessedVmap = this->remove_vmap_deadzones(vmapRaw);
-     if(this->_vmapFiltMeth == SOBELIZED_METHOD){
-          preprocessedVmap = preprocess_vmap_sobelized(preprocessedVmap,
-               this->vmapParams.sobel_preprocessing_thresh_sobel,
-               this->vmapParams.sobel_preprocessing_blur_size,
-               this->vmapParams.sobel_kernel_multipliers
-          );
-     } else if(this->_vmapFiltMeth == STRIPPING_METHOD) preprocessedVmap = preprocess_vmap_stripping(preprocessedVmap, &this->vmapParams.stripping_threshs);
-
-     // Extract ground line parameters (if ground is present)
-     std::vector<float> line_params;
-     bool gndPresent = find_ground_line(preprocessedVmap, &line_params,
-          this->vmapParams.gnd_line_search_min_deg,
-          this->vmapParams.gnd_line_search_max_deg,
-          this->vmapParams.gnd_line_search_deadzone,
-          this->vmapParams.gnd_line_search_hough_thresh
-     );
-     if(!gndPresent) printf("[INFO] %s::process() --- Unable to detect Ground Line.\r\n", this->classLbl.c_str());
-
-     // Finish V-map processing starting from the pre-processed vmap
-     cv::Mat vProcessed = preprocessedVmap.clone();
-     if(this->_vmapFiltMeth == SOBELIZED_METHOD){
-          vProcessed = postprocess_vmap_sobelized(vmapRaw, preprocessedVmap,
-               this->vmapParams.sobel_postprocessing_thresh_prefiltering,
-               this->vmapParams.sobel_postprocessing_thresh_postfiltering,
-               this->vmapParams.sobel_postprocessing_blur_size,
-               this->vmapParams.sobel_kernel_multipliers,
-               nullptr,  // sobel_threshed visualization
-               nullptr,  // sobel_blurred visualization
-               nullptr   // keep_mask visualization
-          );
-     }
-     if(umap_output) *umap_output = uProcessed.clone();
-     if(vmap_output) *vmap_output = vProcessed.clone();
-
-     // Obstacle data extraction
-     int nObs = 0;
-     std::vector<Obstacle> obstacles_;
-     std::vector< std::vector<cv::Rect> > obstacleRegions;
-     if(this->_do_obstacle_data_extraction){
-          nObs = find_obstacles_disparity(vProcessed, filtered_contours, line_params, &obstacles_,
-               &obstacleRegions    // obstacle regions visualization
-          );
-     }
-
-     // Filter the original depth image using all the useful data encoded within
-     // the resulting processed UV-Maps
-     cv::Mat filtered_image;
-     int err = filter_depth_using_object_candidate_regions(depthInput, disparityInput,
-          vProcessed, filtered_contours, &filtered_image, line_params,
-          this->vmapParams.depth_filtering_gnd_line_intercept_offset,
-          nullptr,  // keep_mask visualization
-          nullptr,  // vmap_objects visualization
-          nullptr   // vmap_search_regions visualization
-     );
-
-     cv::Mat filtered_depth;
-     err = filter_depth_using_ground_line(filtered_image, disparityInput,
-          vProcessed, line_params, &filtered_depth,
-          std::vector<int>{this->vmapParams.depth_filtering_gnd_line_intercept_offset},
-          &this->processingDebugger   // keep_mask visualization
-     );
-
-     // Attempt to remove any noise (speckles) from the resulting filtered depth image
-     cv::Mat final_depth;
-     if(this->_denoise_filtered_depth){
-          cv::Mat morphElement = cv::getStructuringElement(cv::MORPH_ELLIPSE,
-               cv::Size(this->_filtered_depth_denoising_size, this->_filtered_depth_denoising_size)
-          );
-          cv::Mat morphedDepth;
-          cv::morphologyEx(filtered_depth, morphedDepth, cv::MORPH_OPEN, morphElement);
-          final_depth = morphedDepth.clone();
-     } else final_depth = filtered_depth.clone();
-
-     if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
-
-     // Return Output images if requested before visualization
-     if(found_obstacles) *found_obstacles = obstacles_;
-     if(filtered_input) *filtered_input = final_depth.clone();
-
-     return (int) obstacles_.size();
-}
-*/
 
 void Vboats::set_absolute_minimum_depth(float value){ this->_hard_min_depth = value; }
 void Vboats::set_absolute_maximum_depth(float value){ this->_hard_max_depth = value; }

@@ -976,9 +976,14 @@ int find_obstacles_disparity(const cv::Mat& vmap,
 /** =========================
 *  Depth Filtering Strategies
 * =========================== */
+// int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
+//      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
+//      std::vector<int> line_intercept_offsets, cv::Mat* keep_mask, bool verbose, bool debug_timing)
+// {
 int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
-     std::vector<int> line_intercept_offsets, cv::Mat* keep_mask, bool verbose, bool debug_timing)
+     int line_intercept_offset, cv::Mat* keep_mask, cv::Mat* keep_mask_vmap,
+     bool verbose, bool debug_timing)
 {
      cv::Mat filtered_depth;
      if(depth.empty()){
@@ -1006,65 +1011,59 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
      originalDepth = depth.clone();
 
      // Create a blank "keep" mask whose pixels are filled only if
+     cv::Mat removeMaskVmap;
      cv::Mat removeMask = cv::Mat::zeros(disparity.size(), CV_8UC1);
+     if(keep_mask_vmap) removeMaskVmap = cv::Mat::zeros(vmap.size(), CV_8UC1);
 
-     // Y-intercept offsets to use either a conservative (upper offset) or
-     // a liberal (lower offset) alternative to the original estimated ground line
-     int lower_line_intercept_offset = 0;    // Use this for a more liberal filtering of the ground
-     int upper_line_intercept_offset = 0;    // Use this for a more conservative filtering of the ground
-     if(!line_intercept_offsets.empty()){
-          lower_line_intercept_offset = line_intercept_offsets[0];
-          upper_line_intercept_offset = line_intercept_offsets[1];
-     }
-     // Calculate ROI limits based on estimated ground line coefficients
      float slope = line_params[0];
      int intercept = (int) line_params[1];
-     int lower_intercept = intercept + lower_line_intercept_offset;
-     int upper_intercept = intercept - upper_line_intercept_offset;
-     int intercept_offset = upper_intercept;
-     // NOTE: I forget the original purpose for these variables, but keeping them here for now
-     int lower_intercept_final = (int)(vmap.cols * slope + (lower_intercept));
-     int upper_intercept_final = (int)(vmap.cols * slope + (upper_intercept));
+     // Y-intercept offsets to use either a conservative (upper offset) or
+     // a liberal (lower offset) alternative to the original estimated ground line
+     int intercept_offset = intercept - line_intercept_offset;
 
+     int final_row = (int)(vmap.cols * slope + intercept_offset);
+     int initial_row = intercept_offset;
      // Ensure the y-intercept value is non-zero and use that as the starting row for searching pixels
-     int final_row;
-     if(intercept < 0) initial_row = 0;
-     else final_row = upper_intercept;
-     if(verbose){
-          printf("[DEBUG] remove_ground() --- Original Ground Line Coefficients (m, b): %.2f, %d\r\n", slope, intercept);
-          printf("[DEBUG] remove_ground() --- Using Ground Line Coefficients (m, b): %.2f, %d\r\n", slope, upper_intercept);
-     }
+     if(final_row > vmap.rows) final_row = vmap.rows;
+     if(initial_row < 0) initial_row = 0;
+     if(verbose) printf("[DEBUG] remove_ground() --- Using Ground Line Coefficients (m, b): %.2f, %d\r\n", slope, intercept_offset);
 
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
 
      // For each row in the disparity, mask, and v-map images
      uchar* pix;
-     for(int v = 0; v < keepMaskRefImg.rows; ++v){
-          if(v > )
+     // std::vector<cv::Point>
+     for(int v = 0; v < final_row; ++v){
           // Calculate the x-coordinate of the estimated ground line at the current row
           // which will be used as a limit
-          int xlim = (int)((float)(v - upper_intercept) / slope);
+          float num = (float)(v - intercept_offset);
+          int xlim = (int)(num / slope);
 
           // Find all the nonzero pixels in the current row of the v-map
           cv::Mat nonzero;
           cv::Mat refRow = gndLineRefImg.row(v);
           cv::Mat refMask = refRow > 0;
           cv::findNonZero(refMask, nonzero);
+          int num_nonzero = (int) nonzero.total();
+          // if(num_nonzero <= 0) continue;
+
           // Find the max and min disparity values that are above the estimated ground line
           int maxx = 0, minx = 1000;
-          for(int i = 0; i < nonzero.total(); i++ ){
+          for(int i = 0; i < num_nonzero; i++ ){
                // Get the x-coordinate of the current non-zero v-map pixel
                int tmpx = nonzero.at<cv::Point>(i).x;
                // Skip if the current v-map pixel's x-coordinate is "below" the
                // estimated ground-line
-               // if(tmpx < xlim) continue;
-               if(tmpx > xlim) continue;
+               if(tmpx < xlim) continue;
                // Update the current extremes if the current pixels x-coordinate
                // (i.e. the disparity value) is a better option
                if(tmpx > maxx) maxx = tmpx;
                if(tmpx < minx) minx = tmpx;
+
+               if(keep_mask_vmap) removeMaskVmap.at<uchar>(v, tmpx) = 255;
           }
+          if(verbose) printf("[DEBUG] ---- remove_ground() --- Vmap Row #%d disparity (x-coordinate) limits (min, max) = %d, %d\r\n", v, minx, maxx);
 
           // For each pixel in the current column of the disparity and mask images
           pix = keepMaskRefImg.ptr<uchar>(v);
@@ -1073,13 +1072,19 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
                // corresponding disparity image is in the range of valid pixel values
                // from in the corresponding v-map
                int dvalue = pix[u];
+               // if( (dvalue < minx) || (dvalue > maxx) ) removeMask.at<uchar>(v, u) = 255;
                if( (dvalue >= minx) && (dvalue <= maxx) ) removeMask.at<uchar>(v, u) = 255;
           }
      }
      // Create "keep" mask, use it to filter the original depth image
      cv::Mat keepMask;
-     cv::bitwise_not(removeMask, keepMask);
+     // cv::bitwise_not(removeMask, keepMask);
+     keepMask = removeMask;
      if(keep_mask) *keep_mask = keepMask.clone();
+     if(keep_mask_vmap){
+          cv::Mat keepVMask;
+          *keep_mask_vmap = removeMaskVmap.clone();
+     }
 
      // originalDepth.copyTo(filtered_depth, removeMask);
      originalDepth.copyTo(filtered_depth, keepMask);
@@ -1092,27 +1097,36 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
      if(filtered_image) *filtered_image = filtered_depth.clone();
      return 0;
 }
+// int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
+//      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
+//      std::vector<int> line_intercept_offsets, VboatsProcessingImages* image_debugger,
+//      bool verbose, bool debug_timing)
+// {
 int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
-     std::vector<int> line_intercept_offsets, VboatsProcessingImages* image_debugger,
+     int line_intercept_offset, VboatsProcessingImages* image_debugger,
      bool verbose, bool debug_timing)
 {
      int err = 0;
      if(image_debugger && image_debugger->visualize_gnd_line_keep_mask){
           cv::Mat debug_image;
+          cv::Mat debug_vmap;
           err = filter_depth_using_ground_line(depth, disparity,
                vmap, line_params, filtered_image,
-               line_intercept_offsets,
+               line_intercept_offset,
                &debug_image,   // keep_mask visualization
+               &debug_vmap,    // keep_mask visualization
                verbose, debug_timing
           );
-          image_debugger->set_gnd_line_filtering_keep_mask(debug_image);
+          image_debugger->set_gnd_line_filtering_keep_mask(debug_image, debug_vmap);
      } else{
           cv::Mat* debug_image = nullptr;
+          cv::Mat* debug_vmap = nullptr;
           err = filter_depth_using_ground_line(depth, disparity,
                vmap, line_params, filtered_image,
-               line_intercept_offsets,
+               line_intercept_offset,
                debug_image,   // keep_mask visualization
+               debug_vmap,   // keep_mask visualization
                verbose, debug_timing
           );
      }

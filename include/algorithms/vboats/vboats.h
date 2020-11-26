@@ -54,6 +54,7 @@ public:
 	int process(const cv::Mat& depth, cv::Mat* filtered_input,
 		std::vector<Obstacle>* found_obstacles = nullptr, cv::Mat* disparity_output = nullptr,
 		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr,
+		cv::Mat* umap_input = nullptr, cv::Mat* vmap_input = nullptr,
 		bool verbose_obstacles = false
 	);
 
@@ -118,6 +119,7 @@ private:
 	float _depth_scale            = 0;
 	float _Tx                     = 0;
 	float _depth2disparityFactor  = 0;
+	float _depth_deproject_gain   = 0;
 
 	// TODO: Section Name
 	double _cam_roll    = 0.0;

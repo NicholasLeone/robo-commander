@@ -8,6 +8,8 @@
 #include "utilities/utils.h"
 #include "obstacle.h"
 
+#define DEBUG_FUNC_CALLINGS false
+
 class VboatsProcessingImages{
 public:
      VboatsProcessingImages(){}
@@ -27,18 +29,22 @@ public:
      cv::Mat umap_final;
      cv::Mat vmap_final;
      void set_umap_raw(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_raw\'.\r\n");
           if(!this->visualize_umap_raw) this->umap_raw = cv::Mat();
           else this->umap_raw = image.clone();
      }
      void set_vmap_raw(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_raw\'.\r\n");
           if(!this->visualize_vmap_raw) this->vmap_raw = cv::Mat();
           else this->vmap_raw = image.clone();
      }
      void set_umap_processed(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_processed\'.\r\n");
           if(!this->visualize_umap_final) this->umap_final = cv::Mat();
           else this->umap_final = image.clone();
      }
      void set_vmap_processed(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_processed\'.\r\n");
           if(!this->visualize_vmap_final) this->vmap_final = cv::Mat();
           else this->vmap_final = image.clone();
      }
@@ -55,18 +61,23 @@ public:
      std::vector<cv::Rect> found_obstacle_regions;
      std::vector< std::vector<cv::Rect> > vmap_object_search_regions;
      void set_filtered_umap_hierarchies(const std::vector< cv::Vec4i >& object){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_filtered_umap_hierarchies\'.\r\n");
           this->filtered_umap_hierarchies = std::vector<cv::Vec4i>{object.begin(), object.end()};
      }
      void set_filtered_umap_contours(const std::vector< std::vector<cv::Point> >& object){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_filtered_umap_contours\'.\r\n");
           this->filtered_umap_contours = object;
      }
      void set_found_obstacle_regions(const std::vector<cv::Rect>& object){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_found_obstacle_regions\'.\r\n");
           this->found_obstacle_regions = std::vector<cv::Rect>{object.begin(), object.end()};
      }
      void set_vmap_object_search_regions(const std::vector< std::vector<cv::Rect> >& object){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_object_search_regions\'.\r\n");
           this->vmap_object_search_regions = object;
      }
      void set_gnd_line_coefficients(std::vector<float> params){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_gnd_line_coefficients\'.\r\n");
           this->gnd_line_coefficients = std::vector<float>{params.begin(), params.end()};
      }
      void set_gnd_line_intercept_offset(int value){ this->gnd_line_offset = value; }
@@ -88,31 +99,48 @@ public:
 
      cv::Mat angle_corrected_depth_img;
      cv::Mat gnd_line_filtering_keep_mask;
+     cv::Mat gnd_line_filtering_keep_mask_vmap;
      cv::Mat obj_candidate_filtering_keep_mask;
      cv::Mat umap_keep_mask;
      cv::Mat vmap_postproc_keep_mask;
      cv::Mat vmap_object_candidates_img;
      void set_angle_corrected_depth_image(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_angle_corrected_depth_image\'.\r\n");
           if(!this->visualize_angle_corrected_depth) this->angle_corrected_depth_img = cv::Mat();
           else this->angle_corrected_depth_img = image.clone();
      }
      void set_gnd_line_filtering_keep_mask(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_gnd_line_filtering_keep_mask\'.\r\n");
           if(!this->visualize_gnd_line_keep_mask) this->gnd_line_filtering_keep_mask = cv::Mat();
           else this->gnd_line_filtering_keep_mask = image.clone();
      }
+     void set_gnd_line_filtering_keep_mask(const cv::Mat& image, const cv::Mat& vmap){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_gnd_line_filtering_keep_mask\'.\r\n");
+          if(!this->visualize_gnd_line_keep_mask){
+               this->gnd_line_filtering_keep_mask = cv::Mat();
+               this->gnd_line_filtering_keep_mask_vmap = cv::Mat();
+          } else{
+               this->gnd_line_filtering_keep_mask = image.clone();
+               this->gnd_line_filtering_keep_mask_vmap = vmap.clone();
+          }
+     }
      void set_obj_candidate_filtering_keep_mask(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_obj_candidate_filtering_keep_mask\'.\r\n");
           if(!this->visualize_obj_candidate_keep_mask) this->obj_candidate_filtering_keep_mask = cv::Mat();
           else this->obj_candidate_filtering_keep_mask = image.clone();
      }
      void set_umap_sobelized_keep_mask(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_sobelized_keep_mask\'.\r\n");
           if(!this->visualize_umap_keep_mask) this->umap_keep_mask = cv::Mat();
           else this->umap_keep_mask = image.clone();
      }
      void set_vmap_sobelized_postprocessed_keep_mask(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_sobelized_postprocessed_keep_mask\'.\r\n");
           if(!this->visualize_vmap_post_keep_mask) this->vmap_postproc_keep_mask = cv::Mat();
           else this->vmap_postproc_keep_mask = image.clone();
      }
      void set_vmap_object_candidates_image(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_object_candidates_image\'.\r\n");
           if(!this->visualize_vmap_candidates_img) this->vmap_object_candidates_img = cv::Mat();
           else this->vmap_object_candidates_img = image.clone();
      }
@@ -133,18 +161,22 @@ public:
      cv::Mat umap_sobel_dilated;
      cv::Mat umap_sobel_blurred;
      void set_umap_sobelized_raw(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_sobelized_raw\'.\r\n");
           if(!this->visualize_umap_sobel_raw) this->umap_sobel_raw = cv::Mat();
           else this->umap_sobel_raw = image.clone();
      }
      void set_umap_sobelized_pre_filtering(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_sobelized_pre_filtering\'.\r\n");
           if(!this->visualize_umap_sobel_preprocessed) this->umap_sobel_preprocessed = cv::Mat();
           else this->umap_sobel_preprocessed = image.clone();
      }
      void set_umap_sobelized_dilated(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_sobelized_dilated\'.\r\n");
           if(!this->visualize_umap_sobel_dilated) this->umap_sobel_dilated = cv::Mat();
           else this->umap_sobel_dilated = image.clone();
      }
      void set_umap_sobelized_blurred(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_umap_sobelized_blurred\'.\r\n");
           if(!this->visualize_umap_sobel_blurred) this->umap_sobel_blurred = cv::Mat();
           else this->umap_sobel_blurred = image.clone();
      }
@@ -152,9 +184,11 @@ public:
      std::vector< cv::Vec4i > all_umap_hierarchies;
      std::vector< std::vector<cv::Point> > all_umap_contours;
      void set_all_umap_hierarchies(const std::vector< cv::Vec4i >& object){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_all_umap_hierarchies\'.\r\n");
           this->all_umap_hierarchies = std::vector<cv::Vec4i>{object.begin(), object.end()};
      }
      void set_all_umap_contours(const std::vector< std::vector<cv::Point> >& object){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_all_umap_contours\'.\r\n");
           this->all_umap_contours = object;
      }
      // </custom-fold>
@@ -171,14 +205,17 @@ public:
      cv::Mat vmap_postproc_sobel_blurred;
      cv::Mat vmap_sobelized_preprocessed;
      void set_vmap_sobelized_thresholded(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_sobelized_thresholded\'.\r\n");
           if(!this->visualize_vmap_post_sobel_threshed) this->vmap_postproc_sobel_threshed = cv::Mat();
           else this->vmap_postproc_sobel_threshed = image.clone();
      }
      void set_vmap_sobelized_postprocessed_blurred(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_sobelized_postprocessed_blurred\'.\r\n");
           if(!this->visualize_vmap_post_sobel_blurred) this->vmap_postproc_sobel_blurred = cv::Mat();
           else this->vmap_postproc_sobel_blurred = image.clone();
      }
      void set_vmap_sobelized_preprocessed(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'set_vmap_sobelized_preprocessed\'.\r\n");
           if(!this->visualize_vmap_sobelized_preprocessed) this->vmap_sobelized_preprocessed = cv::Mat();
           else this->vmap_sobelized_preprocessed = image.clone();
      }
@@ -186,6 +223,7 @@ public:
 
      // Composite Image Construction Helpers
      cv::Mat overlay_ground_lines(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'overlay_ground_lines\'.\r\n");
           try{
                cv::Mat display;
                if(image.empty()) return display;
@@ -206,6 +244,7 @@ public:
           return cv::Mat();
      }
      cv::Mat overlay_objects_search_windows(const cv::Mat& image){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'overlay_objects_search_windows\'.\r\n");
           try{
                cv::Mat display;
                if(image.empty()) return display;
@@ -227,6 +266,7 @@ public:
           return cv::Mat();
      }
      cv::Mat overlay_umap_contours(const cv::Mat& image, bool show_all_contours = false){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'overlay_umap_contours\'.\r\n");
           try{
                cv::Mat display;
                if(image.empty()) return display;
@@ -254,6 +294,7 @@ public:
           return cv::Mat();
      }
      cv::Mat overlay_obstacle_bounding_boxes(const cv::Mat& image, std::vector<Obstacle> obstacles){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'overlay_obstacle_bounding_boxes\'.\r\n");
           try{
                cv::Mat display;
                if(image.empty()) return display;
@@ -290,6 +331,7 @@ public:
      pplots(umapsDisps, ncols, nrows, "Umaps", true);
      */
      cv::Mat construct_low_level_umap_image(bool visualize_contours = false, bool set_titles = false){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'construct_low_level_umap_image\'.\r\n");
           cv::Mat display;
           cv::Mat border_tile;
           int border_tile_gap = 5;
@@ -385,6 +427,7 @@ public:
           return display;
      }
      cv::Mat construct_low_level_vmap_image(bool viz_gnd_lines = false, bool viz_search_windows = false, bool set_titles = false){
+          if(DEBUG_FUNC_CALLINGS) printf("[DEBUG] VboatsProcessingImages --- In Function = \'construct_low_level_vmap_image\'.\r\n");
           cv::Mat display;
           cv::Mat border_tile;
           int border_tile_gap = 5;
@@ -468,7 +511,6 @@ public:
           }
           return display;
      }
-
 };
 
 #endif // VBOATS_VBOATS_PROCESSING_IMAGES_H_

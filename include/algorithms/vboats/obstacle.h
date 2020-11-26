@@ -5,11 +5,14 @@
 #include <vector>
 #include <iostream>
 #include "base/definitions.h"
+#include "utilities/utils.h"
 #include <opencv2/core/types.hpp>
 
 class Obstacle{
 public:
-    Obstacle(std::vector<cv::Point> pts, std::vector<int> dBounds) : minXY(pts[0]), maxXY(pts[1]), dMin(dBounds[0]), dMax(dBounds[1]){};
+    Obstacle(std::vector<cv::Point> pts, std::vector<int> dBounds)
+     : minXY(pts[0]), maxXY(pts[1]), dMin(dBounds[0]), dMax(dBounds[1]),
+       angle(0.0), distance(0.0), location() {}
     int dMin;
     int dMax;
     cv::Point maxXY;
@@ -76,8 +79,10 @@ public:
                zgain = (65535.0 / 255.0)*dscale;
                pz = dmean * zgain;
           } else{
-               float tmpDmean = dmean / cvt_gain;
+               // float tmpDmean = dmean / cvt_gain;
                zgain = fx*baseline;
+               // pz = zgain / tmpDmean;
+               float tmpDmean = dmean * cvt_gain;
                pz = zgain / tmpDmean;
           }
 
@@ -85,12 +90,32 @@ public:
           float y = ((ymean - ppy) * pz) / fy;
           float dist = std::sqrt(x*x + pz*pz);
           double theta = std::atan2(x,pz);
-          if(verbose) printf("Obstacle Relative Distance =  %.2fm --- Angle = %.2lf deg --- Position (X,Y,Z) = (%.2f, %.2f, %.2f) m \r\n", dist, theta*M_RAD2DEG, x,y, dmean);
-          this->location.x = x;
-          this->location.y = y;
-          this->location.z = pz;
-          this->distance = dist;
-          this->angle = theta;
+
+          location.x = x;
+          location.y = y;
+          location.z = pz;
+          // location = cv::Point3f(x, y, pz);
+          distance = dist;
+          angle = theta;
+          if(verbose){
+               printf("Obstacle Relative Distance, Angle = %.2fm , %.2lf deg"
+                    " --- Position (X,Y,Z) = (%.2f, %.2f, %.2f) m \r\n",
+                    dist, theta*M_RAD2DEG, location.x, location.y, location.z
+               );
+          }
+     }
+
+     cv::Point3f get_location(){ return location; }
+     std::string toString(){
+          std::string lbl = format("Relative Distance, Angle = (%.2fm , %.2lf deg)"
+               " --- Position (X,Y,Z) = (%.2f, %.2f, %.2f) m"
+               " --- Limits [min, max] = Disparity( %d, %d ), X( %d, %d ), Y( %d, %d )",
+               distance, angle*M_RAD2DEG,
+               location.x, location.y, location.z,
+               dMin, dMax, minXY.x, maxXY.x,
+               minXY.y, maxXY.y
+          );
+          return lbl;
      }
 };
 

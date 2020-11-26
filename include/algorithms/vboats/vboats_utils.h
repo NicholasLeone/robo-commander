@@ -109,14 +109,24 @@ int find_obstacles_disparity(const cv::Mat& vmap,
 * done via a "keep" mask created by removing pixels in the corresponding disparity
 * image that are located at or below the estimated ground line found in the v-map.
 */
+// int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
+//      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
+//      std::vector<int> line_intercept_offsets = {}, cv::Mat* keep_mask = nullptr,
+//      bool verbose = false, bool debug_timing = false
+// );
+// int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
+//      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
+//      std::vector<int> line_intercept_offsets = {}, VboatsProcessingImages* image_debugger = nullptr,
+//      bool verbose = false, bool debug_timing = false
+// );
 int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
-     std::vector<int> line_intercept_offsets = {}, cv::Mat* keep_mask = nullptr,
+     int line_intercept_offset = 0, cv::Mat* keep_mask = nullptr, cv::Mat* keep_mask_vmap = nullptr,
      bool verbose = false, bool debug_timing = false
 );
 int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparity,
      const cv::Mat& vmap, std::vector<float> line_params, cv::Mat* filtered_image,
-     std::vector<int> line_intercept_offsets = {}, VboatsProcessingImages* image_debugger = nullptr,
+     int line_intercept_offset = 0, VboatsProcessingImages* image_debugger = nullptr,
      bool verbose = false, bool debug_timing = false
 );
 int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::Mat& disparity,
