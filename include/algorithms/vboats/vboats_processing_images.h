@@ -186,71 +186,94 @@ public:
 
      // Composite Image Construction Helpers
      cv::Mat overlay_ground_lines(const cv::Mat& image){
-          cv::Mat display;
-          if(image.empty()) return display;
-          if(this->gnd_line_coefficients.empty()){ return display; }
-          if(image.type() != CV_8UC3) display = imCvtCmap(image);
-          else display = image.clone();
+          try{
+               cv::Mat display;
+               if(image.empty()) return display;
+               if(this->gnd_line_coefficients.empty()){ return display; }
+               if(image.type() != CV_8UC3) display = imCvtCmap(image);
+               else display = image.clone();
 
-          int b = (int) this->gnd_line_coefficients[1];
-          int yk = int(display.cols * this->gnd_line_coefficients[0]) + b;
-          int yu = int(display.cols * this->gnd_line_coefficients[0]) + (b-this->gnd_line_offset);
-          cv::line(display, cv::Point(0, b), cv::Point(display.cols, yk), cv::Scalar(0,255,0), 1, cv::LINE_AA);
-          cv::line(display, cv::Point(0, (b-this->gnd_line_offset)), cv::Point(display.cols, yu), cv::Scalar(0,0,255), 1, cv::LINE_AA);
-          return display;
+               int b = (int) this->gnd_line_coefficients[1];
+               int yk = int(display.cols * this->gnd_line_coefficients[0]) + b;
+               int yu = int(display.cols * this->gnd_line_coefficients[0]) + (b-this->gnd_line_offset);
+               cv::line(display, cv::Point(0, b), cv::Point(display.cols, yk), cv::Scalar(0,255,0), 1, cv::LINE_AA);
+               cv::line(display, cv::Point(0, (b-this->gnd_line_offset)), cv::Point(display.cols, yu), cv::Scalar(0,0,255), 1, cv::LINE_AA);
+               return display;
+          } catch(std::exception e){
+               printf("[FATAL] overlay_ground_lines() ---- Error = %s!\r\n", e.what());
+               return cv::Mat();
+          }
+          return cv::Mat();
      }
      cv::Mat overlay_objects_search_windows(const cv::Mat& image){
-          cv::Mat display;
-          if(image.empty()) return display;
+          try{
+               cv::Mat display;
+               if(image.empty()) return display;
 
-          if( (this->vmap_object_search_regions.empty() )
-               || (this->vmap_object_search_regions.size() <= 0)
-          ){ return image; }
-          if(image.type() != CV_8UC3) display = imCvtCmap(image);
-          else display = image.clone();
+               if( (this->vmap_object_search_regions.empty() )
+                    || (this->vmap_object_search_regions.size() <= 0)
+               ){ return image; }
+               if(image.type() != CV_8UC3) display = imCvtCmap(image);
+               else display = image.clone();
 
-          for(auto windows : this->vmap_object_search_regions){
-               for(cv::Rect window : windows){ cv::rectangle(display, window, cv::Scalar(0, 255, 255), 1); }
+               for(auto windows : this->vmap_object_search_regions){
+                    for(cv::Rect window : windows){ cv::rectangle(display, window, cv::Scalar(0, 255, 255), 1); }
+               }
+               return display;
+          } catch(std::exception e){
+               printf("[FATAL] overlay_objects_search_windows() ---- Error = %s!\r\n", e.what());
+               return cv::Mat();
           }
-          return display;
+          return cv::Mat();
      }
      cv::Mat overlay_umap_contours(const cv::Mat& image, bool show_all_contours = false){
-          cv::Mat display;
-          if(image.empty()) return display;
-          if( (this->filtered_umap_contours.empty() )
-               || (this->filtered_umap_contours.size() <= 0)
-          ) return display;
+          try{
+               cv::Mat display;
+               if(image.empty()) return display;
+               if( (this->filtered_umap_contours.empty() )
+                    || (this->filtered_umap_contours.size() <= 0)
+               ) return display;
 
-          if(image.type() != CV_8UC3) display = imCvtCmap(image);
-          else display = image.clone();
+               if(image.type() != CV_8UC3) display = imCvtCmap(image);
+               else display = image.clone();
 
-          if( (!this->all_umap_contours.empty() ) && (this->all_umap_contours.size() > 0)){
-               for(int j = 0; j < int(this->all_umap_contours.size()); j++){
-                    cv::drawContours(display, this->all_umap_contours, j, cv::Scalar(255,0,255), 1, cv::LINE_AA, this->all_umap_hierarchies, 0, cv::Point(0,0));
+               if( (!this->all_umap_contours.empty() ) && (this->all_umap_contours.size() > 0)){
+                    for(int j = 0; j < int(this->all_umap_contours.size()); j++){
+                         cv::drawContours(display, this->all_umap_contours, j, cv::Scalar(255,0,255), 1, cv::LINE_AA, this->all_umap_hierarchies, 0, cv::Point(0,0));
+                    }
                }
-          }
 
-          for(int i = 0; i < int(this->filtered_umap_contours.size()); i++){
-               cv::drawContours(display, this->filtered_umap_contours, i, cv::Scalar(0,255,0), 2, cv::LINE_AA, this->filtered_umap_hierarchies, 0, cv::Point(0,0));
+               for(int i = 0; i < int(this->filtered_umap_contours.size()); i++){
+                    cv::drawContours(display, this->filtered_umap_contours, i, cv::Scalar(0,255,0), 2, cv::LINE_AA, this->filtered_umap_hierarchies, 0, cv::Point(0,0));
+               }
+               return display;
+          } catch(std::exception e){
+               printf("[FATAL] overlay_umap_contours() ---- Error = %s!\r\n", e.what());
+               return cv::Mat();
           }
-
-          return display;
+          return cv::Mat();
      }
      cv::Mat overlay_obstacle_bounding_boxes(const cv::Mat& image, std::vector<Obstacle> obstacles){
-          cv::Mat display;
-          if(image.empty()) return display;
-          if( (obstacles.empty()) || (obstacles.size() <= 0) ) return display;
-          if(image.type() == CV_8UC3) display = image.clone();
-          else{
-               double minVal, maxVal;
-               cv::minMaxLoc(image, &minVal, &maxVal);
-               image.convertTo(display, CV_8UC1, (255.0/maxVal) );
-               cv::cvtColor(display, display, cv::COLOR_GRAY2BGR);
+          try{
+               cv::Mat display;
+               if(image.empty()) return display;
+               if( (obstacles.empty()) || (obstacles.size() <= 0) ) return display;
+               if(image.type() == CV_8UC3) display = image.clone();
+               else{
+                    double minVal, maxVal;
+                    cv::minMaxLoc(image, &minVal, &maxVal);
+                    image.convertTo(display, CV_8UC1, (255.0/maxVal) );
+                    cv::cvtColor(display, display, cv::COLOR_GRAY2BGR);
+               }
+               // TODO: Hardcoded for now
+               cv::Scalar box_color = cv::Scalar(0, 255, 255);
+               for(Obstacle obj : obstacles){ cv::rectangle(display, obj.minXY, obj.maxXY, box_color, 3); }
+               return display;
+          } catch(std::exception e){
+               printf("[FATAL] overlay_obstacle_bounding_boxes() ---- Error = %s!\r\n", e.what());
+               return cv::Mat();
           }
-          // TODO: Hardcoded for now
-          cv::Scalar box_color = cv::Scalar(0, 255, 255);
-          for(Obstacle obj : obstacles){ cv::rectangle(display, obj.minXY, obj.maxXY, box_color, 3); }
-          return display;
+          return cv::Mat();
      }
      // TODO: Blend keep mask into original image
      // cv::Mat overlay_keep_mask(const cv::Mat& image, const cv::Mat& mask, double blend_alpha, cv::Scalar color){}
@@ -270,172 +293,179 @@ public:
           cv::Mat display;
           cv::Mat border_tile;
           int border_tile_gap = 5;
-
-          // Begin adding tiles of valid or available images to the list for merging into one later
-          cv::Mat tmpTileDisplay;
-          std::vector< cv::Mat > img_tiles;
-          if(this->visualize_umap_raw && (!this->umap_raw.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->umap_raw.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
+          try{
+               // Begin adding tiles of valid or available images to the list for merging into one later
+               cv::Mat tmpTileDisplay;
+               std::vector< cv::Mat > img_tiles;
+               if(this->visualize_umap_raw && (!this->umap_raw.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->umap_raw.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->umap_raw);
+                    if(!tmpTileDisplay.empty()){
+                         if(visualize_contours) tmpTileDisplay = this->overlay_umap_contours(tmpTileDisplay);
+                         if(set_titles) cv::putText(tmpTileDisplay, "Umap Raw", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
                }
-               tmpTileDisplay = imCvtCmap(this->umap_raw);
-               if(!tmpTileDisplay.empty()){
-                    if(visualize_contours) tmpTileDisplay = this->overlay_umap_contours(tmpTileDisplay);
-                    if(set_titles) cv::putText(tmpTileDisplay, "Umap Raw", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
+               if(this->visualize_umap_sobel_raw && (!this->umap_sobel_raw.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->umap_sobel_raw.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->umap_sobel_raw);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Raw Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
                }
+               if(this->visualize_umap_sobel_preprocessed && (!this->umap_sobel_preprocessed.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->umap_sobel_preprocessed.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->umap_sobel_preprocessed);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Pre-Proc. Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if(this->visualize_umap_sobel_dilated && (!this->umap_sobel_dilated.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->umap_sobel_dilated.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->umap_sobel_dilated);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Dilated Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if(this->visualize_umap_sobel_blurred && (!this->umap_sobel_blurred.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->umap_sobel_blurred.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->umap_sobel_blurred);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Blurred Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if(this->visualize_umap_final && (!this->umap_final.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->umap_final.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->umap_final);
+                    if(!tmpTileDisplay.empty()){
+                         if(visualize_contours) tmpTileDisplay = this->overlay_umap_contours(tmpTileDisplay);
+                         if(set_titles) cv::putText(tmpTileDisplay, "Umap Final", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if( (!img_tiles.empty()) && (img_tiles.size() > 0) ){ cv::vconcat(img_tiles, display); }
+          } catch(std::exception e){
+               printf("[FATAL] construct_low_level_umap_image() ---- Error = %s!\r\n", e.what());
+               display = cv::Mat();
           }
-          if(this->visualize_umap_sobel_raw && (!this->umap_sobel_raw.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->umap_sobel_raw.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->umap_sobel_raw);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Raw Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_umap_sobel_preprocessed && (!this->umap_sobel_preprocessed.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->umap_sobel_preprocessed.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->umap_sobel_preprocessed);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Pre-Proc. Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_umap_sobel_dilated && (!this->umap_sobel_dilated.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->umap_sobel_dilated.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->umap_sobel_dilated);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Dilated Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_umap_sobel_blurred && (!this->umap_sobel_blurred.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->umap_sobel_blurred.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->umap_sobel_blurred);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Blurred Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_umap_final && (!this->umap_final.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->umap_final.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->umap_final);
-               if(!tmpTileDisplay.empty()){
-                    if(visualize_contours) tmpTileDisplay = this->overlay_umap_contours(tmpTileDisplay);
-                    if(set_titles) cv::putText(tmpTileDisplay, "Umap Final", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-
-          if( (!img_tiles.empty()) && (img_tiles.size() > 0) ){ cv::vconcat(img_tiles, display); }
           return display;
      }
      cv::Mat construct_low_level_vmap_image(bool viz_gnd_lines = false, bool viz_search_windows = false, bool set_titles = false){
           cv::Mat display;
           cv::Mat border_tile;
           int border_tile_gap = 5;
-          // Begin adding tiles of valid or available images to the list for merging into one later
-          cv::Mat tmpTileDisplay;
-          std::vector< cv::Mat > img_tiles;
-          if(this->visualize_vmap_raw && (!this->vmap_raw.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(this->vmap_raw.rows, border_tile_gap, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
+          try{
+               // Begin adding tiles of valid or available images to the list for merging into one later
+               cv::Mat tmpTileDisplay;
+               std::vector< cv::Mat > img_tiles;
+               if(this->visualize_vmap_raw && (!this->vmap_raw.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(this->vmap_raw.rows, border_tile_gap, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->vmap_raw);
+                    if(!tmpTileDisplay.empty()){
+                         if(viz_gnd_lines){ tmpTileDisplay = this->overlay_ground_lines(tmpTileDisplay); }
+                         if(viz_search_windows){ tmpTileDisplay = this->overlay_objects_search_windows(tmpTileDisplay); }
+                         if(set_titles) cv::putText(tmpTileDisplay, "Vmap Raw", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
                }
-               tmpTileDisplay = imCvtCmap(this->vmap_raw);
-               if(!tmpTileDisplay.empty()){
-                    if(viz_gnd_lines){ tmpTileDisplay = this->overlay_ground_lines(tmpTileDisplay); }
-                    if(viz_search_windows){ tmpTileDisplay = this->overlay_objects_search_windows(tmpTileDisplay); }
-                    if(set_titles) cv::putText(tmpTileDisplay, "Vmap Raw", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
+               if(this->visualize_vmap_sobelized_preprocessed && (!this->vmap_sobelized_preprocessed.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(this->vmap_sobelized_preprocessed.rows, border_tile_gap, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->vmap_sobelized_preprocessed);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Pre-Proc. Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
                }
+               if(this->visualize_vmap_post_sobel_threshed && (!this->vmap_postproc_sobel_threshed.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(this->vmap_postproc_sobel_threshed.rows, border_tile_gap, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->vmap_postproc_sobel_threshed);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Post-Proc. Sobel Thresh\'d", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if(this->visualize_vmap_post_sobel_blurred && (!this->vmap_postproc_sobel_blurred.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(this->vmap_postproc_sobel_blurred.rows, border_tile_gap, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->vmap_postproc_sobel_blurred);
+                    if(!tmpTileDisplay.empty()){
+                         if(set_titles) cv::putText(tmpTileDisplay, "Post-Proc. Sobel Blurred", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if(this->visualize_vmap_final && (!this->vmap_final.empty()) ){
+                    // If the border tile size hasn't been determined yet set the size, otherwise skip this part
+                    if(border_tile.empty()){
+                         border_tile = cv::Mat(border_tile_gap, this->vmap_final.cols, CV_8UC3);
+                         border_tile.setTo( cv::Scalar(255, 255, 255) );
+                    }
+                    tmpTileDisplay = imCvtCmap(this->vmap_final);
+                    if(!tmpTileDisplay.empty()){
+                         if(viz_gnd_lines) tmpTileDisplay = this->overlay_ground_lines(tmpTileDisplay);
+                         if(viz_search_windows) tmpTileDisplay = this->overlay_objects_search_windows(tmpTileDisplay);
+                         if(set_titles) cv::putText(tmpTileDisplay, "Vmap Final", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
+                         img_tiles.push_back(tmpTileDisplay);
+                         img_tiles.push_back(border_tile);
+                    }
+               }
+               if( (!img_tiles.empty()) && (img_tiles.size() > 0) ){ cv::hconcat(img_tiles, display); }
+          } catch(std::exception e){
+               printf("[FATAL] construct_low_level_vmap_image() ---- Error = %s!\r\n", e.what());
+               display = cv::Mat();
           }
-          if(this->visualize_vmap_sobelized_preprocessed && (!this->vmap_sobelized_preprocessed.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(this->vmap_sobelized_preprocessed.rows, border_tile_gap, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->vmap_sobelized_preprocessed);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Pre-Proc. Sobel", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_vmap_post_sobel_threshed && (!this->vmap_postproc_sobel_threshed.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(this->vmap_postproc_sobel_threshed.rows, border_tile_gap, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->vmap_postproc_sobel_threshed);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Post-Proc. Sobel Thresh\'d", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_vmap_post_sobel_blurred && (!this->vmap_postproc_sobel_blurred.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(this->vmap_postproc_sobel_blurred.rows, border_tile_gap, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->vmap_postproc_sobel_blurred);
-               if(!tmpTileDisplay.empty()){
-                    if(set_titles) cv::putText(tmpTileDisplay, "Post-Proc. Sobel Blurred", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-          if(this->visualize_vmap_final && (!this->vmap_final.empty()) ){
-               // If the border tile size hasn't been determined yet set the size, otherwise skip this part
-               if(border_tile.empty()){
-                    border_tile = cv::Mat(border_tile_gap, this->vmap_final.cols, CV_8UC3);
-                    border_tile.setTo( cv::Scalar(255, 255, 255) );
-               }
-               tmpTileDisplay = imCvtCmap(this->vmap_final);
-               if(!tmpTileDisplay.empty()){
-                    if(viz_gnd_lines) tmpTileDisplay = this->overlay_ground_lines(tmpTileDisplay);
-                    if(viz_search_windows) tmpTileDisplay = this->overlay_objects_search_windows(tmpTileDisplay);
-                    if(set_titles) cv::putText(tmpTileDisplay, "Vmap Final", cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(200,200,250), 1, cv::LINE_AA);
-                    img_tiles.push_back(tmpTileDisplay);
-                    img_tiles.push_back(border_tile);
-               }
-          }
-
-          if( (!img_tiles.empty()) && (img_tiles.size() > 0) ){ cv::hconcat(img_tiles, display); }
           return display;
      }
 

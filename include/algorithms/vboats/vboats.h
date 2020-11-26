@@ -66,6 +66,10 @@ public:
 	void set_depth_denoising_kernel_size(int size);
 	void set_absolute_minimum_depth(float value);
 	void set_absolute_maximum_depth(float value);
+	void set_object_dimension_limits_x(float min, float max);
+	void set_object_dimension_limits_y(float min, float max);
+	void flip_object_dimension_x_limits(bool flag = false);
+	void flip_object_dimension_y_limits(bool flag = false);
 
 	// Config Setters
 	void set_contour_filtering_method(std::string method);
@@ -78,6 +82,7 @@ public:
 	void enable_correction_angle_sign_flip(bool flag = true);
 	void enable_filtered_depth_denoising(bool flag = true);
 	void enable_obstacle_data_extraction(bool flag = true);
+	void toggle_disparity_generation_debug_verbosity(bool flag = true);
 
 	// Getters
 	bool is_obstacle_data_extraction_performed();
@@ -86,6 +91,8 @@ public:
 	double get_depth_absolute_min();
 	double get_depth_absolute_max();
 	double get_correction_angle(bool in_degrees = false, bool flip_sign = false);
+	ImageAngleCorrectionType get_angle_correction_type();
+	std::vector<double> get_camera_angles();
 
 private:
 	std::string classLbl = txt_bold_magenta() + "Vboats" + txt_reset_color();
@@ -95,6 +102,12 @@ private:
 	// TODO: Section Name
 	float _hard_min_depth = 0.01;
 	float _hard_max_depth = 20.0;
+	float _object_min_dimension_x = 0.0;
+	float _object_max_dimension_x = 0.0;
+	float _object_min_dimension_y = 0.0;
+	float _object_max_dimension_y = 0.0;
+	bool _flip_object_dimension_x_limits = false;
+	bool _flip_object_dimension_y_limits = false;
 
 	// TODO: Section Name
 	float _fx                     = 0;
@@ -114,12 +127,6 @@ private:
 	int _filtered_depth_denoising_size = 2;
 
 	// TODO: Section Name
-	cv::Mat _cur_depth;
-	cv::Mat _cur_disparity;
-	cv::Mat _cur_umap;
-	cv::Mat _cur_vmap;
-
-	// TODO: Section Name
 	ContourFilterMethod _contourFiltMeth = PERIMETER_BASED;
 	UvMapFilterMethod _umapFiltMeth = SOBELIZED_METHOD;
 	UvMapFilterMethod _vmapFiltMeth = SOBELIZED_METHOD;
@@ -135,7 +142,7 @@ private:
 	bool _flip_correction_angle_sign = false;
 
 	// Debug Objects
-	bool _verbose = false;
+	bool _debug_disparity_gen = false;
 };
 
 #endif // ROBOCOMMANDER_ALGORITHMS_VBOATS_H_

@@ -1,5 +1,4 @@
 #include <math.h>                  // For fabs, ceil
-#include <Eigen/Geometry>          // For Quaternion
 
 #include "algorithms/vboats/vboats.h"
 #include "algorithms/vboats/vboats_utils.h"
@@ -69,32 +68,6 @@ cv::Mat Vboats::remove_vmap_deadzones(const cv::Mat& vmap){
      return processed;
 }
 
-/** void VboatsRos::depth_to_disparity(const cv::Mat& depth, cv::Mat* disparity, float gain){
-     if(depth.empty()) return;
-     cv::Mat image, disparityOut;
-     if(depth.type() == CV_16UC1){
-          depth.convertTo(image, CV_32F, this->_dscale);
-          gain = gain * this->_dscale;
-     } else if(depth.type() != CV_32F) depth.convertTo(image, CV_32F);
-     else image = depth.clone();
-     if(this->_debug_disparity_generation){
-          printf("[DEBUG] VboatsRos::depth_to_disparity() --- Using conversion gain = %f.\r\n", gain);
-          cvinfo(image, "VboatsRos::depth_to_disparity() --- Input Depth Image: ");
-     }
-     // Depth2DisparityConverter<float> d2dconverter(gain);
-     ForEachDepthConverter<float> d2dconverter(gain, (float) this->_disparity_hard_min, (float) this->_disparity_hard_max);
-     image.forEach<float>(d2dconverter);
-     if(this->_debug_disparity_generation) cvinfo(image, "VboatsRos::depth_to_disparity() --- Disparity image before uint8 conversion: ");
-
-     if(image.type() != CV_8UC1){
-          double minVal, maxVal;
-          cv::minMaxLoc(image, &minVal, &maxVal);
-          image.convertTo(disparityOut, CV_8UC1, (255.0/maxVal) );
-     } else disparityOut = image;
-     if(this->_debug_disparity_generation) cvinfo(disparityOut, "VboatsRos::depth_to_disparity() --- Output Disparity: ");
-     if(disparity) *disparity = disparityOut.clone();
-}
-*/
 cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
      cv::Mat output;
      if(depth.empty()) return output;
@@ -108,14 +81,54 @@ cv::Mat Vboats::generate_disparity_from_depth(const cv::Mat& depth){
      } else if(depth.type() != CV_32F) depth.convertTo(image, CV_32F);
      else image = depth.clone();
 
-     ForEachDepthConverter<float> d2dconverter(gain, (float) this->_hard_min_depth, (float) this->_hard_max_depth);
+     if(this->_debug_disparity_gen){
+          std::string lbl1 = format("[DEBUG] %s --- DepthScale = %.4f && Input Depth = ", this->classLbl.c_str(), gain);
+          std::string lbl2 = format("[DEBUG] %s --- Depth Image Before ForEach Operation = ", this->classLbl.c_str());
+          cvinfo(depth, lbl1.c_str());
+          cvinfo(image, lbl2.c_str());
+     }
+
+     float xMinVal, xMaxVal;
+     if(this->_flip_object_dimension_x_limits){
+          xMaxVal = (float) this->_object_min_dimension_x;
+          xMinVal = (float) this->_object_max_dimension_x;
+     } else{
+          xMinVal = (float) this->_object_min_dimension_x;
+          xMaxVal = (float) this->_object_max_dimension_x;
+     }
+
+     float yMinVal, yMaxVal;
+     if(this->_flip_object_dimension_y_limits){
+          yMaxVal = (float) this->_object_min_dimension_y;
+          yMinVal = (float) this->_object_max_dimension_y;
+     } else{
+          yMinVal = (float) this->_object_min_dimension_y;
+          yMaxVal = (float) this->_object_max_dimension_y;
+     }
+
+     ForEachSaturateDepthLimits<float> d2dconverter(gain,
+          (float) this->_hard_min_depth, (float) this->_hard_max_depth,
+          (float) this->_fx, (float) this->_fy, (float) this->_px, (float) this->_py,
+          xMinVal, xMaxVal, yMinVal, yMaxVal
+     );
+     // ForEachDepthConverter<float> d2dconverter(gain, (float) this->_hard_min_depth, (float) this->_hard_max_depth);
+
      image.forEach<float>(d2dconverter);
+
+     if(this->_debug_disparity_gen){
+          std::string lbl1 = format("[DEBUG] %s --- Depth Image After ForEach Operation = ", this->classLbl.c_str());
+          cvinfo(image, lbl1.c_str());
+     }
 
      if(image.type() != CV_8UC1){
           double minVal, maxVal;
           cv::minMaxLoc(image, &minVal, &maxVal);
           image.convertTo(output, CV_8UC1, (255.0/maxVal) );
      } else output = image.clone();
+     if(this->_debug_disparity_gen){
+          std::string lbl1 = format("[DEBUG] %s --- Function Output = ", this->classLbl.c_str());
+          cvinfo(output, lbl1.c_str());
+     }
      return output.clone();
 }
 cloudxyz_t::Ptr Vboats::generate_pointcloud_from_depth(const cv::Mat& depth, bool debug_timing){
@@ -199,9 +212,6 @@ void Vboats::set_camera_orientation(double roll, double pitch, double yaw, bool 
      }
 }
 void Vboats::set_camera_orientation(double x, double y, double z, double w, bool verbose){
-     // Eigen::Quaternion<double> quat(w, x, y, z);
-     // Eigen::Vector3d euler = quat.toRotationMatrix().eulerAngles(0, 1, 2);
-
      std::vector<double> euler = quaternion_to_euler(x, y, z, w);
      double roll, pitch, yaw;
      roll  = (double) euler[0];
@@ -400,8 +410,9 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      cv::Mat filtered_depth;
      err = filter_depth_using_ground_line(filtered_image, disparityInput,
           vProcessed, line_params, &filtered_depth,
-          std::vector<int>{this->vmapParams.depth_filtering_gnd_line_intercept_offset},
-          &this->processingDebugger   // keep_mask visualization
+          std::vector<int>{0, this->vmapParams.depth_filtering_gnd_line_intercept_offset},
+          &this->processingDebugger,   // keep_mask visualization
+          true
      );
 
      // Attempt to remove any noise (speckles) from the resulting filtered depth image
@@ -606,6 +617,16 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
 
 void Vboats::set_absolute_minimum_depth(float value){ this->_hard_min_depth = value; }
 void Vboats::set_absolute_maximum_depth(float value){ this->_hard_max_depth = value; }
+void Vboats::set_object_dimension_limits_x(float min, float max){
+     this->_object_min_dimension_x = min;
+     this->_object_max_dimension_x = max;
+}
+void Vboats::set_object_dimension_limits_y(float min, float max){
+     this->_object_min_dimension_y = min;
+     this->_object_max_dimension_y = max;
+}
+void Vboats::flip_object_dimension_x_limits(bool flag){ this->_flip_object_dimension_x_limits = flag; }
+void Vboats::flip_object_dimension_y_limits(bool flag){ this->_flip_object_dimension_y_limits = flag; }
 void Vboats::set_contour_filtering_method(std::string method){
      if(strcmp(method.c_str(), "perimeter") == 0) this->_contourFiltMeth = PERIMETER_BASED;
      else if(strcmp(method.c_str(), "Perimeter") == 0) this->_contourFiltMeth = PERIMETER_BASED;
@@ -636,6 +657,7 @@ void Vboats::set_image_angle_correction_type(std::string method){
      else if(strcmp(method.c_str(), "Yaw") == 0) this->_angleCorrectionType = YAW_CORRECTION;
      else this->_angleCorrectionType = ROLL_CORRECTION;
 }
+void Vboats::toggle_disparity_generation_debug_verbosity(bool flag){ this->_debug_disparity_gen = flag; }
 
 bool Vboats::is_obstacle_data_extraction_performed(){ return this->_do_obstacle_data_extraction; }
 bool Vboats::is_depth_denoising_performed(){ return this->_denoise_filtered_depth; }
@@ -654,6 +676,8 @@ double Vboats::get_correction_angle(bool in_degrees, bool flip_sign){
      if(flip_sign) output = -1.0 * output;
      return output;
 }
+ImageAngleCorrectionType Vboats::get_angle_correction_type(){ return this->_angleCorrectionType; }
+std::vector<double> Vboats::get_camera_angles(){ return std::vector<double>{this->_cam_roll, this->_cam_pitch, this->_cam_yaw}; }
 
 void Vboats::enable_angle_correction(bool flag){ this->_do_angle_correction = flag; }
 void Vboats::enable_correction_angle_sign_flip(bool flag){ this->_flip_correction_angle_sign = flag; }

@@ -65,6 +65,20 @@ template<typename dtype> struct ForEachNaiveDepthConverter{
 };
 
 /** Templated struct for fast conversion of depth image into disparity */
+template<typename dtype> struct ForEachPrepareDepthConverter{
+     const dtype m_min;
+     const dtype m_max;
+     ForEachPrepareDepthConverter() : m_min(0), m_max(0){}
+     ForEachPrepareDepthConverter(dtype abs_min, dtype abs_max) : m_min(abs_min), m_max(abs_max){}
+     void operator()(dtype& pixel, const int * idx) const{
+          if(!std::isfinite(pixel)){ pixel = 0; }
+          else if(pixel != 0){
+               if(m_min != 0){ if(pixel < m_min) pixel = 0; }
+               if(m_max != 0){ if(pixel > m_max) pixel = 0; }
+          }
+     }
+};
+
 template<typename dtype> struct ForEachDepthConverter{
      const dtype m_gain;
      const dtype m_min;
@@ -81,21 +95,8 @@ template<typename dtype> struct ForEachDepthConverter{
           }
      }
 };
-template<typename dtype> struct ForEachPrepareDepthConverter{
-     const dtype m_min;
-     const dtype m_max;
-     ForEachPrepareDepthConverter() : m_min(0), m_max(0){}
-     ForEachPrepareDepthConverter(dtype abs_min, dtype abs_max) : m_min(abs_min), m_max(abs_max){}
-     void operator()(dtype& pixel, const int * idx) const{
-          if(!std::isfinite(pixel)){ pixel = 0; }
-          else if(pixel != 0){
-               if(m_min != 0){ if(pixel < m_min) pixel = 0; }
-               if(m_max != 0){ if(pixel > m_max) pixel = 0; }
-          }
-     }
-};
-
 template<typename dtype> struct ForEachSaturateDepthLimits{
+     const dtype m_gain;
      const dtype m_min;
      const dtype m_max;
      const dtype m_fx;
@@ -106,40 +107,55 @@ template<typename dtype> struct ForEachSaturateDepthLimits{
      const dtype x_max;
      const dtype y_min;
      const dtype y_max;
-     ForEachSaturateDepthLimits() : m_min(0), m_max(0),
-          m_fx(0), m_fy(0), m_px(0), m_py(0),
-          x_min(0), x_max(0), y_min(0), y_max(0)
-     {}
-     ForEachSaturateDepthLimits(dtype abs_min, dtype abs_max) :
-          m_min(abs_min), m_max(abs_max), m_fx(0), m_fy(0),
-          m_px(0), m_py(0), x_min(0), x_max(0), y_min(0), y_max(0)
-     {}
-     ForEachSaturateDepthLimits(dtype abs_min, dtype abs_max,
+     ForEachSaturateDepthLimits() : m_gain(0.0), m_min(0.0), m_max(0.0), m_fx(0.0), m_fy(0.0),
+          m_px(0.0), m_py(0.0), x_min(0.0), x_max(0.0), y_min(0.0), y_max(0.0){}
+     ForEachSaturateDepthLimits(dtype gain) :
+          m_gain(gain), m_min(0.0), m_max(0.0), m_fx(0.0), m_fy(0.0),
+          m_px(0.0), m_py(0.0), x_min(0.0), x_max(0.0), y_min(0.0), y_max(0.0){}
+     ForEachSaturateDepthLimits(dtype gain, dtype abs_min, dtype abs_max) :
+          m_gain(gain), m_min(abs_min), m_max(abs_max), m_fx(0.0), m_fy(0.0),
+          m_px(0.0), m_py(0.0), x_min(0.0), x_max(0.0), y_min(0.0), y_max(0.0){}
+     ForEachSaturateDepthLimits(dtype gain, dtype abs_min, dtype abs_max,
           dtype fx, dtype fy, dtype px, dtype py,
-          dtype minX, dtype maxX, dtype minY, dtype maxY) : m_min(abs_min), m_max(abs_max),
-           m_fx(fx), m_fy(fy), m_px(px), m_py(py),
-           x_min(minX), x_max(maxX), y_min(minY), y_max(maxY)
-     {}
+          dtype minX, dtype maxX, dtype minY, dtype maxY) : m_gain(gain), 
+          m_min(abs_min), m_max(abs_max), m_fx(fx), m_fy(fy), m_px(px), m_py(py),
+          x_min(minX), x_max(maxX), y_min(minY), y_max(maxY){}
      void operator()(dtype& pixel, const int * idx) const{
           if(!std::isfinite(pixel)){ pixel = 0; }
           else if(pixel != 0){
-               int curPx = idx[1];
-               int curPy = idx[0];
-               float curDepth = (float) pixel;
-               if(m_min != 0){ if(curDepth < m_min) pixel = 0; }
-               if(m_max != 0){ if(curDepth > m_max) pixel = 0; }
+               dtype depth = pixel;
+               // Saturate pixel value based on geometric limits -- X DIMENSION
+               // Note: If supplied and camera intrinsics are known
+               bool clip_x = false;
                if(m_fx != 0){
-                    float x = (float)(( (float) curPx - m_px) * curDepth) / (float) m_fx;
-                    float absX = fabs(x);
-                    if(x_min != 0){ if(x < x_min) pixel = 0; }
-                    if(x_max != 0){ if(x > x_max) pixel = 0; }
+                    float xNum = ((float) idx[1] - (float) m_px) * (float) depth;
+                    float xLoc = (float) xNum / (float) m_fx;
+                    if( (x_min != 0) && ((dtype) xLoc < x_min) ){ clip_x = true; }
+                    if( (x_max != 0) && ((dtype) xLoc > x_max) ){ clip_x = true; }
                }
+               // Saturate pixel value based on geometric limits -- Y DIMENSION
+               // Note: If supplied and camera intrinsics are known
+               bool clip_y = false;
                if(m_fy != 0){
-                    float y = (float)(( (float) curPy - m_py) * curDepth) / (float) m_fy;
-                    float absY = fabs(y);
-                    if(y_min != 0){ if(y < y_min) pixel = 0; }
-                    if(y_max != 0){ if(y > y_max) pixel = 0; }
+                    float yNum = ((float) idx[0] - (float) m_py) * (float) depth;
+                    float yLoc = (float) yNum / (float) m_fy;
+                    if( (y_min != 0) && ((dtype) yLoc < y_min) ){ clip_y = true; }
+                    if( (y_max != 0) && ((dtype) yLoc > y_max) ){ clip_y = true; }
                }
+
+               // Finally convert current pixel's depth value to its
+               // corresponding disparity value, unless we are clipping this pixel
+               dtype tmpVal;
+               if(clip_x || clip_y){ tmpVal = 0; }
+               else{
+                    dtype tmpDepth = depth;
+                    // Saturate pixel value to depth limits (IF SUPPLIED)
+                    if( (m_min != 0) && (depth < m_min) ){ tmpDepth = m_min; }
+                    else if( (m_max != 0) && (depth > m_max) ){ tmpDepth = m_max; }
+                    tmpVal = (dtype) m_gain / tmpDepth;
+               }
+               // Actually set pixel value to new value in original input image
+               pixel = tmpVal;
           }
      }
 };

@@ -1,5 +1,6 @@
 #include "algorithms/vboats/vboats_utils.h"
 
+#include <Eigen/Geometry>          // For Quaternion
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -8,11 +9,19 @@ using namespace std;
 #define VERBOSE_OBS_SEARCH false
 
 std::vector<double> quaternion_to_euler(double qx, double qy, double qz, double qw){
-     double y2 = qy * qy;
-     double rz = std::atan2(2*(qw*qz + qx*qy), (1 - 2*(y2 + qz*qz)));
-     double ry = std::asin( 2*(qw*qy - qz*qx));
-     double rx = std::atan2(2*(qw*qx + qy*qz), (1 - 2*(qx*qx + y2)));
-     return std::vector<double>{rx, ry, rz};
+     try{
+          // Eigen::Quaternion<double> quat(w, x, y, z);
+          // Eigen::Vector3d euler = quat.toRotationMatrix().eulerAngles(0, 1, 2);
+          double y2 = qy * qy;
+          double rz = std::atan2(2*(qw*qz + qx*qy), (1 - 2*(y2 + qz*qz)));
+          double ry = std::asin( 2*(qw*qy - qz*qx));
+          double rx = std::atan2(2*(qw*qx + qy*qz), (1 - 2*(qx*qx + y2)));
+          return std::vector<double>{rx, ry, rz};
+     } catch(std::exception e){
+          printf("[FATAL] quaternion_to_euler() --- Error = %s.\r\n", e.what());
+          return std::vector<double>{};
+     }
+     return std::vector<double>{};
 }
 
 /** =========================
@@ -104,155 +113,166 @@ void genUVMapThreaded(cv::Mat image, cv::Mat* umap, cv::Mat* vmap, double nThrea
 * =========================== */
 cv::Mat preprocess_umap_stripping(const cv::Mat& input, vector<float>* thresholds, bool verbose, bool debug){
      cv::Mat output;
-     preprocess_umap_stripping(input, &output, thresholds, verbose, debug);
+     try{ preprocess_umap_stripping(input, &output, thresholds, verbose, debug);
+     } catch(std::exception e){
+          printf("[FATAL] preprocess_umap_stripping() --- Error = %s.\r\n", e.what());
+          output = cv::Mat();
+     }
      return output;
 }
+
 void preprocess_umap_stripping(const cv::Mat& input, cv::Mat* output,
      vector<float>* thresholds, bool verbose, bool debug)
 {
-     cv::Mat filtered;
-     if(input.empty()) return;
-     cv::Mat imgCopy = input.clone();
+     try{
+          cv::Mat filtered;
+          if(input.empty()) return;
+          cv::Mat imgCopy = input.clone();
 
-     vector<float> threshs;
-     if(thresholds) threshs = (*thresholds);
-     if(threshs.empty()) threshs = vector<float>{0.3,0.295,0.275,0.3};
-     int nThreshs = threshs.size();
+          vector<float> threshs;
+          if(thresholds) threshs = (*thresholds);
+          if(threshs.empty()) threshs = vector<float>{0.3,0.295,0.275,0.3};
+          int nThreshs = threshs.size();
 
-     if(verbose){
-          std::string threshStr = vector_str(threshs, ", ");
-          printf("[INFO] preprocess_umap_stripping() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
-     }
-
-     double uMin, uMax;
-     cv::minMaxLoc(imgCopy, &uMin, &uMax);
-
-     float ratio = (float)(imgCopy.rows) / 255.0;
-     int nStrips = int(ceil(ratio * nThreshs)) - 1;
-     if(debug) printf("uMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", (int) uMax, ratio, nStrips);
-
-     cv::threshold(imgCopy, imgCopy, 8, 255, cv::THRESH_TOZERO);
-     std::vector<cv::Mat> strips;
-     int err = strip_image(imgCopy, &strips, nStrips, false);
-
-     int idx = 0;
-     std::vector<cv::Mat> pStrips;
-     if(err >= 0){
-          for(cv::Mat strip : strips){
-               double stripMin, stripMax;
-               cv::Scalar stripMean, stripStddev;
-               cv::minMaxLoc(strip, &stripMin, &stripMax);
-               cv::meanStdDev(strip, stripMean, stripStddev);
-               int tmpMax = (int) stripMax;
-               double tmpMean = (double) stripMean[0];
-               double tmpStd = (double) stripStddev[0];
-               if(tmpMean == 0.0){
-                    pStrips.push_back(strip.clone());
-                    idx++; continue;
-               }
-
-               if(debug) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
-               double maxValRatio = (double) uMax/255.0;
-               double relRatio = (double)(tmpMax-tmpStd)/(double)uMax;
-               double relRatio2 = (tmpMean)/(double)(tmpMax);
-               if(debug) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
-
-               double tmpGain;
-               if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
-               else tmpGain = 1.0 - (relRatio + relRatio2);
-
-               int thresh = int(threshs[idx] * tmpGain * tmpMax);
-               if(debug) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
-
-               cv::Mat tmpStrip;
-               threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
-               pStrips.push_back(tmpStrip.clone());
-               idx++;
+          if(verbose){
+               std::string threshStr = vector_str(threshs, ", ");
+               printf("[INFO] preprocess_umap_stripping() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
           }
-          err = merge_strips(pStrips, &filtered, false);
-     } else{
-          if(verbose) printf("[WARNING] preprocess_umap_stripping() --- Could not properly strip input umap given the stripping parameters. Returning unfiltered umap.\r\n");
-          int wholeThresh = int(0.25*uMax);
-          cv::threshold(imgCopy, filtered, wholeThresh, 255, cv::THRESH_TOZERO);
-     }
 
-     if(output) *output = filtered;
+          double uMin, uMax;
+          cv::minMaxLoc(imgCopy, &uMin, &uMax);
+
+          float ratio = (float)(imgCopy.rows) / 255.0;
+          int nStrips = int(ceil(ratio * nThreshs)) - 1;
+          if(debug) printf("uMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", (int) uMax, ratio, nStrips);
+
+          cv::threshold(imgCopy, imgCopy, 8, 255, cv::THRESH_TOZERO);
+          std::vector<cv::Mat> strips;
+          int err = strip_image(imgCopy, &strips, nStrips, false);
+
+          int idx = 0;
+          std::vector<cv::Mat> pStrips;
+          if(err >= 0){
+               for(cv::Mat strip : strips){
+                    double stripMin, stripMax;
+                    cv::Scalar stripMean, stripStddev;
+                    cv::minMaxLoc(strip, &stripMin, &stripMax);
+                    cv::meanStdDev(strip, stripMean, stripStddev);
+                    int tmpMax = (int) stripMax;
+                    double tmpMean = (double) stripMean[0];
+                    double tmpStd = (double) stripStddev[0];
+                    if(tmpMean == 0.0){
+                         pStrips.push_back(strip.clone());
+                         idx++; continue;
+                    }
+
+                    if(debug) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
+                    double maxValRatio = (double) uMax/255.0;
+                    double relRatio = (double)(tmpMax-tmpStd)/(double)uMax;
+                    double relRatio2 = (tmpMean)/(double)(tmpMax);
+                    if(debug) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
+
+                    double tmpGain;
+                    if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
+                    else tmpGain = 1.0 - (relRatio + relRatio2);
+
+                    int thresh = int(threshs[idx] * tmpGain * tmpMax);
+                    if(debug) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
+
+                    cv::Mat tmpStrip;
+                    threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
+                    pStrips.push_back(tmpStrip.clone());
+                    idx++;
+               }
+               err = merge_strips(pStrips, &filtered, false);
+          } else{
+               if(verbose) printf("[WARNING] preprocess_umap_stripping() --- Could not properly strip input umap given the stripping parameters. Returning unfiltered umap.\r\n");
+               int wholeThresh = int(0.25*uMax);
+               cv::threshold(imgCopy, filtered, wholeThresh, 255, cv::THRESH_TOZERO);
+          }
+          if(output) *output = filtered;
+     } catch(std::exception e){ printf("[FATAL] preprocess_umap_stripping() --- Error = %s.\r\n", e.what()); }
 }
 cv::Mat preprocess_vmap_stripping(const cv::Mat& input, vector<float>* thresholds, bool verbose, bool debug){
      cv::Mat output;
-     preprocess_vmap_stripping(input, &output, thresholds, verbose, debug);
+     try{ preprocess_vmap_stripping(input, &output, thresholds, verbose, debug);
+     } catch(std::exception e){
+          printf("[FATAL] preprocess_vmap_stripping() --- Error = %s.\r\n", e.what());
+          output = cv::Mat();
+     }
      return output;
 }
 void preprocess_vmap_stripping(const cv::Mat& input, cv::Mat* output,
      vector<float>* thresholds, bool verbose, bool debug)
 {
-     cv::Mat filtered;
-     if(input.empty()) return;
-     cv::Mat imgCopy = input.clone();
+     try{
+          cv::Mat filtered;
+          if(input.empty()) return;
+          cv::Mat imgCopy = input.clone();
 
-     vector<float> threshs;
-     if(thresholds) threshs = (*thresholds);
-     if(threshs.empty()) threshs = vector<float>{0.3, 0.3,0.25,0.4};
-     int nThreshs = threshs.size();
+          vector<float> threshs;
+          if(thresholds) threshs = (*thresholds);
+          if(threshs.empty()) threshs = vector<float>{0.3, 0.3,0.25,0.4};
+          int nThreshs = threshs.size();
 
-     if(verbose){
-          std::string threshStr = vector_str(threshs, ", ");
-          printf("[INFO] preprocess_vmap_stripping() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
-     }
-
-     double vMin, vMax;
-     cv::minMaxLoc(imgCopy, &vMin, &vMax);
-
-     float ratio = (float)(imgCopy.cols) / 255.0;
-     int nStrips = int(ceil(ratio * nThreshs)) - 1;
-     if(debug) printf("vMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", (int) vMax, ratio, nStrips);
-
-     std::vector<cv::Mat> strips;
-     int err = strip_image(imgCopy, &strips, nStrips, true);
-
-     int idx = 0;
-     std::vector<cv::Mat> pStrips;
-     if(err >= 0){
-          for(cv::Mat strip : strips){
-               double stripMin, stripMax;
-               cv::Scalar stripMean, stripStddev;
-               cv::minMaxLoc(strip, &stripMin, &stripMax);
-               cv::meanStdDev(strip, stripMean, stripStddev);
-
-               int tmpMax = (int) stripMax;
-               double tmpMean = (double) stripMean[0];
-               double tmpStd = (double) stripStddev[0];
-               if(tmpMean == 0.0){
-                    pStrips.push_back(strip.clone());
-                    idx++; continue;
-               }
-
-               if(debug) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
-               double maxValRatio = (double) vMax/255.0;
-               double relRatio = (double)(tmpMax-tmpStd)/(double)vMax;
-               double relRatio2 = (tmpMean)/(double)(tmpMax);
-               if(debug) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
-
-               double tmpGain;
-               if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
-               else tmpGain = 1.0 - (relRatio + relRatio2);
-
-               int thresh = int(threshs[idx] * tmpGain * tmpMax);
-               if(debug) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
-
-               cv::Mat tmpStrip;
-               threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
-               pStrips.push_back(tmpStrip.clone());
-               idx++;
+          if(verbose){
+               std::string threshStr = vector_str(threshs, ", ");
+               printf("[INFO] preprocess_vmap_stripping() --- Using %d thresholds = [%s]\r\n", (int)threshs.size(), threshStr.c_str());
           }
-          err = merge_strips(pStrips, &filtered);
-     }else{
-          if(verbose) printf("[WARNING] preprocess_vmap_stripping() --- Could not properly strip input vmap given the stripping parameters. Returning unfiltered vmap.\r\n");
-          int wholeThresh = int(0.25*vMax);
-          cv::threshold(imgCopy, filtered, wholeThresh, 255, cv::THRESH_TOZERO);
-     }
 
-     if(output) *output = filtered;
+          double vMin, vMax;
+          cv::minMaxLoc(imgCopy, &vMin, &vMax);
+
+          float ratio = (float)(imgCopy.cols) / 255.0;
+          int nStrips = int(ceil(ratio * nThreshs)) - 1;
+          if(debug) printf("vMax, sizeRatio, nThreshs: %d, %.2f, %d\r\n", (int) vMax, ratio, nStrips);
+
+          std::vector<cv::Mat> strips;
+          int err = strip_image(imgCopy, &strips, nStrips, true);
+
+          int idx = 0;
+          std::vector<cv::Mat> pStrips;
+          if(err >= 0){
+               for(cv::Mat strip : strips){
+                    double stripMin, stripMax;
+                    cv::Scalar stripMean, stripStddev;
+                    cv::minMaxLoc(strip, &stripMin, &stripMax);
+                    cv::meanStdDev(strip, stripMean, stripStddev);
+
+                    int tmpMax = (int) stripMax;
+                    double tmpMean = (double) stripMean[0];
+                    double tmpStd = (double) stripStddev[0];
+                    if(tmpMean == 0.0){
+                         pStrips.push_back(strip.clone());
+                         idx++; continue;
+                    }
+
+                    if(debug) printf(" ---------- [Thresholding Strip %d] ---------- \r\n\tMax = %d, Mean = %.1lf, Std = %.1lf\r\n", idx,tmpMax,tmpMean,tmpStd);
+                    double maxValRatio = (double) vMax/255.0;
+                    double relRatio = (double)(tmpMax-tmpStd)/(double)vMax;
+                    double relRatio2 = (tmpMean)/(double)(tmpMax);
+                    if(debug) printf("\tRatios: %.3lf, %.3lf, %.3lf\r\n", maxValRatio, relRatio, relRatio2);
+
+                    double tmpGain;
+                    if(relRatio >= 0.4) tmpGain = relRatio + relRatio2;
+                    else tmpGain = 1.0 - (relRatio + relRatio2);
+
+                    int thresh = int(threshs[idx] * tmpGain * tmpMax);
+                    if(debug) printf("\tGain = %.2lf, Thresh = %d\r\n", tmpGain,thresh);
+
+                    cv::Mat tmpStrip;
+                    threshold(strip, tmpStrip, thresh, 255,cv::THRESH_TOZERO);
+                    pStrips.push_back(tmpStrip.clone());
+                    idx++;
+               }
+               err = merge_strips(pStrips, &filtered);
+          }else{
+               if(verbose) printf("[WARNING] preprocess_vmap_stripping() --- Could not properly strip input vmap given the stripping parameters. Returning unfiltered vmap.\r\n");
+               int wholeThresh = int(0.25*vMax);
+               cv::threshold(imgCopy, filtered, wholeThresh, 255, cv::THRESH_TOZERO);
+          }
+          if(output) *output = filtered;
+     } catch(std::exception e){ printf("[FATAL] preprocess_vmap_stripping() --- Error = %s.\r\n", e.what()); }
 }
 cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel,
      int thresh_sobel_preprocess, int thresh_sobel_postprocess, int dilate_size,
@@ -260,107 +280,118 @@ cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel,
      cv::Mat* sobel_preprocessed, cv::Mat* sobel_dilated, cv::Mat* sobel_blurred)
 {
      cv::Mat output;
-     if(umap.empty()) return output;
-     int kernel_x_multiplier = 10, kernel_y_multiplier = 2;
-     if(!kernel_multipliers.empty()){
-          kernel_x_multiplier = kernel_multipliers[0];
-          kernel_y_multiplier = kernel_multipliers[1];
+     try{
+          if(umap.empty()) return output;
+          int kernel_x_multiplier = 10, kernel_y_multiplier = 2;
+          if(!kernel_multipliers.empty()){
+               kernel_x_multiplier = kernel_multipliers[0];
+               kernel_y_multiplier = kernel_multipliers[1];
+          }
+          // Create output containers for debugging stages during processing
+          cv::Mat umapSobel, sobelThreshed, sobelDilated, sobelBlurred, keepMask;
+
+          // Create Sobel-ized Umap
+          cv::Mat rawUmap, umapThreshed;
+          umap.convertTo(rawUmap, CV_64F);
+          threshold(rawUmap, umapThreshed, float(thresh_pre_sobel), 255, cv::THRESH_TOZERO);
+          cv::Sobel(umapThreshed, umapSobel, CV_64F, 0, 1, 3);
+          if(sobel_raw) *sobel_raw = umapSobel.clone();
+
+          // Threshold sobel-ized umap before processing
+          double minVal, maxVal;
+          cv::minMaxLoc(umapSobel, &minVal, &maxVal);
+          umapSobel = umapSobel * (255.0/maxVal);
+          cv::convertScaleAbs(umapSobel, umapSobel, 1, 0);
+          threshold(umapSobel, sobelThreshed, float(thresh_sobel_preprocess), 255, cv::THRESH_TOZERO);
+          if(sobel_preprocessed) *sobel_preprocessed = sobelThreshed.clone();
+
+          // Process Sobel-ized Umap into a "keep" mask
+          cv::Mat dilate_element = cv::getStructuringElement( cv::MORPH_ELLIPSE,
+               cv::Size(dilate_size * kernel_x_multiplier, dilate_size * kernel_y_multiplier)
+          );
+          cv::dilate(sobelThreshed, sobelDilated, dilate_element, cv::Point(-1,-1), 1);
+          if(sobel_dilated) *sobel_dilated = sobelDilated.clone();
+
+          cv::blur(sobelDilated, sobelBlurred,
+               cv::Size(blur_size * kernel_x_multiplier, blur_size * kernel_y_multiplier)
+          );
+          if(sobel_blurred) *sobel_blurred = sobelBlurred.clone();
+
+          threshold(sobelBlurred, keepMask, 0, 255, cv::THRESH_BINARY);
+          if(keep_mask) *keep_mask = keepMask.clone();
+
+          // Filter the input umap using mask created from sobel images, and threshold result
+          umap.copyTo(output, keepMask);
+          threshold(output, output, float(thresh_sobel_postprocess), 255, cv::THRESH_TOZERO);
+          return output.clone();
+     } catch(std::exception e){
+          printf("[FATAL] preprocess_umap_sobelized() --- Error = %s.\r\n", e.what());
+          output = cv::Mat();
      }
-     // Create output containers for debugging stages during processing
-     cv::Mat umapSobel, sobelThreshed, sobelDilated, sobelBlurred, keepMask;
-
-     // Create Sobel-ized Umap
-     cv::Mat rawUmap, umapThreshed;
-     umap.convertTo(rawUmap, CV_64F);
-     threshold(rawUmap, umapThreshed, float(thresh_pre_sobel), 255, cv::THRESH_TOZERO);
-     cv::Sobel(umapThreshed, umapSobel, CV_64F, 0, 1, 3);
-     if(sobel_raw) *sobel_raw = umapSobel.clone();
-
-     // Threshold sobel-ized umap before processing
-     double minVal, maxVal;
-     cv::minMaxLoc(umapSobel, &minVal, &maxVal);
-     umapSobel = umapSobel * (255.0/maxVal);
-     cv::convertScaleAbs(umapSobel, umapSobel, 1, 0);
-     threshold(umapSobel, sobelThreshed, float(thresh_sobel_preprocess), 255, cv::THRESH_TOZERO);
-     if(sobel_preprocessed) *sobel_preprocessed = sobelThreshed.clone();
-
-     // Process Sobel-ized Umap into a "keep" mask
-     cv::Mat dilate_element = cv::getStructuringElement( cv::MORPH_ELLIPSE,
-          cv::Size(dilate_size * kernel_x_multiplier, dilate_size * kernel_y_multiplier)
-     );
-     cv::dilate(sobelThreshed, sobelDilated, dilate_element, cv::Point(-1,-1), 1);
-     if(sobel_dilated) *sobel_dilated = sobelDilated.clone();
-
-     cv::blur(sobelDilated, sobelBlurred,
-          cv::Size(blur_size * kernel_x_multiplier, blur_size * kernel_y_multiplier)
-     );
-     if(sobel_blurred) *sobel_blurred = sobelBlurred.clone();
-
-     threshold(sobelBlurred, keepMask, 0, 255, cv::THRESH_BINARY);
-     if(keep_mask) *keep_mask = keepMask.clone();
-
-     // Filter the input umap using mask created from sobel images, and threshold result
-     umap.copyTo(output, keepMask);
-     threshold(output, output, float(thresh_sobel_postprocess), 255, cv::THRESH_TOZERO);
-     return output.clone();
+     return output;
 }
 cv::Mat preprocess_umap_sobelized(const cv::Mat& umap, int thresh_pre_sobel,
      int thresh_sobel_preprocess, int thresh_sobel_postprocess, int dilate_size,
      int blur_size, vector<int> kernel_multipliers, VboatsProcessingImages* image_debugger)
 {
      cv::Mat processed;
-     if(image_debugger){
-          cv::Mat* debug_image = nullptr;
-          cv::Mat* debug_image2 = nullptr;
-          cv::Mat* debug_image3 = nullptr;
-          cv::Mat* debug_image4 = nullptr;
-          cv::Mat* debug_image5 = nullptr;
-          if(image_debugger->visualize_umap_keep_mask) debug_image = new cv::Mat();
-          if(image_debugger->visualize_umap_sobel_raw) debug_image2 = new cv::Mat();
-          if(image_debugger->visualize_umap_sobel_preprocessed) debug_image3 = new cv::Mat();
-          if(image_debugger->visualize_umap_sobel_dilated) debug_image4 = new cv::Mat();
-          if(image_debugger->visualize_umap_sobel_blurred) debug_image5 = new cv::Mat();
+     try{
+          if(image_debugger){
+               cv::Mat* debug_image = nullptr;
+               cv::Mat* debug_image2 = nullptr;
+               cv::Mat* debug_image3 = nullptr;
+               cv::Mat* debug_image4 = nullptr;
+               cv::Mat* debug_image5 = nullptr;
+               if(image_debugger->visualize_umap_keep_mask) debug_image = new cv::Mat();
+               if(image_debugger->visualize_umap_sobel_raw) debug_image2 = new cv::Mat();
+               if(image_debugger->visualize_umap_sobel_preprocessed) debug_image3 = new cv::Mat();
+               if(image_debugger->visualize_umap_sobel_dilated) debug_image4 = new cv::Mat();
+               if(image_debugger->visualize_umap_sobel_blurred) debug_image5 = new cv::Mat();
 
-          processed = preprocess_umap_sobelized(umap, thresh_pre_sobel,
-               thresh_sobel_preprocess, thresh_sobel_postprocess,
-               dilate_size, blur_size, kernel_multipliers,
-               debug_image,  // keep_mask visualization
-               debug_image2,  // sobel_raw visualization
-               debug_image3,  // sobel_preprocessed visualization
-               debug_image4,  // sobel_dilated visualization
-               debug_image5   // sobel_blurred visualization
-          );
+               processed = preprocess_umap_sobelized(umap, thresh_pre_sobel,
+                    thresh_sobel_preprocess, thresh_sobel_postprocess,
+                    dilate_size, blur_size, kernel_multipliers,
+                    debug_image,  // keep_mask visualization
+                    debug_image2,  // sobel_raw visualization
+                    debug_image3,  // sobel_preprocessed visualization
+                    debug_image4,  // sobel_dilated visualization
+                    debug_image5   // sobel_blurred visualization
+               );
 
-          if(image_debugger->visualize_umap_keep_mask){
-               image_debugger->set_umap_sobelized_keep_mask(*debug_image);
-               delete debug_image;
+               if(image_debugger->visualize_umap_keep_mask){
+                    image_debugger->set_umap_sobelized_keep_mask(*debug_image);
+                    delete debug_image;
+               }
+               if(image_debugger->visualize_umap_sobel_raw){
+                    image_debugger->set_umap_sobelized_raw(*debug_image2);
+                    delete debug_image2;
+               }
+               if(image_debugger->visualize_umap_sobel_preprocessed){
+                    image_debugger->set_umap_sobelized_pre_filtering(*debug_image3);
+                    delete debug_image3;
+               }
+               if(image_debugger->visualize_umap_sobel_dilated){
+                    image_debugger->set_umap_sobelized_dilated(*debug_image4);
+                    delete debug_image4;
+               }
+               if(image_debugger->visualize_umap_sobel_blurred){
+                    image_debugger->set_umap_sobelized_blurred(*debug_image5);
+                    delete debug_image5;
+               }
+          } else{
+               processed = preprocess_umap_sobelized(umap, thresh_pre_sobel,
+                    thresh_sobel_preprocess, thresh_sobel_postprocess,
+                    dilate_size, blur_size, kernel_multipliers,
+                    nullptr,  // keep_mask visualization
+                    nullptr,  // sobel_raw visualization
+                    nullptr,  // sobel_preprocessed visualization
+                    nullptr,  // sobel_dilated visualization
+                    nullptr   // sobel_blurred visualization
+               );
           }
-          if(image_debugger->visualize_umap_sobel_raw){
-               image_debugger->set_umap_sobelized_raw(*debug_image2);
-               delete debug_image2;
-          }
-          if(image_debugger->visualize_umap_sobel_preprocessed){
-               image_debugger->set_umap_sobelized_pre_filtering(*debug_image3);
-               delete debug_image3;
-          }
-          if(image_debugger->visualize_umap_sobel_dilated){
-               image_debugger->set_umap_sobelized_dilated(*debug_image4);
-               delete debug_image4;
-          }
-          if(image_debugger->visualize_umap_sobel_blurred){
-               image_debugger->set_umap_sobelized_blurred(*debug_image5);
-               delete debug_image5;
-          }
-     } else{
-          processed = preprocess_umap_sobelized(umap, thresh_pre_sobel,
-               thresh_sobel_preprocess, thresh_sobel_postprocess,
-               dilate_size, blur_size, kernel_multipliers,
-               nullptr,  // keep_mask visualization
-               nullptr,  // sobel_raw visualization
-               nullptr,  // sobel_preprocessed visualization
-               nullptr,  // sobel_dilated visualization
-               nullptr   // sobel_blurred visualization
-          );
+     } catch(std::exception e){
+          printf("[FATAL] preprocess_umap_sobelized() --- Error = %s.\r\n", e.what());
+          processed = cv::Mat();
      }
      return processed;
 }
@@ -393,79 +424,89 @@ cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preproces
      cv::Mat* sobel_threshed, cv::Mat* sobel_blurred, cv::Mat* keep_mask
 ){
      cv::Mat output;
-     if(vmap.empty()) return output;
-     if(preprocessed_sobel.empty()) return vmap;
+     try{
+          if(vmap.empty()) return output;
+          if(preprocessed_sobel.empty()) return vmap;
 
-     int kernel_x_multiplier = 1, kernel_y_multiplier = 1;
-     if(!kernel_multipliers.empty()){
-          kernel_x_multiplier = kernel_multipliers[0];
-          kernel_y_multiplier = kernel_multipliers[1];
+          int kernel_x_multiplier = 1, kernel_y_multiplier = 1;
+          if(!kernel_multipliers.empty()){
+               kernel_x_multiplier = kernel_multipliers[0];
+               kernel_y_multiplier = kernel_multipliers[1];
+          }
+          // Create output containers for debugging stages during processing
+          cv::Mat sobelThreshed, sobelBlurred, keepMask;
+
+          // Threshold sobel-ized vmap created from pre-processing before further processing of sobel-ized vmap
+          threshold(preprocessed_sobel, sobelThreshed, float(thresh_preprocess), 255, cv::THRESH_TOZERO);
+          if(sobel_threshed) *sobel_threshed = sobelThreshed.clone();
+
+          // Blur sobel-ized vmap for creating a conservative "keep" mask
+          cv::blur(sobelThreshed, sobelBlurred,
+               cv::Size(blur_size * kernel_x_multiplier, blur_size * kernel_y_multiplier)
+          );
+          if(sobel_blurred) *sobel_blurred = sobelBlurred.clone();
+
+          // Threshold processed sobel-ized vmap into a "keep" mask
+          threshold(sobelBlurred, keepMask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+          cv::bitwise_not(keepMask,keepMask);
+          if(keep_mask) *keep_mask = keepMask.clone();
+
+          // Filter the original vmap using the "keep" mask, and threshold result
+          vmap.copyTo(output, keepMask);
+          threshold(output, output, float(thresh_postprocess), 255, cv::THRESH_TOZERO);
+          return output.clone();
+     } catch(std::exception e){
+          printf("[FATAL] preprocess_umap_sobelized() --- Error = %s.\r\n", e.what());
+          output = cv::Mat();
      }
-     // Create output containers for debugging stages during processing
-     cv::Mat sobelThreshed, sobelBlurred, keepMask;
-
-     // Threshold sobel-ized vmap created from pre-processing before further processing of sobel-ized vmap
-     threshold(preprocessed_sobel, sobelThreshed, float(thresh_preprocess), 255, cv::THRESH_TOZERO);
-     if(sobel_threshed) *sobel_threshed = sobelThreshed.clone();
-
-     // Blur sobel-ized vmap for creating a conservative "keep" mask
-     cv::blur(sobelThreshed, sobelBlurred,
-          cv::Size(blur_size * kernel_x_multiplier, blur_size * kernel_y_multiplier)
-     );
-     if(sobel_blurred) *sobel_blurred = sobelBlurred.clone();
-
-     // Threshold processed sobel-ized vmap into a "keep" mask
-     threshold(sobelBlurred, keepMask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-     cv::bitwise_not(keepMask,keepMask);
-     if(keep_mask) *keep_mask = keepMask.clone();
-
-     // Filter the original vmap using the "keep" mask, and threshold result
-     vmap.copyTo(output, keepMask);
-     threshold(output, output, float(thresh_postprocess), 255, cv::THRESH_TOZERO);
-     return output.clone();
+     return output;
 }
 cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preprocessed_sobel,
      int thresh_preprocess, int thresh_postprocess, int blur_size, vector<int> kernel_multipliers,
      VboatsProcessingImages* image_debugger
 ){
      cv::Mat processed;
-     if(image_debugger){
-          cv::Mat* debug_image = nullptr;
-          cv::Mat* debug_image2 = nullptr;
-          cv::Mat* debug_image3 = nullptr;
-          if(image_debugger->visualize_vmap_post_sobel_threshed) debug_image = new cv::Mat();
-          if(image_debugger->visualize_vmap_post_sobel_blurred) debug_image2 = new cv::Mat();
-          if(image_debugger->visualize_vmap_post_keep_mask) debug_image3 = new cv::Mat();
+     try{
+          if(image_debugger){
+               cv::Mat* debug_image = nullptr;
+               cv::Mat* debug_image2 = nullptr;
+               cv::Mat* debug_image3 = nullptr;
+               if(image_debugger->visualize_vmap_post_sobel_threshed) debug_image = new cv::Mat();
+               if(image_debugger->visualize_vmap_post_sobel_blurred) debug_image2 = new cv::Mat();
+               if(image_debugger->visualize_vmap_post_keep_mask) debug_image3 = new cv::Mat();
 
-          processed = postprocess_vmap_sobelized(vmap, preprocessed_sobel,
-               thresh_preprocess, thresh_postprocess, blur_size, kernel_multipliers,
-               debug_image,  // sobel_threshed visualization
-               debug_image2,  // sobel_blurred visualization
-               debug_image3   // keep_mask visualization
-          );
+               processed = postprocess_vmap_sobelized(vmap, preprocessed_sobel,
+                    thresh_preprocess, thresh_postprocess, blur_size, kernel_multipliers,
+                    debug_image,  // sobel_threshed visualization
+                    debug_image2,  // sobel_blurred visualization
+                    debug_image3   // keep_mask visualization
+               );
 
-          if(image_debugger->visualize_vmap_post_sobel_threshed){
-               image_debugger->set_vmap_sobelized_thresholded(*debug_image);
-               delete debug_image;
+               if(image_debugger->visualize_vmap_post_sobel_threshed){
+                    image_debugger->set_vmap_sobelized_thresholded(*debug_image);
+                    delete debug_image;
+               }
+               if(image_debugger->visualize_vmap_post_sobel_blurred){
+                    image_debugger->set_vmap_sobelized_postprocessed_blurred(*debug_image2);
+                    delete debug_image2;
+               }
+               if(image_debugger->visualize_vmap_post_keep_mask){
+                    image_debugger->set_vmap_sobelized_postprocessed_keep_mask(*debug_image3);
+                    delete debug_image3;
+               }
+          } else{
+               processed = postprocess_vmap_sobelized(vmap, preprocessed_sobel,
+                    thresh_preprocess, thresh_postprocess, blur_size, kernel_multipliers,
+                    nullptr,  // sobel_threshed visualization
+                    nullptr,  // sobel_blurred visualization
+                    nullptr   // keep_mask visualization
+               );
           }
-          if(image_debugger->visualize_vmap_post_sobel_blurred){
-               image_debugger->set_vmap_sobelized_postprocessed_blurred(*debug_image2);
-               delete debug_image2;
-          }
-          if(image_debugger->visualize_vmap_post_keep_mask){
-               image_debugger->set_vmap_sobelized_postprocessed_keep_mask(*debug_image3);
-               delete debug_image3;
-          }
-     } else{
-          processed = postprocess_vmap_sobelized(vmap, preprocessed_sobel,
-               thresh_preprocess, thresh_postprocess, blur_size, kernel_multipliers,
-               nullptr,  // sobel_threshed visualization
-               nullptr,  // sobel_blurred visualization
-               nullptr   // keep_mask visualization
-          );
+     } catch(std::exception e){
+          printf("[FATAL] postprocess_vmap_sobelized() --- Error = %s.\r\n", e.what());
+          processed = cv::Mat();
      }
      return processed;
-
 }
 
 /** =========================
@@ -1014,7 +1055,8 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
                int tmpx = nonzero.at<cv::Point>(i).x;
                // Skip if the current v-map pixel's x-coordinate is "below" the
                // estimated ground-line
-               if(tmpx > xlim) continue;
+               if(tmpx < xlim) continue;
+               // if(tmpx > xlim) continue;
                // Update the current extremes if the current pixels x-coordinate
                // (i.e. the disparity value) is a better option
                if(tmpx > maxx) maxx = tmpx;
@@ -1227,11 +1269,13 @@ int filter_depth_using_object_candidate_regions(const cv::Mat& depth, const cv::
                verbose, debug, debug_img_info, debug_timing
           );
           if(image_debugger->visualize_obj_candidate_keep_mask){
-               image_debugger->set_obj_candidate_filtering_keep_mask(*debug_image);
+               cv::Mat tmpImg = (*debug_image).clone();
+               image_debugger->set_obj_candidate_filtering_keep_mask(tmpImg);
                delete debug_image;
           }
           if(image_debugger->visualize_vmap_candidates_img){
-               image_debugger->set_vmap_object_candidates_image(*debug_image2);
+               cv::Mat tmpImg = (*debug_image2).clone();
+               image_debugger->set_vmap_object_candidates_image(tmpImg);
                delete debug_image2;
           }
      } else{
