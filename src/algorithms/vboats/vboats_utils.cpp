@@ -1021,13 +1021,15 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
      int intercept = (int) line_params[1];
      int lower_intercept = intercept + lower_line_intercept_offset;
      int upper_intercept = intercept - upper_line_intercept_offset;
+     int intercept_offset = upper_intercept;
      // NOTE: I forget the original purpose for these variables, but keeping them here for now
      int lower_intercept_final = (int)(vmap.cols * slope + (lower_intercept));
      int upper_intercept_final = (int)(vmap.cols * slope + (upper_intercept));
+
      // Ensure the y-intercept value is non-zero and use that as the starting row for searching pixels
-     int initial_row;
+     int final_row;
      if(intercept < 0) initial_row = 0;
-     else initial_row = intercept;
+     else final_row = upper_intercept;
      if(verbose){
           printf("[DEBUG] remove_ground() --- Original Ground Line Coefficients (m, b): %.2f, %d\r\n", slope, intercept);
           printf("[DEBUG] remove_ground() --- Using Ground Line Coefficients (m, b): %.2f, %d\r\n", slope, upper_intercept);
@@ -1038,7 +1040,8 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
 
      // For each row in the disparity, mask, and v-map images
      uchar* pix;
-     for(int v = initial_row; v < keepMaskRefImg.rows; ++v){
+     for(int v = 0; v < keepMaskRefImg.rows; ++v){
+          if(v > )
           // Calculate the x-coordinate of the estimated ground line at the current row
           // which will be used as a limit
           int xlim = (int)((float)(v - upper_intercept) / slope);
@@ -1055,8 +1058,8 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
                int tmpx = nonzero.at<cv::Point>(i).x;
                // Skip if the current v-map pixel's x-coordinate is "below" the
                // estimated ground-line
-               if(tmpx < xlim) continue;
-               // if(tmpx > xlim) continue;
+               // if(tmpx < xlim) continue;
+               if(tmpx > xlim) continue;
                // Update the current extremes if the current pixels x-coordinate
                // (i.e. the disparity value) is a better option
                if(tmpx > maxx) maxx = tmpx;

@@ -412,7 +412,6 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           vProcessed, line_params, &filtered_depth,
           std::vector<int>{0, this->vmapParams.depth_filtering_gnd_line_intercept_offset},
           &this->processingDebugger,   // keep_mask visualization
-          true
      );
 
      // Attempt to remove any noise (speckles) from the resulting filtered depth image
