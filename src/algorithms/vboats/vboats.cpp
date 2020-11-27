@@ -417,6 +417,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
 
      if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
 
+     std::vector<Obstacle> obstacles_output;
      if( (this->_do_obstacle_data_extraction) && (!obstacles_.empty()) ){
           for(Obstacle obj : obstacles_){
                obj.update(false, this->_baseline, this->_depth_scale,
@@ -424,11 +425,12 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                     std::vector<float>{this->_px, this->_py},
                     this->_depth_deproject_gain, 1.0, verbose_obstacles
                );
+               obstacles_output.push_back(obj);
           }
-     }
+     } else{ obstacles_output.reserve(nObs); obstacles_output.assign(obstacles_.begin(), obstacles_.end()); }
 
      // Return Output images if requested before visualization
-     if(found_obstacles) *found_obstacles = obstacles_;
+     if(found_obstacles) *found_obstacles = std::vector<Obstacle>(obstacles_output.begin(), obstacles_output.end());
      if(filtered_input) *filtered_input = final_depth.clone();
      return (int) obstacles_.size();
 }

@@ -123,12 +123,12 @@ add_library(vboats_utils SHARED algorithms/vboats/vboats_utils.cpp)
 target_link_libraries(vboats_utils PUBLIC image_utils ${OpenCV_LIBS})
 list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_utils)
 
-# add_library(uvmap_utils SHARED algorithms/vboats/uvmap_utils.cpp)
-# target_link_libraries(uvmap_utils PUBLIC utils image_utils ${OpenCV_LIBS})
-# list(APPEND ${PROJECT_NAME}_LIBRARIES uvmap_utils)
+add_library(vboats_obstacle SHARED algorithms/vboats/obstacle.cpp)
+target_link_libraries(vboats_obstacle PUBLIC utils)
+list(APPEND ${PROJECT_NAME}_LIBRARIES vboats_obstacle)
 
 add_library(vboats SHARED algorithms/vboats/vboats.cpp)
-target_link_libraries(vboats PUBLIC vboats_utils ${PCL_LIBRARIES}) # image_utils utils
+target_link_libraries(vboats PUBLIC vboats_utils vboats_obstacle ${PCL_LIBRARIES}) # image_utils utils
 list(APPEND ${PROJECT_NAME}_LIBRARIES vboats)
 
 # =========================================
