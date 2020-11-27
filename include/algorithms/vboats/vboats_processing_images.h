@@ -492,7 +492,7 @@ public:
                if(this->visualize_vmap_final && (!this->vmap_final.empty()) ){
                     // If the border tile size hasn't been determined yet set the size, otherwise skip this part
                     if(border_tile.empty()){
-                         border_tile = cv::Mat(this->vmap_final.cols, border_tile_gap, CV_8UC3);
+                         border_tile = cv::Mat(this->vmap_final.rows, border_tile_gap, CV_8UC3);
                          border_tile.setTo( cv::Scalar(255, 255, 255) );
                     }
                     tmpTileDisplay = imCvtCmap(this->vmap_final);

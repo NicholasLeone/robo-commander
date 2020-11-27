@@ -243,6 +243,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      cv::Mat* umap_input, cv::Mat* vmap_input,
      bool verbose_obstacles, bool debug
 ){
+     // <custom-fold Receive and Check Data Input Sources
      if(depth.empty()){
           printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
           return -1;
@@ -284,6 +285,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           // this->processingDebugger.set_angle_corrected_depth_image(cv::Mat());
      }
      if(disparity_output) *disparity_output = disparityInput.clone();
+     // </custom-fold>
 
      cv::Mat umap, vmap;
      genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
@@ -307,6 +309,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           if(vmap_input) *vmap_input = vmapRaw.clone();
      }
 
+     // <custom-fold UV-Map Pre-processing
      // Pre-process Umap
      cv::Mat uProcessed = this->remove_umap_deadzones(umapRaw);
      if(this->_umapFiltMeth == SOBELIZED_METHOD){
@@ -342,6 +345,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           );
      } else if(this->_vmapFiltMeth == STRIPPING_METHOD) preprocessedVmap = preprocess_vmap_stripping(preprocessedVmap, &this->vmapParams.stripping_threshs);
      this->processingDebugger.set_vmap_sobelized_preprocessed(preprocessedVmap);
+     // </custom-fold>
 
      // Extract ground line parameters (if ground is present)
      std::vector<float> line_params;
@@ -389,6 +393,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           if(line_coefficients) *line_coefficients = std::vector<float>(line_params.begin(), line_params.end());
      }
 
+     // <custom-fold UV-Map Post-processing
      // Finish V-map processing starting from the pre-processed vmap
      cv::Mat vProcessed = preprocessedVmap.clone();
      if(this->_vmapFiltMeth == SOBELIZED_METHOD){
@@ -408,6 +413,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           this->processingDebugger.set_vmap_processed(vProcessed);
           if(vmap_output) *vmap_output = vProcessed.clone();
      }
+     // </custom-fold>
 
      // Obstacle data extraction
      int nObs = 0;
