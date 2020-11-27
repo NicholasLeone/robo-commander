@@ -298,13 +298,13 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      }
      cv::Mat umapRaw = umap.clone();
      cv::Mat vmapRaw = vmap.clone();
-     if(umap_input){
-          *umap_input = umapRaw.clone();
+     if(umap_input || this->processingDebugger.visualize_umap_raw){
           this->processingDebugger.set_umap_raw(umapRaw);
+          if(umap_input) *umap_input = umapRaw.clone();
      }
-     if(vmap_input){
-          *vmap_input = vmapRaw.clone();
+     if(vmap_input || this->processingDebugger.visualize_vmap_raw){
           this->processingDebugger.set_vmap_raw(vmapRaw);
+          if(vmap_input) *vmap_input = vmapRaw.clone();
      }
 
      // Pre-process Umap
@@ -367,13 +367,13 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
                &this->processingDebugger
           );
      }
-     if(umap_output){
-          *umap_output = uProcessed.clone();
+     if(umap_output || this->processingDebugger.visualize_umap_final){
           this->processingDebugger.set_umap_processed(uProcessed);
+          if(umap_output) *umap_output = uProcessed.clone();
      }
-     if(vmap_output){
-          *vmap_output = vProcessed.clone();
+     if(vmap_output || this->processingDebugger.visualize_vmap_final){
           this->processingDebugger.set_vmap_processed(vProcessed);
+          if(vmap_output) *vmap_output = vProcessed.clone();
      }
 
      // Obstacle data extraction
