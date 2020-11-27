@@ -120,7 +120,6 @@ cv::Mat preprocess_umap_stripping(const cv::Mat& input, vector<float>* threshold
      }
      return output;
 }
-
 void preprocess_umap_stripping(const cv::Mat& input, cv::Mat* output,
      vector<float>* thresholds, bool verbose, bool debug)
 {
@@ -421,8 +420,8 @@ cv::Mat preprocess_vmap_sobelized(const cv::Mat& vmap, int thresh_sobel, int blu
 }
 cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preprocessed_sobel,
      int thresh_preprocess, int thresh_postprocess, int blur_size, vector<int> kernel_multipliers,
-     cv::Mat* sobel_threshed, cv::Mat* sobel_blurred, cv::Mat* keep_mask
-){
+     cv::Mat* sobel_threshed, cv::Mat* sobel_blurred, cv::Mat* keep_mask)
+{
      cv::Mat output;
      try{
           if(vmap.empty()) return output;
@@ -463,8 +462,8 @@ cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preproces
 }
 cv::Mat postprocess_vmap_sobelized(const cv::Mat& vmap, const cv::Mat& preprocessed_sobel,
      int thresh_preprocess, int thresh_postprocess, int blur_size, vector<int> kernel_multipliers,
-     VboatsProcessingImages* image_debugger
-){
+     VboatsProcessingImages* image_debugger)
+{
      cv::Mat processed;
      try{
           if(image_debugger){
@@ -529,8 +528,8 @@ void get_hough_line_params(const float& rho, const float& theta, float* slope, i
 int estimate_ground_line_coefficients(const vector<cv::Vec2f>& lines, float* best_slope,
      int* best_intercept, float* worst_slope, int* worst_intercept,
      double gnd_deadzone, double minDeg, double maxDeg,
-     bool verbose, bool debug_timing
-){
+     bool verbose, bool debug_timing)
+{
      double t;
      vector<cv::Vec2f> buf;
      int nLines = lines.size();
@@ -653,8 +652,8 @@ bool find_ground_line(const cv::Mat& vmap, std::vector<float>* best_coeffs,
 }
 bool find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
      double minDeg, double maxDeg, double gnd_deadzone, int hough_thresh,
-     bool verbose, bool debug_timing
-){
+     bool verbose, bool debug_timing)
+{
      if(vmap.empty()) return false;
 
      double t;

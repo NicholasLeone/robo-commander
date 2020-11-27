@@ -52,10 +52,12 @@ public:
 	cloudxyz_t::Ptr generate_pointcloud_from_depth(const cv::Mat& depth, bool debug_timing = false);
 
 	int process(const cv::Mat& depth, cv::Mat* filtered_input,
-		std::vector<Obstacle>* found_obstacles = nullptr, cv::Mat* disparity_output = nullptr,
+		std::vector<Obstacle>* found_obstacles = nullptr,
+		std::vector<float>* line_coefficients = nullptr,
+		cv::Mat* disparity_output = nullptr,
 		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr,
 		cv::Mat* umap_input = nullptr, cv::Mat* vmap_input = nullptr,
-		bool verbose_obstacles = false
+		bool verbose_obstacles = false, bool debug = false
 	);
 
 	// Runtime Setters
@@ -71,6 +73,8 @@ public:
 	void set_object_dimension_limits_y(float min, float max);
 	void flip_object_dimension_x_limits(bool flag = false);
 	void flip_object_dimension_y_limits(bool flag = false);
+	void set_gnd_line_slope_error_threshold(float value);
+	void set_gnd_line_intercept_error_threshold(int value);
 
 	// Config Setters
 	void set_contour_filtering_method(std::string method);
@@ -83,6 +87,7 @@ public:
 	void enable_correction_angle_sign_flip(bool flag = true);
 	void enable_filtered_depth_denoising(bool flag = true);
 	void enable_obstacle_data_extraction(bool flag = true);
+	void enable_noisy_gnd_line_filtering(bool flag = true);
 	void toggle_disparity_generation_debug_verbosity(bool flag = true);
 
 	// Getters
@@ -129,6 +134,12 @@ private:
 	int _filtered_depth_denoising_size = 2;
 
 	// TODO: Section Name
+	float _prev_gnd_line_slope    		= 0.0;
+	float _delta_gnd_line_slope_thresh		= 1.5;
+	int _prev_gnd_line_intercept     		= 0;
+	int _delta_gnd_line_intercept_thresh	= 300;
+
+	// TODO: Section Name
 	ContourFilterMethod _contourFiltMeth = PERIMETER_BASED;
 	UvMapFilterMethod _umapFiltMeth = SOBELIZED_METHOD;
 	UvMapFilterMethod _vmapFiltMeth = SOBELIZED_METHOD;
@@ -142,6 +153,7 @@ private:
 	bool _do_obstacle_data_extraction = true;
 	bool _angle_correction_performed = false;
 	bool _flip_correction_angle_sign = false;
+	bool _check_gnd_line_noise = false;
 
 	// Debug Objects
 	bool _debug_disparity_gen = false;

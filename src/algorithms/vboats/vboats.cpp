@@ -238,10 +238,10 @@ void Vboats::set_camera_angle_offset(double offset_degrees){ this->_cam_angle_of
 void Vboats::set_depth_denoising_kernel_size(int size){ this->_filtered_depth_denoising_size = size; }
 
 int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
-     std::vector<Obstacle>* found_obstacles, cv::Mat* disparity_output,
-     cv::Mat* umap_output, cv::Mat* vmap_output,
+     std::vector<Obstacle>* found_obstacles, std::vector<float>* line_coefficients,
+     cv::Mat* disparity_output, cv::Mat* umap_output, cv::Mat* vmap_output,
      cv::Mat* umap_input, cv::Mat* vmap_input,
-     bool verbose_obstacles
+     bool verbose_obstacles, bool debug
 ){
      if(depth.empty()){
           printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
@@ -351,10 +351,43 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           this->vmapParams.gnd_line_search_deadzone,
           this->vmapParams.gnd_line_search_hough_thresh
      );
+
+     float delta_slope   = 0;
+     int delta_intercept = 0;
+     if(!line_params.empty()){
+          float cur_gnd_line_slope       = (float) line_params[0];
+          int cur_gnd_line_intercept     = (int) line_params[1];
+          delta_slope                    = fabs(cur_gnd_line_slope - this->_prev_gnd_line_slope);
+          delta_intercept                = abs(cur_gnd_line_intercept - this->_prev_gnd_line_intercept);
+          this->_prev_gnd_line_slope     = cur_gnd_line_slope;
+          this->_prev_gnd_line_intercept = cur_gnd_line_intercept;
+          if(this->_check_gnd_line_noise){
+               if(delta_slope > this->_delta_gnd_line_slope_thresh){
+                    // Override ground line detection flag
+                    gndPresent = false;
+                    printf("[INFO] %s::process() --- Noisy Ground Line Detected, slope difference (%.3f) > %.3f.\r\n",
+                         this->classLbl.c_str(), delta_slope, this->_delta_gnd_line_slope_thresh
+                    );
+               } else if(delta_intercept > this->_delta_gnd_line_intercept_thresh){
+                    // Override ground line detection flag
+                    gndPresent = false;
+                    printf("[INFO] %s::process() --- Noisy Ground Line Detected, intercept difference (%.3f) > %.3f.\r\n",
+                         this->classLbl.c_str(), delta_intercept, this->_delta_gnd_line_intercept_thresh
+                    );
+               }
+          }
+     }
      if(!gndPresent){
           printf("[INFO] %s::process() --- Unable to detect Ground Line.\r\n", this->classLbl.c_str());
+          // Ensure any ground line dependent functions get notified on no ground line
+          // via null coefficients
+          line_params = std::vector<float>{};
           this->processingDebugger.set_gnd_line_coefficients(std::vector<float>{});
-     } else this->processingDebugger.set_gnd_line_coefficients(line_params);
+          if(line_coefficients) *line_coefficients = std::vector<float>{};
+     } else{
+          this->processingDebugger.set_gnd_line_coefficients(line_params);
+          if(line_coefficients) *line_coefficients = std::vector<float>(line_params.begin(), line_params.end());
+     }
 
      // Finish V-map processing starting from the pre-processed vmap
      cv::Mat vProcessed = preprocessedVmap.clone();
@@ -478,6 +511,9 @@ void Vboats::set_image_angle_correction_type(std::string method){
      else this->_angleCorrectionType = ROLL_CORRECTION;
 }
 void Vboats::toggle_disparity_generation_debug_verbosity(bool flag){ this->_debug_disparity_gen = flag; }
+void Vboats::set_gnd_line_slope_error_threshold(float value){ this->_delta_gnd_line_slope_thresh = value; }
+void Vboats::set_gnd_line_intercept_error_threshold(int value){ this->_delta_gnd_line_intercept_thresh = value; }
+void Vboats::enable_noisy_gnd_line_filtering(bool flag){ this->_check_gnd_line_noise = flag; }
 
 bool Vboats::is_obstacle_data_extraction_performed(){ return this->_do_obstacle_data_extraction; }
 bool Vboats::is_depth_denoising_performed(){ return this->_denoise_filtered_depth; }
