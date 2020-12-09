@@ -197,6 +197,7 @@ int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged, bool merge_hori
      *merged = _img;
      return 0;
 }
+
 cv::Mat rotate_image(const cv::Mat& input, double angle){
      cv::Mat output;
      if(input.empty()) return output;
@@ -227,7 +228,6 @@ int imshowCmap(const cv::Mat& img, std::string title){
      else return -2;
      return 0;
 }
-
 int pplot(cv::Mat image, std::string title, bool blocking){
      cv::Mat display;
      if(image.empty()) return -1;
@@ -288,7 +288,6 @@ std::string img_to_str_simple(cv::Mat image, std::string encoding){
      std::string encoded = base64_encode(enc_msg, buf.size());
      return encoded;
 }
-
 std::string img_to_str(cv::Mat image, double* min, double* max, float* scale, bool preprocess, std::string encoding){
      if(image.empty()) return std::string();
      float scaleVal = 0.0;

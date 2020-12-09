@@ -1,0 +1,82 @@
+Based on https://jamesbowley.co.uk/opencv-3-4-gpu-cuda-performance-comparison-nvidia-vs-intel
+code using the following functions might benefit from using CUDA:
+
+Sobel           - ~9% increase
+WarpAffine      - ~1.89% increase
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+DONT CUDA-ized the following function:
+
+     ******* Or at least proceed with caution *******
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Normalize
+BitwiseNot
+MorphologyEx
+CountNonZero
+Dilate/Erode/Blur
+Median/MeanStdDev/MinMax/MinMaxLoc
+
+https://jamesbowley.co.uk/accelerating-opencv-with-cuda-streams-in-python/
+https://github.com/cudawarped/opencv-experiments
+
+============================================
+============================================
+============================================
+
+https://docs.opencv.org/master/dd/d3d/tutorial_gpu_basics_similarity.html
+https://github.com/opencv/opencv/blob/master/samples/cpp/tutorial_code/gpu/gpu-basics-similarity/gpu-basics-similarity.cpp
+
+https://forums.developer.nvidia.com/t/eliminate-upload-download-for-opencv-cuda-gpumat-using-shared-memory/83090/11
+https://github.com/opencv/opencv/blob/master/samples/gpu/multi.cpp
+https://github.com/opencv/opencv/blob/master/samples/gpu/stereo_multi.cpp
+https://github.com/opencv/opencv/blob/master/samples/gpu/stereo_match.cpp
+https://github.com/opencv/opencv/blob/master/samples/gpu/houghlines.cpp
+https://techcommunity.microsoft.com/t5/educator-developer-blog/high-performance-real-time-object-detection-on-nvidia-jetson-tx2/ba-p/917067
+
+============================================
+============================================
+============================================
+
+
+static void download(const GpuMat& d_mat, vector<Point2f>& vec){
+    vec.resize(d_mat.cols);
+    Mat mat(1, d_mat.cols, CV_32FC2, (void*)&vec[0]);
+    d_mat.download(mat);
+}
+
+static void download(const GpuMat& d_mat, vector<uchar>& vec){
+    vec.resize(d_mat.cols);
+    Mat mat(1, d_mat.cols, CV_8UC1, (void*)&vec[0]);
+    d_mat.download(mat);
+}
+
+void App::ErodeDilate()
+{
+    int n = erode_dilate_pos - max_iters;
+    int an = n > 0 ? n : -n;
+
+    Mat element = getStructuringElement(element_shape, Size(an*2+1, an*2+1), Point(an, an));
+
+    if (n < 0)
+    {
+        Ptr<cuda::Filter> erodeFilter = cuda::createMorphologyFilter(MORPH_ERODE, src.type(), element);
+        erodeFilter->apply(src, dst);
+    }
+    else
+    {
+        Ptr<cuda::Filter> dilateFilter = cuda::createMorphologyFilter(MORPH_DILATE, src.type(), element);
+        dilateFilter->apply(src, dst);
+    }
+
+    Mat h_dst(dst);
+    imshow("Erode/Dilate", h_dst);
+}
+
+void App::OpenCloseCallback(int, void* data)
+{
+    App* thiz = (App*) data;
+    thiz->OpenClose();
+}
+
+#endif

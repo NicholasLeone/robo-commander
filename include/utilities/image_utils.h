@@ -4,13 +4,14 @@
 #include <vector>
 #include <string.h>
 
-// #include <opencv/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
-// #include <opencv2/opencv.hpp>
-#include <opencv2/core/types.hpp> /* For OpenCV backwards compatibility */
-#include <opencv2/core.hpp> /* For OpenCV backwards compatibility */
-// #include <opencv2/imgproc.hpp>
-// #include <opencv2/highgui.hpp>
+
+#ifdef WITH_CUDA
+#include <opencv2/gpu.hpp>
+#include <opencv2/core/cuda.hpp>
+#endif
 
 using namespace std;
 
@@ -27,33 +28,34 @@ int strip_image(const cv::Mat& input, vector<cv::Mat>* strips, int nstrips = 5,
 int merge_strips(const vector<cv::Mat>& strips, cv::Mat* merged,
      bool merge_horizontally = true, bool visualize=false, bool verbose=false
 );
-
 void spread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
      double* fx, double* fy, bool verbose = false
 );
 void spread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
      cv::Size* new_size, bool verbose = false
 );
-
 void unspread_image(const cv::Mat& input, cv::Mat* output, const cv::Size& target_size,
      double* fx, double* fy, bool verbose = false
 );
 void unspread_image(const cv::Mat& input, cv::Mat* output, double fx, double fy,
      cv::Size* new_size, bool verbose = false
 );
+
 cv::Mat rotate_image(const cv::Mat& input, double angle = 0.0);
+
+#ifdef WITH_CUDA
+// cv::Mat rotate_image(const cv::cuda::GpuMat& input, double angle = 0.0);
+#endif
 
 /** Visualization and plotting utility functions */
 cv::Mat imCvtCmap(const cv::Mat& img);
 int imshowCmap(const cv::Mat& img, std::string title);
-
 int pplot(cv::Mat image, std::string title, bool blocking = false);
 int pplots(std::vector<cv::Mat> images, long cols, long rows, std::string title, bool blocking = false);
 
 /** Encoding / Decoding utility functions */
 std::string img_to_str_simple(cv::Mat image, std::string encoding = "jpg");
 std::string img_to_str(cv::Mat image, double* min = nullptr, double* max = nullptr, float* scale = nullptr, bool preprocess = true, std::string encoding = "jpg");
-
 
 /** Templated struct for fast conversion of a depth image into disparity using naive method */
 template<typename dtype> struct ForEachNaiveDepthConverter{
@@ -63,7 +65,6 @@ template<typename dtype> struct ForEachNaiveDepthConverter{
           if((std::isfinite(pixel)) && (pixel != 0.0)){ pixel = m_gain / pixel; }
      }
 };
-
 /** Templated struct for fast conversion of depth image into disparity */
 template<typename dtype> struct ForEachPrepareDepthConverter{
      const dtype m_min;
@@ -78,7 +79,6 @@ template<typename dtype> struct ForEachPrepareDepthConverter{
           }
      }
 };
-
 template<typename dtype> struct ForEachDepthConverter{
      const dtype m_gain;
      const dtype m_min;
@@ -117,7 +117,7 @@ template<typename dtype> struct ForEachSaturateDepthLimits{
           m_px(0.0), m_py(0.0), x_min(0.0), x_max(0.0), y_min(0.0), y_max(0.0){}
      ForEachSaturateDepthLimits(dtype gain, dtype abs_min, dtype abs_max,
           dtype fx, dtype fy, dtype px, dtype py,
-          dtype minX, dtype maxX, dtype minY, dtype maxY) : m_gain(gain), 
+          dtype minX, dtype maxX, dtype minY, dtype maxY) : m_gain(gain),
           m_min(abs_min), m_max(abs_max), m_fx(fx), m_fy(fy), m_px(px), m_py(py),
           x_min(minX), x_max(maxX), y_min(minY), y_max(maxY){}
      void operator()(dtype& pixel, const int * idx) const{
@@ -159,7 +159,6 @@ template<typename dtype> struct ForEachSaturateDepthLimits{
           }
      }
 };
-
 /** Templated structure for fast generation of object segmentation mask.
 * Creates a binary LUT using nonzero pixel values in the input vmap
 */
@@ -195,6 +194,5 @@ struct ForEachObsMaskGenerator{
           if((position[0] < m_rows) && (pixel < m_cols)){ pixel = (uchar) m_table[position[0]][pixel]; }
      }
 };
-
 
 #endif // ROBOCOMMANDER_UTILITIES_IMAGE_UTILS_H_
