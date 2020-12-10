@@ -29,6 +29,7 @@ set(WITH_LIBREALSENSE    ON CACHE INTERNAL "Include the librealsense2 library")
 set(WITH_OPENMP          ON CACHE INTERNAL "Include the OpenMP library")
 
 set(COMPILE_ARM          OFF CACHE INTERNAL "Build targets for ARM processors (e.g Raspberry Pi)")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ===========================
 #        Set Compiler
