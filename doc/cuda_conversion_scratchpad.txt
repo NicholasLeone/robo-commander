@@ -1,3 +1,12 @@
+/** CUDA-FY NOTES
+
+     reference below for cuda Stream usage for potentially processing portions
+ of image pipeline on an input depth image queue
+
+ https://developer.ridgerun.com/wiki/index.php?title=How_to_use_OpenCV_CUDA_Streams
+
+*/
+
 int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      std::vector<Obstacle>* found_obstacles, std::vector<float>* line_coefficients,
      cv::Mat* disparity_output, cv::Mat* umap_output, cv::Mat* vmap_output,
@@ -13,7 +22,10 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           return -2;
      }
 
-     /** DONT CUDA-FY */
+     /** MAYBE CUDA-FY
+     https://github.com/NVIDIA/thrust/blob/master/examples/dot_products_with_zip.cu
+     https://github.com/NVIDIA/thrust/blob/master/examples/remove_points2d.cu
+     */
      cv::Mat depthRaw = depth.clone();
      cv::Mat disparity = this->generate_disparity_from_depth(depthRaw);
      if(disparity.empty()){
@@ -22,7 +34,11 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      }
      cv::Mat disparityRaw = disparity.clone();
 
-     /** CUDA-FY */
+     /** CUDA-FY
+          https://docs.opencv.org/4.2.0/db/d29/group__cudawarping.html
+          cv::cuda::rotate
+          cv::cuda::warpAffine
+     */
      cv::Mat depthInput, disparityInput;
      double correctionAngle = this->get_correction_angle(true, this->_flip_correction_angle_sign);
      if(this->_do_angle_correction){
@@ -43,7 +59,12 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      }
      if(disparity_output) *disparity_output = disparityInput.clone();
 
-     /** MAYBE CUDA-FY */
+     /** MAYBE CUDA-FY
+          * cv::cuda::calcHist
+
+          https://github.com/NVIDIA/thrust/blob/master/examples/scan_matrix_by_rows.cu
+          https://docs.opencv.org/4.2.0/d8/db9/tutorial_gpu_thrust_interop.html
+     */
      cv::Mat umap, vmap;
      genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
      if(umap.empty()){
@@ -57,56 +78,59 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      cv::Mat umapRaw = umap.clone();
      cv::Mat vmapRaw = vmap.clone();
 
-     /** CUDA-FY */
-     // Pre-process Umap
+     /** CUDA-FY UV-Map Preprocessing Outline
+
+     1. fillpoly deadzone regions for UV maps [CPU]
+     2. process umap and preprocess vmap [GPU]
+          * cv::cuda::createBoxFilter, cv::cuda::minMaxLoc, cv::cuda::threshold,
+            cv::cuda::createMorphologyFilter, cv::cuda::createSobelFilter,
+     3. find & filter contours [CPU]
+     4. find estimated ground line params [GPU]
+          * cv::cuda::HoughLinesDetector
+     5. postprocess vmap [GPU]
+          * cv::cuda::threshold, cv::cuda::createMorphologyFilter, cv::cuda::bitwise_not
+     6.
+
+     https://docs.opencv.org/4.2.0/dc/d66/group__cudafilters.html
+     https://docs.opencv.org/4.2.0/d4/d03/cudaarithm_8hpp.html
+     */
+
      cv::Mat uProcessed = this->remove_umap_deadzones(umapRaw);
+     cv::Mat preprocessedVmap = this->remove_vmap_deadzones(vmapRaw);
+     // Pre-process Umap
      if(this->_umapFiltMeth == SOBELIZED_METHOD){ uProcessed = preprocess_umap_sobelized(); }
+     // Pre-process Vmap
+     if(this->_vmapFiltMeth == SOBELIZED_METHOD){ preprocessedVmap = preprocess_vmap_sobelized(); }
+
+     // Extract ground line parameters (if ground is present)
+     std::vector<float> line_params;
+     bool gndPresent = find_ground_line(preprocessedVmap, &line_params);
+     // Finish V-map processing starting from the pre-processed vmap
+     cv::Mat vProcessed = preprocessedVmap.clone();
+     if(this->_vmapFiltMeth == SOBELIZED_METHOD){ vProcessed = postprocess_vmap_sobelized(); }
      /**  END CUDA-FY */
 
-     /** MAYBE CUDA-FY */
      // Find contours in Umap needed later for obstacle filtering
      vector<vector<cv::Point>> filtered_contours;
      find_contours();
 
-     /** CUDA-FY */
-     // Pre-process Vmap
-     cv::Mat preprocessedVmap = this->remove_vmap_deadzones(vmapRaw);
-     if(this->_vmapFiltMeth == SOBELIZED_METHOD){
-          preprocessedVmap = preprocess_vmap_sobelized();
-     }
-
-     // Extract ground line parameters (if ground is present)
-     std::vector<float> line_params;
-     bool gndPresent = find_ground_line(preprocessedVmap, &line_params,
-          this->vmapParams.gnd_line_search_min_deg,
-          this->vmapParams.gnd_line_search_max_deg,
-          this->vmapParams.gnd_line_search_deadzone,
-          this->vmapParams.gnd_line_search_hough_thresh
-     );
-
-     /** Possibly do after cuda-fied vmap processing */
+     // Noisy Ground Line Filtering stuff here
      float delta_slope   = 0;
      int delta_intercept = 0;
-     if(!line_params.empty()){
-          // Noisy Ground Line Filtering stuff here
-     }
-     /** End Possibly do after cuda-fied vmap processing */
-
-     // Finish V-map processing starting from the pre-processed vmap
-     cv::Mat vProcessed = preprocessedVmap.clone();
-     if(this->_vmapFiltMeth == SOBELIZED_METHOD){ vProcessed = postprocess_vmap_sobelized(); }
-     /** END CUDA-FY */
+     if(!line_params.empty()){}
 
      // Obstacle data extraction
      std::vector<Obstacle> obstacles_;
      if(this->_do_obstacle_data_extraction){ nObs = find_obstacles_disparity(); }
 
+     /** MAYBE CUDA-FY
+          https://github.com/NVIDIA/thrust/blob/master/examples/remove_points2d.cu
+     */
      // Filter the original depth image using all the useful data encoded within the resulting processed UV-Maps
      cv::Mat filtered_image;
-     int err = filter_depth_using_object_candidate_regions();
-
-     cv::Mat filtered_depth;
      err = filter_depth_using_ground_line();
+     cv::Mat filtered_depth;
+     int err = filter_depth_using_object_candidate_regions();
 
      /** CUDA-FY */
      // Attempt to remove any noise (speckles) from the resulting filtered depth image
@@ -122,6 +146,12 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
 
      if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
      /** END CUDA-FY */
+
+     /** MAYBE CUDA-FY
+     Pointcloud generation from filtered depth image doing something similar to
+          https://github.com/NVIDIA/thrust/blob/master/examples/dot_products_with_zip.cu
+     in generate_pointcloud_from_depth()
+     */
 
      // Return Output images if requested before visualization
      return (int) obstacles_.size();
