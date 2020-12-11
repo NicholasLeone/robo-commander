@@ -84,7 +84,7 @@ list(APPEND ${PROJECT_NAME}_LIBRARIES bno055_i2c)
 # Camera - D415
 if(WITH_LIBREALSENSE)
      add_library(camera_d4xx SHARED sensors/camera_d4xx.cpp)
-     target_link_libraries(camera_d4xx PUBLIC image_utils ${OpenCV_LIBS} ${realsense2_LIBRARY})
+     target_link_libraries(camera_d4xx PUBLIC image_utils ${realsense2_LIBRARY})
      list(APPEND ${PROJECT_NAME}_LIBRARIES camera_d4xx)
 endif(WITH_LIBREALSENSE)
 

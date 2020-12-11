@@ -7,3 +7,4 @@ build/*
 .ctags
 *test_bno0552.py
 .clangd
+*.gch

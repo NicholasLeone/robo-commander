@@ -14,6 +14,11 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+#ifdef WITH_CUDA
+	#include <memory>
+	#include <opencv2/core/cuda.hpp>
+#endif
+
 using namespace std;
 
 typedef pcl::PointCloud<pcl::PointXYZ> cloudxyz_t;
@@ -60,6 +65,25 @@ public:
 		bool verbose_obstacles = false, bool debug = false
 	);
 
+	#ifdef WITH_CUDA
+
+	#endif
+
+	// Config Setters
+	void set_contour_filtering_method(std::string method);
+	void set_umap_processing_method(std::string method);
+	void set_vmap_processing_method(std::string method);
+	void set_image_angle_correction_type(std::string method);
+
+	// Runtime Togglers
+	void enable_angle_correction(bool flag = true);
+	void enable_correction_angle_sign_flip(bool flag = true);
+	void enable_filtered_depth_denoising(bool flag = true);
+	void enable_obstacle_data_extraction(bool flag = true);
+	void enable_noisy_gnd_line_filtering(bool flag = true);
+	void enable_image_processing_timings_debug(bool flag = true);
+	void toggle_disparity_generation_debug_verbosity(bool flag = true);
+
 	// Runtime Setters
 	void set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose = false);
 	void set_camera_info(float fx, float fy, float px, float py, float depth_scale, float baseline, bool verbose = false);
@@ -75,21 +99,6 @@ public:
 	void flip_object_dimension_y_limits(bool flag = false);
 	void set_gnd_line_slope_error_threshold(float value);
 	void set_gnd_line_intercept_error_threshold(int value);
-
-	// Config Setters
-	void set_contour_filtering_method(std::string method);
-	void set_umap_processing_method(std::string method);
-	void set_vmap_processing_method(std::string method);
-	void set_image_angle_correction_type(std::string method);
-
-	// Runtime Togglers
-	void enable_angle_correction(bool flag = true);
-	void enable_correction_angle_sign_flip(bool flag = true);
-	void enable_filtered_depth_denoising(bool flag = true);
-	void enable_obstacle_data_extraction(bool flag = true);
-	void enable_noisy_gnd_line_filtering(bool flag = true);
-	void toggle_disparity_generation_debug_verbosity(bool flag = true);
-
 	// Getters
 	bool is_obstacle_data_extraction_performed();
 	bool is_depth_denoising_performed();
@@ -157,6 +166,7 @@ private:
 
 	// Debug Objects
 	bool _debug_disparity_gen = false;
+	bool _debug_process_timings = false;
 };
 
 #endif // ROBOCOMMANDER_ALGORITHMS_VBOATS_H_
