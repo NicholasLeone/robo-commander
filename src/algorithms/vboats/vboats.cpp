@@ -5,7 +5,46 @@
 
 using namespace std;
 
-Vboats::Vboats(){}
+Vboats::Vboats(){
+     #ifdef WITH_CUDA
+     this->_cudaSreams = std::make_shared<std::vector<cv::cuda::Stream>>();
+     cv::cuda::Stream streamA, streamB, streamC, streamD;
+     this->_cudaSreams->push_back(streamA);
+     this->_cudaSreams->push_back(streamB);
+     this->_cudaSreams->push_back(streamC);
+     this->_cudaSreams->push_back(streamD);
+
+     //Create Pinned Memory (PAGE_LOCKED) arrays
+     std::shared_ptr<std::vector<cv::cuda::HostMem >> srcMemArray = std::make_shared<std::vector<cv::cuda::HostMem >>();
+     std::shared_ptr<std::vector<cv::cuda::HostMem >> dstMemArray = std::make_shared<std::vector<cv::cuda::HostMem >>();
+
+     //Create GpuMat arrays to use them on OpenCV CUDA Methods
+     std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuSrcArray = std::make_shared<std::vector<cv::cuda::GpuMat>>();
+     std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuDstArray = std::make_shared<std::vector<cv::cuda::GpuMat>>();
+
+     //Create Output array for CPU Mat
+     std::shared_ptr<std::vector< cv::Mat >> outArray = std::make_shared<std::vector<cv::Mat>>();
+     for(int i=0; i<4; i++){
+          //Define GPU Mats
+          cv::cuda::GpuMat srcMat;
+          cv::cuda::GpuMat dstMat;
+          //Define CPU Mat
+          cv::Mat outMat;
+          //Initialize the Pinned Memory with input image
+          cv::cuda::HostMem srcHostMem = cv::cuda::HostMem(srcHostImage, cv::cuda::HostMem::PAGE_LOCKED);
+          //Initialize the output Pinned Memory with reference to output Mat
+          cv::cuda::HostMem srcDstMem = cv::cuda::HostMem(outMat, cv::cuda::HostMem::PAGE_LOCKED);
+
+          //Add elements to each array.
+          srcMemArray->push_back(srcHostMem);
+          dstMemArray->push_back(srcDstMem);
+
+          gpuSrcArray->push_back(srcMat);
+          gpuDstArray->push_back(dstMat);
+          outArray->push_back(outMat);
+     }
+     #endif
+}
 Vboats::~Vboats(){}
 
 void Vboats::init(){}

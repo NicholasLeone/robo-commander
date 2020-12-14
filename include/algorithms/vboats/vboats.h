@@ -167,6 +167,10 @@ private:
 	// Debug Objects
 	bool _debug_disparity_gen = false;
 	bool _debug_process_timings = false;
+
+	#ifdef WITH_CUDA
+	std::shared_ptr< std::vector<cv::cuda::Stream> > _cudaSreams;
+	#endif
 };
 
 #endif // ROBOCOMMANDER_ALGORITHMS_VBOATS_H_
