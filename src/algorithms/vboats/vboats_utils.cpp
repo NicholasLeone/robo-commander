@@ -295,91 +295,136 @@ int process_uvmaps_sobelized_cuda(const cv::Mat& umap, const cv::Mat& vmap,
           vkernel_y_multiplier = vmapParams.sobel_kernel_multipliers[1];
      }
 
+     cv::cuda::Stream uStream, vStream;
+
      // <custom-fold Umap
-     bu.inputCpu = cv::cuda::HostMem(umap, cv::cuda::HostMem::PAGE_LOCKED);
-     bu.outputCpu = cv::cuda::HostMem(bu.processed, cv::cuda::HostMem::PAGE_LOCKED);
-     bu.inputGpu.upload(bu.inputCpu, bu.stream);
+     // cv::cuda::GpuMat inputGpu;
+     // // bu.processed = cv::Mat();
+     // bu.inputCpu = cv::cuda::HostMem(umap, cv::cuda::HostMem::PAGE_LOCKED);
+     // // bu.outputCpu = cv::cuda::HostMem(bu.processed, cv::cuda::HostMem::PAGE_LOCKED);
+     // inputGpu.upload(bu.inputCpu, bu.stream);
+     // // bu.inputGpu.upload(umap, bu.stream);
+     //
+     // // Create Sobel-ized Umap
+     // // bu.inputGpu.convertTo(bu.rawUmap, CV_8UC1, bu.stream);
+     // cv::cuda::threshold(inputGpu, bu.umapGpu, float(umapParams.sobel_thresh_pre_sobel), 255, cv::THRESH_TOZERO, bu.stream);
+     // cv::Ptr<cv::cuda::Filter> uSobel = cv::cuda::createSobelFilter(bu.umapGpu.type(), bu.umapGpu.type(), 0, 1);
+     // uSobel->apply(bu.umapGpu, bu.umapGpu, bu.stream);
+     //
+     // // Threshold sobel-ized umap before processing
+     // double minVal, maxVal;
+     // cv::cuda::minMax(bu.umapGpu, &minVal, &maxVal);
+     // // bu.umapGpu = bu.umapGpu * (255.0/maxVal);
+     // cv::cuda::multiply(bu.umapGpu, (255.0/maxVal), bu.umapGpu, 1, -1, bu.stream);
+     // bu.umapGpu.convertTo(bu.umapGpu, CV_8U, 1, 0, bu.stream);
+     // cv::cuda::threshold(bu.umapGpu, bu.umapGpu, float(umapParams.sobel_thresh_sobel_preprocess), 255, cv::THRESH_TOZERO, bu.stream);
+     //
+     // // Process Sobel-ized Umap into a "keep" mask
+     // cv::Mat dilate_element = cv::getStructuringElement( cv::MORPH_ELLIPSE,
+     //      cv::Size(umapParams.sobel_dilate_size * ukernel_x_multiplier,
+     //               umapParams.sobel_dilate_size * ukernel_y_multiplier)
+     // );
+     // cv::Ptr<cv::cuda::Filter> dilater = cv::cuda::createMorphologyFilter(cv::MORPH_DILATE, bu.umapGpu.type(), dilate_element, cv::Point(-1,-1), 1);
+     // dilater->apply(bu.umapGpu, bu.umapGpu, bu.stream);
+     //
+     // cv::Ptr<cv::cuda::Filter> blurrer = cv::cuda::createBoxFilter(bu.umapGpu.type(), bu.umapGpu.type(),
+     //      cv::Size(umapParams.sobel_blur_size * ukernel_x_multiplier, umapParams.sobel_blur_size * ukernel_y_multiplier)
+     // );
+     // blurrer->apply(bu.umapGpu, bu.umapGpu, bu.stream);
+     // cv::cuda::threshold(bu.umapGpu, bu.umapGpu, 0, 255, cv::THRESH_BINARY, bu.stream);
+     //
+     // // Filter the input umap using mask created from sobel images, and threshold result
+     // inputGpu.copyTo(bu.outputGpu, bu.umapGpu, bu.stream);
+     // cv::cuda::threshold(bu.outputGpu, bu.outputGpu, float(umapParams.sobel_thresh_sobel_postprocess), 255, cv::THRESH_TOZERO, bu.stream);
+     // // bu.outputGpu.download(bu.outputCpu, bu.stream);
+     // // bu.processed = bu.outputCpu.createMatHeader();
+     // cv::Mat temp;
+     // bu.outputGpu.download(temp, bu.stream);
+     // bu.processed = temp.clone();
+
+     // </custom-fold>
+
+     // <custom-fold Vmap
+     bv.inputCpu = cv::cuda::HostMem(vmap, cv::cuda::HostMem::PAGE_LOCKED);
+     bv.outputCpu = cv::cuda::HostMem(bv.postprocessed, cv::cuda::HostMem::PAGE_LOCKED);
+     bv.inputGpu.upload(bv.inputCpu, vStream);
+
+     cv::Ptr<cv::cuda::Filter> vblurrer = cv::cuda::createBoxFilter(bv.inputGpu.type(), bv.inputGpu.type(),
+          cv::Size(vmapParams.sobel_preprocessing_blur_size * vkernel_x_multiplier, vmapParams.sobel_preprocessing_blur_size * vkernel_y_multiplier)
+     );
+     vblurrer->apply(bv.inputGpu, bv.vmapGpu, vStream);
+     cv::Ptr<cv::cuda::Filter> vSobel = cv::cuda::createSobelFilter(bv.vmapGpu.type(), bv.vmapGpu.type(), 0, 1);
+     vSobel->apply(bv.vmapGpu, bv.vmapGpu, vStream);
+
+     double minValv, maxValv;
+     cv::cuda::minMax(bv.vmapGpu, &minValv, &maxValv);
+     cv::cuda::multiply(bv.vmapGpu, (255.0/maxValv), bv.vmapGpu, 1, -1, vStream);
+     bv.vmapGpu.convertTo(bv.vmapGpu, CV_8U, 1, 0, vStream);
+     cv::cuda::threshold(bv.vmapGpu, bv.preprocessed_sobel, float(vmapParams.sobel_preprocessing_thresh_sobel), 255, cv::THRESH_TOZERO, vStream);
+
+     // Threshold sobel-ized vmap created from pre-processing before further processing of sobel-ized vmap
+     cv::cuda::threshold(bv.preprocessed_sobel, bv.sobelThreshed, float(vmapParams.sobel_postprocessing_thresh_prefiltering), 255, cv::THRESH_TOZERO, vStream);
+     // Blur sobel-ized vmap for creating a conservative "keep" mask
+     cv::Ptr<cv::cuda::Filter> vblurrer2 = cv::cuda::createBoxFilter(bv.preprocessed_sobel.type(), bv.preprocessed_sobel.type(),
+          cv::Size(vmapParams.sobel_postprocessing_blur_size * vkernel_x_multiplier, vmapParams.sobel_postprocessing_blur_size * vkernel_y_multiplier)
+     );
+     vblurrer2->apply(bv.sobelThreshed, bv.sobelBlurred, vStream);
+     // Threshold processed sobel-ized vmap into a "keep" mask
+     // cv::cuda::threshold(bv.sobelBlurred, bv.keepMask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU, vStream);
+     cv::cuda::threshold(bv.sobelBlurred, bv.keepMask, 0, 255, cv::THRESH_BINARY, vStream);
+     cv::cuda::bitwise_not(bv.keepMask,bv.keepMask, cv::noArray(), vStream);
+     // Filter the original vmap using the "keep" mask, and threshold result
+     bv.inputGpu.copyTo(bv.outputGpu, bv.keepMask, vStream);
+     cv::cuda::threshold(bv.outputGpu, bv.outputGpu, float(vmapParams.sobel_postprocessing_thresh_postfiltering), 255, cv::THRESH_TOZERO, vStream);
+
+     bv.outputGpu.download(bv.outputCpu, vStream);
+     bv.postprocessed = bv.outputCpu.createMatHeader();
+     // </custom-fold>
+     vStream.waitForCompletion();
+
+     cv::Ptr<cv::cuda::HoughLinesDetector> houghdetector = cv::cuda::createHoughLinesDetector(1, CV_PI/180, vmapParams.gnd_line_search_hough_thresh);
+     houghdetector->detect(bv.preprocessed_sobel, bv.d_lines, vStream);
+     houghdetector->downloadResults(bv.d_lines, bv.lines, cv::noArray(), vStream);
+     vStream.waitForCompletion();
+
+     cv::cuda::GpuMat inputGpu;
+     // bu.processed = cv::Mat();
+     // bu.inputCpu = cv::cuda::HostMem(umap, cv::cuda::HostMem::PAGE_LOCKED);
+     // bu.outputCpu = cv::cuda::HostMem(bu.processed, cv::cuda::HostMem::PAGE_LOCKED);
+     inputGpu.upload(umap);
+     // bu.inputGpu.upload(umap);
 
      // Create Sobel-ized Umap
-     bu.inputGpu.convertTo(bu.rawUmap, CV_64F, bu.stream);
-     cv::cuda::threshold(bu.rawUmap, bu.umapThreshed, float(umapParams.sobel_thresh_pre_sobel), 255, cv::THRESH_TOZERO, bu.stream);
-     cv::Ptr<cv::cuda::Filter> uSobel = cv::cuda::createSobelFilter(bu.umapThreshed.type(), bu.umapThreshed.type(), 0, 1);
-     uSobel->apply(bu.umapThreshed, bu.umapSobel, bu.stream);
+     // bu.inputGpu.convertTo(bu.rawUmap, CV_8UC1);
+     cv::cuda::threshold(inputGpu, bu.umapGpu, float(umapParams.sobel_thresh_pre_sobel), 255, cv::THRESH_TOZERO);
+     cv::Ptr<cv::cuda::Filter> uSobel = cv::cuda::createSobelFilter(bu.umapGpu.type(), bu.umapGpu.type(), 0, 1);
+     uSobel->apply(bu.umapGpu, bu.umapGpu);
 
      // Threshold sobel-ized umap before processing
      double minVal, maxVal;
-     cv::cuda::minMax(bu.umapSobel, &minVal, &maxVal);
-     // bu.umapSobel = bu.umapSobel * (255.0/maxVal);
-     cv::cuda::multiply(bu.umapSobel, (255.0/maxVal), bu.umapSobel, 1, -1, bu.stream);
-     bu.umapSobel.convertTo(bu.umapSobel, CV_8U, 1, 0, bu.stream);
-     cv::cuda::threshold(bu.umapSobel, bu.sobelThreshed, float(umapParams.sobel_thresh_sobel_preprocess), 255, cv::THRESH_TOZERO, bu.stream);
+     cv::cuda::minMax(bu.umapGpu, &minVal, &maxVal);
+     cv::cuda::multiply(bu.umapGpu, (255.0/maxVal), bu.umapGpu, 1, -1);
+     bu.umapGpu.convertTo(bu.umapGpu, CV_8U, 1, 0);
+     cv::cuda::threshold(bu.umapGpu, bu.umapGpu, float(umapParams.sobel_thresh_sobel_preprocess), 255, cv::THRESH_TOZERO);
 
      // Process Sobel-ized Umap into a "keep" mask
      cv::Mat dilate_element = cv::getStructuringElement( cv::MORPH_ELLIPSE,
           cv::Size(umapParams.sobel_dilate_size * ukernel_x_multiplier,
                    umapParams.sobel_dilate_size * ukernel_y_multiplier)
      );
-     cv::Ptr<cv::cuda::Filter> dilater = cv::cuda::createMorphologyFilter(cv::MORPH_DILATE, bu.sobelThreshed.type(), dilate_element, cv::Point(-1,-1), 1);
-     dilater->apply(bu.sobelThreshed, bu.sobelDilated, bu.stream);
+     cv::Ptr<cv::cuda::Filter> dilater = cv::cuda::createMorphologyFilter(cv::MORPH_DILATE, bu.umapGpu.type(), dilate_element, cv::Point(-1,-1), 1);
+     dilater->apply(bu.umapGpu, bu.umapGpu);
 
-     cv::Ptr<cv::cuda::Filter> blurrer = cv::cuda::createBoxFilter(bu.sobelDilated.type(), bu.sobelDilated.type(),
+     cv::Ptr<cv::cuda::Filter> blurrer = cv::cuda::createBoxFilter(bu.umapGpu.type(), bu.umapGpu.type(),
           cv::Size(umapParams.sobel_blur_size * ukernel_x_multiplier, umapParams.sobel_blur_size * ukernel_y_multiplier)
      );
-     blurrer->apply(bu.sobelDilated, bu.sobelBlurred, bu.stream);
-     cv::cuda::threshold(bu.sobelBlurred, bu.keepMask, 0, 255, cv::THRESH_BINARY, bu.stream);
-
-     // Filter the input umap using mask created from sobel images, and threshold result
-     bu.inputGpu.copyTo(bu.outputGpu, bu.keepMask, bu.stream);
-     cv::cuda::threshold(bu.outputGpu, bu.outputGpu, float(umapParams.sobel_thresh_sobel_postprocess), 255, cv::THRESH_TOZERO, bu.stream);
-     bu.outputGpu.download(bu.outputCpu, bu.stream);
-     bu.processed = bu.outputCpu.createMatHeader();
-     // </custom-fold>
-
-     // <custom-fold Vmap
-     bv.inputCpu = cv::cuda::HostMem(vmap, cv::cuda::HostMem::PAGE_LOCKED);
-     bv.preoutputCpu = cv::cuda::HostMem(bv.preprocessed, cv::cuda::HostMem::PAGE_LOCKED);
-     bv.outputCpu = cv::cuda::HostMem(bv.postprocessed, cv::cuda::HostMem::PAGE_LOCKED);
-     bv.inputGpu.upload(bv.inputCpu, bv.stream);
-
-     bv.inputGpu.convertTo(bv.rawVmap, CV_64F, bv.stream);
-
-     cv::Ptr<cv::cuda::Filter> vblurrer = cv::cuda::createBoxFilter(CV_64F, CV_64F,
-          cv::Size(vmapParams.sobel_preprocessing_blur_size * vkernel_x_multiplier, vmapParams.sobel_preprocessing_blur_size * vkernel_y_multiplier)
-     );
-     vblurrer->apply(bv.rawVmap, bv.blurVmap, bv.stream);
-     cv::Ptr<cv::cuda::Filter> vSobel = cv::cuda::createSobelFilter(CV_64F, CV_64F, 0, 1);
-     vSobel->apply(bv.blurVmap, bv.sobel, bv.stream);
-
-     double minValv, maxValv;
-     cv::cuda::minMax(bv.sobel, &minValv, &maxValv);
-     // bv.sobel = bv.sobel * (255.0/maxValv);
-     cv::cuda::multiply(bv.sobel, (255.0/maxValv), bv.sobel, 1, -1, bv.stream);
-     bv.sobel.convertTo(bv.sobel, CV_8U, 1, 0, bv.stream);
-     cv::cuda::threshold(bv.sobel, bv.preprocessed_sobel, float(vmapParams.sobel_preprocessing_thresh_sobel), 255, cv::THRESH_TOZERO, bv.stream);
-     bv.preprocessed_sobel.download(bv.preoutputCpu, bv.stream);
-     bv.preprocessed = bv.preoutputCpu.createMatHeader();
-
-     // Threshold sobel-ized vmap created from pre-processing before further processing of sobel-ized vmap
-     cv::cuda::threshold(bv.preprocessed_sobel, bv.sobelThreshed, float(vmapParams.sobel_postprocessing_thresh_prefiltering), 255, cv::THRESH_TOZERO, bv.stream);
-     // Blur sobel-ized vmap for creating a conservative "keep" mask
-     cv::Ptr<cv::cuda::Filter> vblurrer2 = cv::cuda::createBoxFilter(bv.preprocessed_sobel.type(), bv.preprocessed_sobel.type(),
-          cv::Size(vmapParams.sobel_postprocessing_blur_size * vkernel_x_multiplier, vmapParams.sobel_postprocessing_blur_size * vkernel_y_multiplier)
-     );
-     vblurrer2->apply(bv.sobelThreshed, bv.sobelBlurred, bv.stream);
-     // Threshold processed sobel-ized vmap into a "keep" mask
-     cv::cuda::threshold(bv.sobelBlurred, bv.keepMask, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU, bv.stream);
-     cv::cuda::bitwise_not(bv.keepMask,bv.keepMask, cv::noArray(), bv.stream);
-     // Filter the original vmap using the "keep" mask, and threshold result
-     bv.inputGpu.copyTo(bv.outputGpu, bv.keepMask, bv.stream);
-     cv::cuda::threshold(bv.outputGpu, bv.outputGpu, float(vmapParams.sobel_postprocessing_thresh_postfiltering), 255, cv::THRESH_TOZERO, bv.stream);
-
-     bv.outputGpu.download(bv.outputCpu, bv.stream);
-     bv.postprocessed = bv.outputCpu.createMatHeader();
-     // </custom-fold>
-
-     bu.stream.waitForCompletion();
-     bv.stream.waitForCompletion();
-
+     blurrer->apply(bu.umapGpu, bu.umapGpu);
+     cv::cuda::threshold(bu.umapGpu, bu.umapGpu, 0, 255, cv::THRESH_BINARY);
+     cv::Mat temp, output;
+     bu.umapGpu.download(temp);
+     umap.copyTo(output, temp);
+     threshold(output, output, float(umapParams.sobel_thresh_sobel_postprocess), 255, cv::THRESH_TOZERO);
+     bu.processed = output.clone();
      return err;
 }
 
@@ -768,17 +813,28 @@ bool find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercep
 {
      if(vmap.empty()) return false;
 
-     double t;
+     double t, dt;
      if(debug_timing) t = (double)cv::getTickCount();
 
      std::vector<cv::Vec2f> lines;
      int nLines = find_ground_lines(vmap, &lines, hough_thresh);
      if(nLines <= 0) return false;
 
+     if(debug_timing){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] find_ground_line() --- --- houghline generation took %.4lf ms (%.2lf Hz).\r\n", dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
      float m, badm;
      int b, badb;
      int nUsed = estimate_ground_line_coefficients(lines, &m, &b, &badm, &badb, gnd_deadzone, minDeg, maxDeg);
      if(nUsed <= 0) return false;
+
+     if(debug_timing){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] find_ground_line() --- --- linear coefficient estimation took %.4lf ms (%.2lf Hz).\r\n", dt*1000.0, (1.0/dt));
+     }
 
      if(debug_timing){
           t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
@@ -814,7 +870,7 @@ void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* filtered_cont
      if(debug_timing) t = (double)cv::getTickCount();
 
      cv::Mat image;
-     if(umap.channels() <= 3) image = umap;
+     if(umap.channels() <= 3) image = umap.clone();
      else cv::cvtColor(umap, image, cv::COLOR_BGR2GRAY);
 
      int offx, offy;
@@ -1141,11 +1197,21 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
 
      double t;
      if(debug_timing) t = (double)cv::getTickCount();
+     //
+     // cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range){
+     //      cv::MatND histV;
+     //      for(int j = range.start; j < range.end; j++){
+     //           cv::Mat vscan = image.row(j);
+     //           cv::calcHist(&vscan, 1, channels, cv::Mat(), histV, 1, histSize, ranges);
+     //           histV.col(0).copyTo(vmapMat.col(j));
+     //      }
+     // },2.0);
 
      // For each row in the disparity, mask, and v-map images
-     uchar* pix;
-     // std::vector<cv::Point>
-     for(int v = 0; v < final_row; ++v){
+     // uchar* pix;
+     cv::parallel_for_(cv::Range(0, final_row), [&](const cv::Range& range){
+     // for(int v = 0; v < final_row; ++v){
+     for(int v = range.start; v < range.end; v++){
           // Calculate the x-coordinate of the estimated ground line at the current row
           // which will be used as a limit
           float num = (float)(v - intercept_offset);
@@ -1177,7 +1243,7 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
           if(verbose) printf("[DEBUG] ---- remove_ground() --- Vmap Row #%d disparity (x-coordinate) limits (min, max) = %d, %d\r\n", v, minx, maxx);
 
           // For each pixel in the current column of the disparity and mask images
-          pix = keepMaskRefImg.ptr<uchar>(v);
+          uchar* pix = keepMaskRefImg.ptr<uchar>(v);
           for(int u = 0; u < keepMaskRefImg.cols; ++u){
                // Fill in the "keep" mask pixel if the disparity value in the
                // corresponding disparity image is in the range of valid pixel values
@@ -1187,6 +1253,7 @@ int filter_depth_using_ground_line(const cv::Mat& depth, const cv::Mat& disparit
                if( (dvalue >= minx) && (dvalue <= maxx) ) removeMask.at<uchar>(v, u) = 255;
           }
      }
+     },4.0);
      // Create "keep" mask, use it to filter the original depth image
      cv::Mat keepMask;
      // cv::bitwise_not(removeMask, keepMask);

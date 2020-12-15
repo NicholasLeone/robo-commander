@@ -355,7 +355,8 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
           this->vmapParams.gnd_line_search_min_deg,
           this->vmapParams.gnd_line_search_max_deg,
           this->vmapParams.gnd_line_search_deadzone,
-          this->vmapParams.gnd_line_search_hough_thresh
+          this->vmapParams.gnd_line_search_hough_thresh,
+          false, this->_debug_process_timings
      );
 
      if(this->_debug_process_timings){
@@ -633,7 +634,7 @@ int Vboats::process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
      // </custom-fold>
 
      cv::Mat umap, vmap;
-     genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
+     genUVMapThreaded(disparityInput, &umap, &vmap, 4.0);
      if(umap.empty()){
           printf("[WARNING] %s::process_w_cuda() --- Umap input is empty.\r\n", this->classLbl.c_str());
           return -4;
@@ -668,24 +669,32 @@ int Vboats::process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
           this->umapParams, this->vmapParams, this->umapBuffer, this->vmapBuffer
      );
 
-     cv::Mat uProcessed = this->umapBuffer.processed.clone();
-     cv::Mat preprocessedVmap = this->vmapBuffer.preprocessed.clone();
+     cv::Mat uProcessed = this->umapBuffer.processed;
+     // cv::Mat preprocessedVmap = this->vmapBuffer.preprocessed.clone();
      cv::Mat vProcessed = this->vmapBuffer.postprocessed.clone();
+     std::vector<cv::Vec2f> found_lines = std::vector<cv::Vec2f>{this->vmapBuffer.lines.begin(), this->vmapBuffer.lines.end()};
+     // int nFound = (int) found_lines.size();
 
      if(this->_debug_process_timings){
           dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-          printf("[DEBUG] %s::process_w_cuda() --- --- umap processing took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          printf("[DEBUG] %s::process_w_cuda() --- --- uvmap processing took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
           t = (double)cv::getTickCount();
      }
 
-     // Extract ground line parameters (if ground is present)
      std::vector<float> line_params;
-     bool gndPresent = find_ground_line(preprocessedVmap, &line_params,
-          this->vmapParams.gnd_line_search_min_deg,
-          this->vmapParams.gnd_line_search_max_deg,
-          this->vmapParams.gnd_line_search_deadzone,
-          this->vmapParams.gnd_line_search_hough_thresh
-     );
+     bool gndPresent = true;
+     if(found_lines.empty()) gndPresent = false;
+     else{
+          float m, badm;
+          int b, badb;
+          int nUsed = estimate_ground_line_coefficients(found_lines, &m, &b, &badm, &badb,
+               this->vmapParams.gnd_line_search_deadzone,
+               this->vmapParams.gnd_line_search_min_deg,
+               this->vmapParams.gnd_line_search_max_deg
+          );
+          if(nUsed <= 0) gndPresent = false;
+          else line_params = std::vector<float>{m, (float) b};
+     }
 
      if(this->_debug_process_timings){
           dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();

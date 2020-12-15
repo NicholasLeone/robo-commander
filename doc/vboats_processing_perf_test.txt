@@ -16,3 +16,32 @@ Vboats::process() --- obstacle candidate based depth filtering took           2.
 Vboats::process() --- final filtered depth corrections took                   1.6056 ms (622.82 Hz).
 Vboats::process() --- individual obstacle geometric data calculations took    0.0259 ms (38601.10 Hz).
 Vboats::process() --- Entire processing pipeline took                         18.8035 ms (53.18 Hz).
+
+Vboats::process() --- disparity generation took                       14.4214 ms (69.34 Hz).
+Vboats::process() --- angle correction took                           7.4072 ms (135.00 Hz).
+Vboats::process() --- uv-map generation took                          9.6371 ms (103.77 Hz).
+Vboats::process() --- umap processing took                            8.2092 ms (121.81 Hz).
+Vboats::process() --- vmap processing took                            4.6380 ms (215.61 Hz).
+Vboats::process() --- ground line estimation took                     28.9492 ms (34.54 Hz).
+Vboats::process() --- umap contour filtering took                     0.4574 ms (2186.48 Hz).
+Vboats::process() --- Overall UV-map processing block took            42.3864 ms (23.59 Hz).
+Vboats::process() --- finding individual obstacles took               0.6321 ms (1582.08 Hz).
+Vboats::process() --- ground line based depth filtering took          11.3059 ms (88.45 Hz).
+Vboats::process() --- obstacle candidate based depth filtering took   5.3440 ms (187.13 Hz).
+Vboats::process() --- final filtered depth corrections took           4.8510 ms (206.14 Hz).
+Vboats::process() --- obstacle geometric data calculations took       0.0518 ms (19313.59 Hz).
+Vboats::process() --- Entire processing pipeline took                 64.9520 ms (15.40 Hz).
+
+Vboats::process_w_cuda() --- disparity generation took                               15.4051 ms (64.91 Hz).
+Vboats::process_w_cuda() --- angle correction took                                   6.3938 ms (156.40 Hz).
+Vboats::process_w_cuda() --- uv-map generation took                                  9.6607 ms (103.51 Hz).
+Vboats::process_w_cuda() --- umap processing took                                    25.4618 ms (39.27 Hz).
+Vboats::process_w_cuda() --- ground line estimation took                             16.6471 ms (60.07 Hz).
+Vboats::process_w_cuda() --- umap contour filtering took                             0.4759 ms (2101.27 Hz).
+Vboats::process_w_cuda() --- Overall UV-map processing block took                    42.6652 ms (23.44 Hz).
+Vboats::process_w_cuda() --- finding individual obstacles took                       0.8569 ms (1167.01 Hz).
+Vboats::process_w_cuda() --- ground line based depth filtering took                  10.6305 ms (94.07 Hz).
+Vboats::process_w_cuda() --- obstacle candidate based depth filtering took 5.4902 ms (182.14 Hz).
+Vboats::process_w_cuda() --- final filtered depth corrections took                   4.6454 ms (215.27 Hz).
+Vboats::process_w_cuda() --- individual obstacle geometric data calculations took    0.0532 ms (18780.05 Hz).
+Vboats::process_w_cuda() --- Entire processing pipeline took                         64.7206 ms (15.45 Hz).

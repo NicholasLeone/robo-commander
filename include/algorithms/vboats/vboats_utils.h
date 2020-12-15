@@ -16,6 +16,8 @@
 // #ifdef WITH_CUDA
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/cudafilters.hpp>
+#include <opencv2/cudaarithm.hpp>
+#include <opencv2/cudaimgproc.hpp>
 
 typedef struct BufferUmapProcessing{
      cv::cuda::GpuMat inputGpu;
@@ -27,7 +29,7 @@ typedef struct BufferUmapProcessing{
      cv::cuda::GpuMat sobelDilated;
      cv::cuda::GpuMat sobelBlurred;
      cv::cuda::GpuMat keepMask;
-     cv::cuda::GpuMat rawUmap;
+     cv::cuda::GpuMat umapGpu;
      cv::cuda::GpuMat umapThreshed;
      cv::cuda::Stream stream;
      cv::Mat processed;
@@ -38,7 +40,7 @@ typedef struct BufferVmapProcessing{
      cv::cuda::HostMem inputCpu;
      cv::cuda::HostMem preoutputCpu;
      cv::cuda::HostMem outputCpu;
-     cv::cuda::GpuMat rawVmap;
+     cv::cuda::GpuMat vmapGpu;
      cv::cuda::GpuMat blurVmap;
      cv::cuda::GpuMat sobel;
      cv::cuda::GpuMat preprocessed_sobel;
@@ -48,6 +50,8 @@ typedef struct BufferVmapProcessing{
      cv::cuda::Stream stream;
      cv::Mat preprocessed;
      cv::Mat postprocessed;
+     cv::cuda::GpuMat d_lines;
+     std::vector<cv::Vec2f> lines;
 };
 
 int process_uvmaps_sobelized_cuda(const cv::Mat& umap, const cv::Mat& vmap,
