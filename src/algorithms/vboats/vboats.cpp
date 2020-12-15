@@ -1,7 +1,6 @@
 #include <math.h>                  // For fabs, ceil
 
 #include "algorithms/vboats/vboats.h"
-#include "algorithms/vboats/vboats_utils.h"
 
 using namespace std;
 
@@ -537,7 +536,7 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      return (int) obstacles_.size();
 }
 
-#ifdef WITH_CUDA
+
 // std::shared_ptr<std::vector<cv::Mat>> Vboats::computeArray(
 //      std::shared_ptr<std::vector< cv::cuda::HostMem >> srcMemArray,
 //      std::shared_ptr<std::vector< cv::cuda::HostMem >> dstMemArray,
@@ -575,6 +574,7 @@ int Vboats::process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
      cv::Mat* umap_input, cv::Mat* vmap_input,
      bool verbose_obstacles, bool debug
 ){
+     // #ifdef WITH_CUDA
      double t, tUVmapProc, tTotal, dt;
      // <custom-fold Receive and Check Data Input Sources
      if(depth.empty()){
@@ -863,8 +863,10 @@ int Vboats::process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
      if(found_obstacles) *found_obstacles = std::vector<Obstacle>(obstacles_output.begin(), obstacles_output.end());
      if(filtered_input) *filtered_input = final_depth.clone();
      return (int) obstacles_.size();
+     // #else
+     // return -999;
+     // #endif
 }
-#endif
 
 void Vboats::set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose){
      if(this->_cam_info_count <= 10){

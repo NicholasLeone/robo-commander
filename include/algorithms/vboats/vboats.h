@@ -10,14 +10,15 @@
 #include "algorithms/vboats/umap_processing_params.h"
 #include "algorithms/vboats/vmap_processing_params.h"
 #include "algorithms/vboats/vboats_processing_images.h"
+#include "algorithms/vboats/vboats_utils.h"
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#ifdef WITH_CUDA
+// #ifdef WITH_CUDA
 	#include <memory>
 	#include <opencv2/core/cuda.hpp>
-#endif
+// #endif
 
 using namespace std;
 
@@ -42,10 +43,10 @@ public:
 	UmapProcessingParams umapParams;
 	VmapProcessingParams vmapParams;
 	VboatsProcessingImages processingDebugger;
-	#ifdef WITH_CUDA
 	BufferUmapProcessing umapBuffer;
 	BufferVmapProcessing vmapBuffer;
-	#endif
+	// #ifdef WITH_CUDA
+	// #endif
 public:
 	/** Constructors */
 	Vboats();
@@ -69,7 +70,6 @@ public:
 		bool verbose_obstacles = false, bool debug = false
 	);
 
-	#ifdef WITH_CUDA
 	int process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
 		std::vector<Obstacle>* found_obstacles = nullptr,
 		std::vector<float>* line_coefficients = nullptr,
@@ -86,7 +86,6 @@ public:
 	//      std::shared_ptr<std::vector< cv::Mat >> outArray,
 	//      std::shared_ptr<std::vector< cv::cuda::Stream >> streamsArray
 	// );
-	#endif
 
 	// Config Setters
 	void set_contour_filtering_method(std::string method);

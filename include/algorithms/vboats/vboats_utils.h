@@ -13,10 +13,11 @@
 #include "algorithms/vboats/vmap_processing_params.h"
 #include "algorithms/vboats/vboats_processing_images.h"
 
-#ifdef WITH_CUDA
+// #ifdef WITH_CUDA
 #include <opencv2/core/cuda.hpp>
+#include <opencv2/cudafilters.hpp>
 
-struct BufferUmapProcessing{
+typedef struct BufferUmapProcessing{
      cv::cuda::GpuMat inputGpu;
      cv::cuda::HostMem inputCpu;
      cv::cuda::GpuMat outputGpu;
@@ -31,7 +32,7 @@ struct BufferUmapProcessing{
      cv::cuda::Stream stream;
      cv::Mat processed;
 };
-struct BufferVmapProcessing{
+typedef struct BufferVmapProcessing{
      cv::cuda::GpuMat inputGpu;
      cv::cuda::GpuMat outputGpu;
      cv::cuda::HostMem inputCpu;
@@ -51,9 +52,9 @@ struct BufferVmapProcessing{
 
 int process_uvmaps_sobelized_cuda(const cv::Mat& umap, const cv::Mat& vmap,
      UmapProcessingParams umapParams, VmapProcessingParams vmapParams,
-     const BufferUmapProcessing& bu, const BufferVmapProcessing& bv
+     BufferUmapProcessing& bu, BufferVmapProcessing& bv
 );
-#endif
+// #endif
 
 using namespace std;
 
