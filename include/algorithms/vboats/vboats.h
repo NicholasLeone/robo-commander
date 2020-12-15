@@ -42,6 +42,10 @@ public:
 	UmapProcessingParams umapParams;
 	VmapProcessingParams vmapParams;
 	VboatsProcessingImages processingDebugger;
+	#ifdef WITH_CUDA
+	BufferUmapProcessing umapBuffer;
+	BufferVmapProcessing vmapBuffer;
+	#endif
 public:
 	/** Constructors */
 	Vboats();
@@ -66,7 +70,22 @@ public:
 	);
 
 	#ifdef WITH_CUDA
-
+	int process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
+		std::vector<Obstacle>* found_obstacles = nullptr,
+		std::vector<float>* line_coefficients = nullptr,
+		cv::Mat* disparity_output = nullptr,
+		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr,
+		cv::Mat* umap_input = nullptr, cv::Mat* vmap_input = nullptr,
+		bool verbose_obstacles = false, bool debug = false
+	);
+	// std::shared_ptr<std::vector<cv::Mat>> computeArray(
+	//      std::shared_ptr<std::vector< cv::cuda::HostMem >> srcMemArray,
+	//      std::shared_ptr<std::vector< cv::cuda::HostMem >> dstMemArray,
+	//      std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuSrcArray,
+	//      std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuDstArray,
+	//      std::shared_ptr<std::vector< cv::Mat >> outArray,
+	//      std::shared_ptr<std::vector< cv::cuda::Stream >> streamsArray
+	// );
 	#endif
 
 	// Config Setters
@@ -169,7 +188,9 @@ private:
 	bool _debug_process_timings = false;
 
 	#ifdef WITH_CUDA
-	std::shared_ptr< std::vector<cv::cuda::Stream> > _cudaSreams;
+	// cv::cuda::Stream _umapCudaStr;
+	// cv::cuda::Stream _vmapCudaStr;
+	// std::shared_ptr< std::vector<cv::cuda::Stream> > _cudaSreams;
 	#endif
 };
 

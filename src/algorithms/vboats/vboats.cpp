@@ -6,44 +6,44 @@
 using namespace std;
 
 Vboats::Vboats(){
-     #ifdef WITH_CUDA
-     this->_cudaSreams = std::make_shared<std::vector<cv::cuda::Stream>>();
-     cv::cuda::Stream streamA, streamB, streamC, streamD;
-     this->_cudaSreams->push_back(streamA);
-     this->_cudaSreams->push_back(streamB);
-     this->_cudaSreams->push_back(streamC);
-     this->_cudaSreams->push_back(streamD);
-
-     //Create Pinned Memory (PAGE_LOCKED) arrays
-     std::shared_ptr<std::vector<cv::cuda::HostMem >> srcMemArray = std::make_shared<std::vector<cv::cuda::HostMem >>();
-     std::shared_ptr<std::vector<cv::cuda::HostMem >> dstMemArray = std::make_shared<std::vector<cv::cuda::HostMem >>();
-
-     //Create GpuMat arrays to use them on OpenCV CUDA Methods
-     std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuSrcArray = std::make_shared<std::vector<cv::cuda::GpuMat>>();
-     std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuDstArray = std::make_shared<std::vector<cv::cuda::GpuMat>>();
-
-     //Create Output array for CPU Mat
-     std::shared_ptr<std::vector< cv::Mat >> outArray = std::make_shared<std::vector<cv::Mat>>();
-     for(int i=0; i<4; i++){
-          //Define GPU Mats
-          cv::cuda::GpuMat srcMat;
-          cv::cuda::GpuMat dstMat;
-          //Define CPU Mat
-          cv::Mat outMat;
-          //Initialize the Pinned Memory with input image
-          cv::cuda::HostMem srcHostMem = cv::cuda::HostMem(srcHostImage, cv::cuda::HostMem::PAGE_LOCKED);
-          //Initialize the output Pinned Memory with reference to output Mat
-          cv::cuda::HostMem srcDstMem = cv::cuda::HostMem(outMat, cv::cuda::HostMem::PAGE_LOCKED);
-
-          //Add elements to each array.
-          srcMemArray->push_back(srcHostMem);
-          dstMemArray->push_back(srcDstMem);
-
-          gpuSrcArray->push_back(srcMat);
-          gpuDstArray->push_back(dstMat);
-          outArray->push_back(outMat);
-     }
-     #endif
+     // #ifdef WITH_CUDA
+     // this->_cudaSreams = std::make_shared<std::vector<cv::cuda::Stream>>();
+     // cv::cuda::Stream streamA, streamB, streamC, streamD;
+     // this->_cudaSreams->push_back(streamA);
+     // this->_cudaSreams->push_back(streamB);
+     // this->_cudaSreams->push_back(streamC);
+     // this->_cudaSreams->push_back(streamD);
+     //
+     // //Create Pinned Memory (PAGE_LOCKED) arrays
+     // std::shared_ptr<std::vector<cv::cuda::HostMem >> srcMemArray = std::make_shared<std::vector<cv::cuda::HostMem >>();
+     // std::shared_ptr<std::vector<cv::cuda::HostMem >> dstMemArray = std::make_shared<std::vector<cv::cuda::HostMem >>();
+     //
+     // //Create GpuMat arrays to use them on OpenCV CUDA Methods
+     // std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuSrcArray = std::make_shared<std::vector<cv::cuda::GpuMat>>();
+     // std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuDstArray = std::make_shared<std::vector<cv::cuda::GpuMat>>();
+     //
+     // //Create Output array for CPU Mat
+     // std::shared_ptr<std::vector< cv::Mat >> outArray = std::make_shared<std::vector<cv::Mat>>();
+     // for(int i=0; i<4; i++){
+     //      //Define GPU Mats
+     //      cv::cuda::GpuMat srcMat;
+     //      cv::cuda::GpuMat dstMat;
+     //      //Define CPU Mat
+     //      cv::Mat outMat;
+     //      //Initialize the Pinned Memory with input image
+     //      cv::cuda::HostMem srcHostMem = cv::cuda::HostMem(srcHostImage, cv::cuda::HostMem::PAGE_LOCKED);
+     //      //Initialize the output Pinned Memory with reference to output Mat
+     //      cv::cuda::HostMem srcDstMem = cv::cuda::HostMem(outMat, cv::cuda::HostMem::PAGE_LOCKED);
+     //
+     //      //Add elements to each array.
+     //      srcMemArray->push_back(srcHostMem);
+     //      dstMemArray->push_back(srcDstMem);
+     //
+     //      gpuSrcArray->push_back(srcMat);
+     //      gpuDstArray->push_back(dstMat);
+     //      outArray->push_back(outMat);
+     // }
+     // #endif
 }
 Vboats::~Vboats(){}
 
@@ -536,6 +536,335 @@ int Vboats::process(const cv::Mat& depth, cv::Mat* filtered_input,
      if(filtered_input) *filtered_input = final_depth.clone();
      return (int) obstacles_.size();
 }
+
+#ifdef WITH_CUDA
+// std::shared_ptr<std::vector<cv::Mat>> Vboats::computeArray(
+//      std::shared_ptr<std::vector< cv::cuda::HostMem >> srcMemArray,
+//      std::shared_ptr<std::vector< cv::cuda::HostMem >> dstMemArray,
+//      std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuSrcArray,
+//      std::shared_ptr<std::vector< cv::cuda::GpuMat >> gpuDstArray,
+//      std::shared_ptr<std::vector< cv::Mat >> outArray,
+//      std::shared_ptr<std::vector< cv::cuda::Stream >> streamsArray)
+// {
+//      //Define test target size
+//      cv::Size rSize(256, 256);
+//      //Compute for each input image with async calls
+//      for(int i=0; i<4; i++){
+//           //Upload Input Pinned Memory to GPU Mat
+//           (*gpuSrcArray)[i].upload((*srcMemArray)[i], (*streamsArray)[i]);
+//           //Use the CUDA Kernel Method
+//           cv::cuda::resize((*gpuSrcArray)[i], (*gpuDstArray)[i], rSize, 0, 0, cv::INTER_AREA, (*streamsArray)[i]);
+//           //Download result to Output Pinned Memory
+//           (*gpuDstArray)[i].download((*dstMemArray)[i],(*streamsArray)[i]);
+//           //Obtain data back to CPU Memory
+//           (*outArray)[i] = (*dstMemArray)[i].createMatHeader();
+//      }
+//      //All previous calls are non-blocking therefore
+//      //wait for each stream completetion
+//      (*streamsArray)[0].waitForCompletion();
+//      (*streamsArray)[1].waitForCompletion();
+//      (*streamsArray)[2].waitForCompletion();
+//      (*streamsArray)[3].waitForCompletion();
+//
+//      return outArray;
+// }
+
+int Vboats::process_w_cuda(const cv::Mat& depth, cv::Mat* filtered_input,
+     std::vector<Obstacle>* found_obstacles, std::vector<float>* line_coefficients,
+     cv::Mat* disparity_output, cv::Mat* umap_output, cv::Mat* vmap_output,
+     cv::Mat* umap_input, cv::Mat* vmap_input,
+     bool verbose_obstacles, bool debug
+){
+     double t, tUVmapProc, tTotal, dt;
+     // <custom-fold Receive and Check Data Input Sources
+     if(depth.empty()){
+          printf("[WARNING] %s::process() --- Depth input is empty.\r\n", this->classLbl.c_str());
+          return -1;
+     }
+     if(!this->_have_cam_info){
+          printf("[WARNING] %s::process_w_cuda() --- Camera Information Unknown.\r\n", this->classLbl.c_str());
+          return -2;
+     }
+
+     cv::Mat depthRaw = depth.clone();
+
+     if(this->_debug_process_timings){
+          t = (double)cv::getTickCount();
+          tTotal = t;
+     }
+     cv::Mat disparity = this->generate_disparity_from_depth(depthRaw);
+     if(disparity.empty()){
+          printf("[WARNING] %s::process_w_cuda() --- Disparity input is empty.\r\n", this->classLbl.c_str());
+          return -3;
+     }
+     cv::Mat disparityRaw = disparity.clone();
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- disparity generation took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+     cv::Mat depthInput, disparityInput;
+     double correctionAngle = this->get_correction_angle(true, this->_flip_correction_angle_sign);
+     if(this->_do_angle_correction){
+          cv::Mat warpedDepth = rotate_image(depthRaw, correctionAngle);
+          cv::Mat warpeddDisparity = rotate_image(disparityRaw, correctionAngle);
+
+          if(!warpedDepth.empty() && !warpeddDisparity.empty()){
+               depthInput = warpedDepth.clone();
+               disparityInput = warpeddDisparity.clone();
+               this->_angle_correction_performed = true;
+          } else{
+               depthInput = depthRaw;
+               disparityInput = disparityRaw;
+               this->_angle_correction_performed = false;
+          }
+     } else{
+          depthInput = depthRaw;
+          disparityInput = disparityRaw;
+          this->_angle_correction_performed = false;
+     }
+     if(disparity_output) *disparity_output = disparityInput.clone();
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- angle correction took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+     // </custom-fold>
+
+     cv::Mat umap, vmap;
+     genUVMapThreaded(disparityInput, &umap, &vmap, 2.0);
+     if(umap.empty()){
+          printf("[WARNING] %s::process_w_cuda() --- Umap input is empty.\r\n", this->classLbl.c_str());
+          return -4;
+     }
+     if(vmap.empty()){
+          printf("[WARNING] %s::process_w_cuda() --- Vmap input is empty.\r\n", this->classLbl.c_str());
+          return -5;
+     }
+     cv::Mat umapRaw = umap.clone();
+     cv::Mat vmapRaw = vmap.clone();
+     if(umap_input || this->processingDebugger.visualize_umap_raw){
+          this->processingDebugger.set_umap_raw(umapRaw);
+          if(umap_input) *umap_input = umapRaw.clone();
+     }
+     if(vmap_input || this->processingDebugger.visualize_vmap_raw){
+          this->processingDebugger.set_vmap_raw(vmapRaw);
+          if(vmap_input) *vmap_input = vmapRaw.clone();
+     }
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- uv-map generation took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+          tUVmapProc = t;
+     }
+
+     // <custom-fold UV-Map Pre-processing
+     // Pre-process Umap
+     cv::Mat umapInput = this->remove_umap_deadzones(umapRaw);
+     cv::Mat vmapInput = this->remove_vmap_deadzones(vmapRaw);
+
+     process_uvmaps_sobelized_cuda(umapInput, vmapInput,
+          this->umapParams, this->vmapParams, this->umapBuffer, this->vmapBuffer
+     );
+
+     cv::Mat uProcessed = this->umapBuffer.processed.clone();
+     cv::Mat preprocessedVmap = this->vmapBuffer.preprocessed.clone();
+     cv::Mat vProcessed = this->vmapBuffer.postprocessed.clone();
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- umap processing took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
+     // Extract ground line parameters (if ground is present)
+     std::vector<float> line_params;
+     bool gndPresent = find_ground_line(preprocessedVmap, &line_params,
+          this->vmapParams.gnd_line_search_min_deg,
+          this->vmapParams.gnd_line_search_max_deg,
+          this->vmapParams.gnd_line_search_deadzone,
+          this->vmapParams.gnd_line_search_hough_thresh
+     );
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- ground line estimation took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
+     // Find contours in Umap needed later for obstacle filtering
+     vector<vector<cv::Point>> filtered_contours;
+     find_contours(uProcessed, &filtered_contours, (int) this->_contourFiltMeth,
+          this->umapParams.contour_filtering_thresh_min,
+          this->umapParams.contour_filtering_thresh_max,
+          &this->umapParams.contour_filtering_offset,
+          &this->processingDebugger.filtered_umap_hierarchies,  // filtered contours visualization
+          nullptr,  // all_contours visualization
+          nullptr   // all_hierarchies visualization
+     );
+     this->processingDebugger.set_filtered_umap_contours(filtered_contours);
+     // </custom-fold>
+
+     if(this->_debug_process_timings){
+          double tmpT = (double)cv::getTickCount();
+          dt = (tmpT - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- umap contour filtering took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          dt = (tmpT - tUVmapProc)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- Overall UV-map processing block took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
+     float delta_slope   = 0;
+     int delta_intercept = 0;
+     if(!line_params.empty()){
+          float cur_gnd_line_slope       = (float) line_params[0];
+          int cur_gnd_line_intercept     = (int) line_params[1];
+          delta_slope                    = fabs(cur_gnd_line_slope - this->_prev_gnd_line_slope);
+          delta_intercept                = abs(cur_gnd_line_intercept - this->_prev_gnd_line_intercept);
+          this->_prev_gnd_line_slope     = cur_gnd_line_slope;
+          this->_prev_gnd_line_intercept = cur_gnd_line_intercept;
+          if(this->_check_gnd_line_noise){
+               if(delta_slope > this->_delta_gnd_line_slope_thresh){
+                    // Override ground line detection flag
+                    gndPresent = false;
+                    printf("[INFO] %s::process_w_cuda() --- Noisy Ground Line Detected, slope difference (%.3f) > %.3f.\r\n",
+                         this->classLbl.c_str(), delta_slope, this->_delta_gnd_line_slope_thresh
+                    );
+               } else if(delta_intercept > this->_delta_gnd_line_intercept_thresh){
+                    // Override ground line detection flag
+                    gndPresent = false;
+                    printf("[INFO] %s::process_w_cuda() --- Noisy Ground Line Detected, intercept difference (%.3f) > %.3f.\r\n",
+                         this->classLbl.c_str(), delta_intercept, this->_delta_gnd_line_intercept_thresh
+                    );
+               }
+          }
+     }
+     if(!gndPresent){
+          printf("[INFO] %s::process_w_cuda() --- Unable to detect Ground Line.\r\n", this->classLbl.c_str());
+          // Ensure any ground line dependent functions get notified on no ground line
+          // via null coefficients
+          line_params = std::vector<float>{};
+          this->processingDebugger.set_gnd_line_coefficients(std::vector<float>{});
+          if(line_coefficients) *line_coefficients = std::vector<float>{};
+     } else{
+          this->processingDebugger.set_gnd_line_coefficients(line_params);
+          if(line_coefficients) *line_coefficients = std::vector<float>(line_params.begin(), line_params.end());
+     }
+     if(umap_output || this->processingDebugger.visualize_umap_final){
+          this->processingDebugger.set_umap_processed(uProcessed);
+          if(umap_output) *umap_output = uProcessed.clone();
+     }
+     if(vmap_output || this->processingDebugger.visualize_vmap_final){
+          this->processingDebugger.set_vmap_processed(vProcessed);
+          if(vmap_output) *vmap_output = vProcessed.clone();
+     }
+     // <custom-fold UV-Map Post-processing
+
+     // Obstacle data extraction
+     int nObs = 0;
+     std::vector<Obstacle> obstacles_;
+     std::vector< std::vector<cv::Rect> > obstacleRegions;
+     if(this->_debug_process_timings) t = (double)cv::getTickCount();
+     if(this->_do_obstacle_data_extraction){
+          nObs = find_obstacles_disparity(vProcessed, filtered_contours, line_params, &obstacles_,
+               &obstacleRegions    // obstacle regions visualization
+          );
+
+          if(this->_debug_process_timings){
+               dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+               printf("[DEBUG] %s::process_w_cuda() --- --- finding individual obstacles took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+               t = (double)cv::getTickCount();
+          }
+     }
+     this->processingDebugger.set_vmap_object_search_regions(obstacleRegions);
+
+     // Filter the original depth image using all the useful data encoded within
+     // the resulting processed UV-Maps
+     if(this->_debug_process_timings) t = (double)cv::getTickCount();
+     cv::Mat filtered_image;
+     int err = filter_depth_using_ground_line(depthInput, disparityInput,
+          vProcessed, line_params, &filtered_image,
+          this->vmapParams.depth_filtering_gnd_line_intercept_offset,
+          &this->processingDebugger,   // keep_mask visualization
+          false
+     );
+     // int err = filter_depth_using_object_candidate_regions(depthInput, disparityInput,
+     //      vProcessed, filtered_contours, &filtered_image, line_params,
+     //      this->vmapParams.depth_filtering_gnd_line_intercept_offset, &this->processingDebugger
+     // );
+     // this->processingDebugger.set_gnd_line_intercept_offset(this->vmapParams.depth_filtering_gnd_line_intercept_offset);
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- ground line based depth filtering took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
+     cv::Mat filtered_depth;
+     err = filter_depth_using_object_candidate_regions(filtered_image, disparityInput,
+          vProcessed, filtered_contours, &filtered_depth, line_params,
+          this->vmapParams.depth_filtering_gnd_line_intercept_offset, &this->processingDebugger
+     );
+     this->processingDebugger.set_gnd_line_intercept_offset(this->vmapParams.depth_filtering_gnd_line_intercept_offset);
+     // err = filter_depth_using_ground_line(filtered_image, disparityInput,
+     //      vProcessed, line_params, &filtered_depth,
+     //      this->vmapParams.depth_filtering_gnd_line_intercept_offset,
+     //      &this->processingDebugger,   // keep_mask visualization
+     //      false
+     // );
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- obstacle candidate based depth filtering took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
+     // Attempt to remove any noise (speckles) from the resulting filtered depth image
+     cv::Mat final_depth;
+     if(this->_denoise_filtered_depth){
+          cv::Mat morphElement = cv::getStructuringElement(cv::MORPH_ELLIPSE,
+               cv::Size(this->_filtered_depth_denoising_size, this->_filtered_depth_denoising_size)
+          );
+          cv::Mat morphedDepth;
+          cv::morphologyEx(filtered_depth, morphedDepth, cv::MORPH_OPEN, morphElement);
+          final_depth = morphedDepth.clone();
+     } else final_depth = filtered_depth.clone();
+     if(this->_do_angle_correction && this->_angle_correction_performed) final_depth = rotate_image(final_depth, -correctionAngle);
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- final filtered depth corrections took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          t = (double)cv::getTickCount();
+     }
+
+     std::vector<Obstacle> obstacles_output;
+     if( (this->_do_obstacle_data_extraction) && (!obstacles_.empty()) ){
+          for(Obstacle obj : obstacles_){
+               obj.update(false, this->_baseline, this->_depth_scale,
+                    std::vector<float>{this->_fx, this->_fy},
+                    std::vector<float>{this->_px, this->_py},
+                    this->_depth_deproject_gain, 1.0, verbose_obstacles
+               );
+               obstacles_output.push_back(obj);
+          }
+          if(this->_debug_process_timings){
+               dt = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+               printf("[DEBUG] %s::process_w_cuda() --- --- individual obstacle geometric data calculations took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+          }
+     } else{ obstacles_output.reserve(nObs); obstacles_output.assign(obstacles_.begin(), obstacles_.end()); }
+
+     if(this->_debug_process_timings){
+          dt = ((double)cv::getTickCount() - tUVmapProc)/cv::getTickFrequency();
+          printf("[DEBUG] %s::process_w_cuda() --- --- Entire processing pipeline took %.4lf ms (%.2lf Hz).\r\n", this->classLbl.c_str(), dt*1000.0, (1.0/dt));
+     }
+
+     // Return Output images if requested before visualization
+     if(found_obstacles) *found_obstacles = std::vector<Obstacle>(obstacles_output.begin(), obstacles_output.end());
+     if(filtered_input) *filtered_input = final_depth.clone();
+     return (int) obstacles_.size();
+}
+#endif
 
 void Vboats::set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose){
      if(this->_cam_info_count <= 10){

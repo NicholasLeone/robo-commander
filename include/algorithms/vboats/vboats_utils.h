@@ -9,7 +9,51 @@
 #include "utilities/utils.h"
 #include "utilities/image_utils.h"
 #include "algorithms/vboats/obstacle.h"
+#include "algorithms/vboats/umap_processing_params.h"
+#include "algorithms/vboats/vmap_processing_params.h"
 #include "algorithms/vboats/vboats_processing_images.h"
+
+#ifdef WITH_CUDA
+#include <opencv2/core/cuda.hpp>
+
+struct BufferUmapProcessing{
+     cv::cuda::GpuMat inputGpu;
+     cv::cuda::HostMem inputCpu;
+     cv::cuda::GpuMat outputGpu;
+     cv::cuda::HostMem outputCpu;
+     cv::cuda::GpuMat umapSobel;
+     cv::cuda::GpuMat sobelThreshed;
+     cv::cuda::GpuMat sobelDilated;
+     cv::cuda::GpuMat sobelBlurred;
+     cv::cuda::GpuMat keepMask;
+     cv::cuda::GpuMat rawUmap;
+     cv::cuda::GpuMat umapThreshed;
+     cv::cuda::Stream stream;
+     cv::Mat processed;
+};
+struct BufferVmapProcessing{
+     cv::cuda::GpuMat inputGpu;
+     cv::cuda::GpuMat outputGpu;
+     cv::cuda::HostMem inputCpu;
+     cv::cuda::HostMem preoutputCpu;
+     cv::cuda::HostMem outputCpu;
+     cv::cuda::GpuMat rawVmap;
+     cv::cuda::GpuMat blurVmap;
+     cv::cuda::GpuMat sobel;
+     cv::cuda::GpuMat preprocessed_sobel;
+     cv::cuda::GpuMat sobelThreshed;
+     cv::cuda::GpuMat sobelBlurred;
+     cv::cuda::GpuMat keepMask;
+     cv::cuda::Stream stream;
+     cv::Mat preprocessed;
+     cv::Mat postprocessed;
+};
+
+int process_uvmaps_sobelized_cuda(const cv::Mat& umap, const cv::Mat& vmap,
+     UmapProcessingParams umapParams, VmapProcessingParams vmapParams,
+     const BufferUmapProcessing& bu, const BufferVmapProcessing& bv
+);
+#endif
 
 using namespace std;
 
