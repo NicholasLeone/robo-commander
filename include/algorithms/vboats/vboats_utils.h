@@ -28,11 +28,11 @@ typedef struct BufferUmapProcessing{
      cv::cuda::GpuMat sobelThreshed;
      cv::cuda::GpuMat sobelDilated;
      cv::cuda::GpuMat sobelBlurred;
-     cv::cuda::GpuMat keepMask;
      cv::cuda::GpuMat umapGpu;
      cv::cuda::GpuMat umapThreshed;
      cv::cuda::Stream stream;
      cv::Mat processed;
+     cv::Mat keepMask;
 };
 typedef struct BufferVmapProcessing{
      cv::cuda::GpuMat inputGpu;
