@@ -179,7 +179,16 @@ list(APPEND robocommander_LIBRARIES android_app_interface)
 # =========================================
 #    Build Drivetrain + Robot Profiles
 # =========================================
+#add_library(roboclaw_px4 SHARED devices/roboclaw_px4.cpp)
+#target_link_libraries(roboclaw PUBLIC ${pigpiod_if2_LIBRARY})
+#list(APPEND ${PROJECT_NAME}_LIBRARIES roboclaw_px4)
+
 if(pigpio_FOUND)
+     # 2-wheel diff drive robot using single roboclaws
+     add_library(diffdrive_claw SHARED drivetrains/diffdrive_claw.cpp)
+     target_link_libraries(diffdrive_claw PUBLIC utils roboclaw ${pigpiod_if2_LIBRARY})
+     list(APPEND ${PROJECT_NAME}_LIBRARIES diffdrive_claw)
+
      # 4-wheel drive robot using two roboclaws
      add_library(dualclaw SHARED drivetrains/dual_roboclaw.cpp)
      target_link_libraries(dualclaw PUBLIC utils roboclaw ${pigpiod_if2_LIBRARY})
