@@ -6,3 +6,4 @@ build/*
 .tags
 .ctags
 *test_bno0552.py
+.clangd/
