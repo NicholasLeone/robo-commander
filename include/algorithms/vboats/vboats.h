@@ -15,10 +15,10 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-// #ifdef WITH_CUDA
+#ifdef WITH_CUDA
 	#include <memory>
 	#include <opencv2/core/cuda.hpp>
-// #endif
+#endif
 
 using namespace std;
 
@@ -43,10 +43,10 @@ public:
 	UmapProcessingParams umapParams;
 	VmapProcessingParams vmapParams;
 	VboatsProcessingImages processingDebugger;
+	#ifdef WITH_CUDA
 	BufferUmapProcessing umapBuffer;
 	BufferVmapProcessing vmapBuffer;
-	// #ifdef WITH_CUDA
-	// #endif
+	#endif
 public:
 	/** Constructors */
 	Vboats();
