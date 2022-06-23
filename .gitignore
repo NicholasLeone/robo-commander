@@ -3,6 +3,8 @@
 bin
 lib
 build/*
+build_debug/*
 .tags
 .ctags
 *test_bno0552.py
+.clangd/

@@ -110,7 +110,11 @@ list(APPEND robocommander_LIBRARIES pid)
 # Pure Pursuit
 if(Armadillo_FOUND)
      add_library(purepursuit SHARED controllers/waypoint_follower.cpp)
-     target_link_libraries(purepursuit PUBLIC ${ARMADILLO_LIBRARIES})
+     if(WITH_MATPLOTLIB AND PYTHONLIBS_FOUND)
+          target_link_libraries(purepursuit PUBLIC ${ARMADILLO_LIBRARIES} ${PYTHON_LIBRARIES})
+     else()
+          target_link_libraries(purepursuit PUBLIC ${ARMADILLO_LIBRARIES})
+     endif()
      list(APPEND robocommander_LIBRARIES purepursuit)
 endif(Armadillo_FOUND)
 # =========================================
@@ -145,6 +149,11 @@ endif(OpenCV_FOUND)
 # =========================================
 #      Build Device Libraries
 # =========================================
+# RoboClaw - Unix-based Serial device
+add_library(roboclaw_unix SHARED devices/roboclaw_unix.cpp)
+target_link_libraries(roboclaw_unix PUBLIC utils)
+list(APPEND robocommander_LIBRARIES roboclaw_unix)
+
 if(pigpio_FOUND)
      # RoboClaw
      add_library(roboclaw SHARED devices/roboclaw.cpp)
