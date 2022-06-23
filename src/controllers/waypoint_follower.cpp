@@ -1,10 +1,13 @@
 #include <iostream>
 
 #include "base/definitions.h"
-#include "base/matplotlibcpp.h"
 #include "controllers/waypoint_follower.h"
 
-namespace plt = matplotlibcpp;
+#ifdef PYTHONLIBS_FOUND
+	#include "base/matplotlibcpp.h"
+	namespace plt = matplotlibcpp;
+#endif
+
 using namespace std;
 using namespace arma;
 
