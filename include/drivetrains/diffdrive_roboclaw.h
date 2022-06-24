@@ -1,5 +1,5 @@
-#ifndef DIFFDRIVE_CLAW_H_
-#define DIFFDRIVE_CLAW_H_
+#ifndef DIFFDRIVE_ROBOCLAW_H_
+#define DIFFDRIVE_ROBOCLAW_H_
 
 #include <vector>
 #include <chrono>
@@ -23,7 +23,7 @@ private:
      float _wheel_diameter;
 
      /** Roboclaw Data Containers */
-     vector<float> _main_battery_voltages;
+     float _main_battery_voltage;
      vector<float> _motor_currents;
      vector<uint16_t> _claw_error_status;
      vector<uint32_t> _motors_pps;
@@ -49,7 +49,7 @@ public:
      /**RoboClaw* leftclaw;
      RoboClaw* rightclaw;**/
 
-	 Roboclaw* claw;
+	 RoboClaw* claw;
 
      /** Constructors / Deconstructors */
      DiffDriveClaw();
@@ -88,7 +88,7 @@ public:
 
      /** Class Stored Data Getters */
      vector<float> get_currents();
-     vector<float> get_voltages();
+     float get_voltage();
      vector<uint16_t> get_error_status();
      vector<uint32_t> get_encoder_positions();
      vector<float> get_motor_speeds();
@@ -103,4 +103,4 @@ public:
      float normalize_heading(const float& angle);
 };
 
-#endif // DUAL_ROBOCLAW_H_
+#endif // DIFFDRIVE_ROBOCLAW_H_

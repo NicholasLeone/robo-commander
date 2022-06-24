@@ -2,7 +2,7 @@
 #include <pigpiod_if2.h>
 
 #include "utilities/utils.h"
-#include "drivetrains/diffdrive_claw.h"
+#include "drivetrains/diffdrive_roboclaw.h"
 
 using namespace std;
 using namespace chrono;
@@ -85,7 +85,6 @@ DiffDriveClaw::~DiffDriveClaw(){
      printf("[INFO] DiffDriveClaw() --- Shutting Down...\r\n");
      vector<int32_t> cmds{0,0};
      this->drive(cmds);
-
      /**delete this->leftclaw;
      delete this->rightclaw;**/
 	delete this->claw;
@@ -341,15 +340,16 @@ void DiffDriveClaw::update_status(bool verbose){
           printf("Motor Currents:     %.3f |    %.3f |    %.3f |    %.3f\r\n", leftCurrent1, leftCurrent2, rightCurrent1, rightCurrent2);
           // printf("Motor Currents:     %d |    %d |    %d |    %d\r\n", leftAmps1, leftAmps2, rightAmps1, rightAmps2);
      }**/
-	if(verbose){
-		printf("Battery Voltage:     %.3f \r\n", batLvl);
-          printf("Motor Currents:     %.3f |    %.3f\r\n", leftCurrent, rightCurrent);
-     /** Store received data internally */
-     this->_lock.lock();
-     // this->_claw_error_status = vector<uint16_t>(errVec.begin(), errVec.end());
-     this->_main_battery_voltages = batLvl;
-     this->_motor_currents = vector<float>(currentVec.begin(), currentVec.end());
-     this->_lock.unlock();
+	if(verbose) {
+         printf("Battery Voltage:     %.3f \r\n", batLvl);
+         printf("Motor Currents:     %.3f |    %.3f\r\n", leftCurrent, rightCurrent);
+         /** Store received data internally */
+         this->_lock.lock();
+         // this->_claw_error_status = vector<uint16_t>(errVec.begin(), errVec.end());
+         this->_main_battery_voltage = batLvl;
+         this->_motor_currents = vector<float>(currentVec.begin(), currentVec.end());
+         this->_lock.unlock();
+    }
 }
 void DiffDriveClaw::update_motors(bool verbose){
      bool success;
@@ -363,7 +363,7 @@ void DiffDriveClaw::update_motors(bool verbose){
      uint32_t rightM1Pps = this->rightclaw->ReadSpeedM1(&status3,&valid3);
      uint32_t rightM2Pps = this->rightclaw->ReadSpeedM2(&status4,&valid4);**/
 	uint32_t leftMPps = this->claw->ReadSpeedM1(&status1, &valid1);
-	uint32_t rightMPps = this->claw->ReadSPeedM2(&status2, &valid2);
+	uint32_t rightMPps = this->claw->ReadSpeedM2(&status2, &valid2);
      /** Convert motor motion information into user-friendly format */
      /**float leftM1Vel = (float) ((int32_t) leftM1Pps) / (float) this->_qpps_per_meter;
      float leftM2Vel = (float) ((int32_t) leftM2Pps) / (float) this->_qpps_per_meter;
@@ -467,7 +467,7 @@ void DiffDriveClaw::update_odometry(bool verbose){
      this->_lock.lock();
      this->_cur_pose[0] = curX + dX;
      this->_cur_pose[1] = curY + dY;
-     this->_cur_pose[2] = dYaw;
+     this->_cur_pose[2] = curYaw + dYaw;
      this->_linear_vel = linVel;
      this->_angular_vel = angVel;
      this->_odom_changes[0] = linDistTraveled;
@@ -499,10 +499,8 @@ vector<float> DiffDriveClaw::get_currents(){
      for(float val : this->_motor_currents){ out.push_back(val); }
      return out;
 }
-vector<float> DiffDriveClaw::get_voltages(){
-     vector<float> out;
-     for(float val : this->_main_battery_voltages){ out.push_back(val); }
-     return out;
+float DiffDriveClaw::get_voltage(){
+     return _main_battery_voltage;
 }
 vector<uint16_t> DiffDriveClaw::get_error_status(){
      vector<uint16_t> out;

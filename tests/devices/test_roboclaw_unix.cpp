@@ -66,11 +66,11 @@ int main(int argc, char *argv[]){
                     break;
                case 'a': // Move CCW
                     printf("Moving CCW...\r\n");
-                    claw1->SpeedM1M2(go1,go1);
+                    claw1->SpeedM1M2(-go1,go1);
                     break;
                case 'd': // Move CW
                     printf("Moving CW...\r\n");
-                    claw1->SpeedM1M2(-go1,-go1);
+                    claw1->SpeedM1M2(go1,-go1);
                     break;
                case 'z': // check speeds
                     thread_on = !thread_on;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]){
                     claw1->ResetEncoders();
                     claw1->DutyM1((uint16_t) 5);
                     claw1->DutyM2((uint16_t) 50);
-                    // usleep(10.0 * 1000000);
+                    usleep(10.0 * 1000000);
                     claw1->DutyM1M2(0, 0);
                     uint32_t counts = claw1->ReadEncM1( &status, &valid);
                     counts = claw1->ReadEncM2( &status, &valid);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]){
 
                     claw1->SpeedM1((uint32_t) 100);
                     claw1->SpeedM2((uint32_t) 1000);
-                    // usleep(10.0 * 1000000);
+                    usleep(10.0 * 1000000);
                     claw1->SpeedM1M2(0,0);
                     uint32_t counts1 = 0, counts2 = 0;
                     bool valid_encoders = claw1->ReadEncoders(counts1,counts2);
