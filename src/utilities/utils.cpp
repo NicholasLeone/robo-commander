@@ -1,7 +1,6 @@
 #include "utilities/utils.h"
 
 #include <math.h>
-#include <vector>
 #include <fstream>
 #include <iostream>
 #include <signal.h>
@@ -93,9 +92,6 @@ float unwrap_angle(float angle){
      if(angle < 0) angle += 2*M_PI;
      return angle;
 }
-
-// float convertRadians2Degrees(float angle);
-// float convertDegrees2Radians(float angle);
 int convertSpdRatio2Pulse(float spd_ratio, int max, int min, int neutral){
      float dPulse = (max - min)/2;
      float pulse = (float) dPulse * spd_ratio + (float) neutral;
@@ -333,7 +329,7 @@ void attach_CtrlZ(void_int_fun func2call){
      sigaction(SIGTSTP, &sigUpHandler, NULL);
 }
 
-#ifdef GTSAM_LIBRARY_INCLUDED
+#ifdef GTSAM_FOUND
 #define foreach BOOST_FOREACH
 void writeResults(Values &results, string outputFile){
      ofstream resultFile(outputFile.c_str());

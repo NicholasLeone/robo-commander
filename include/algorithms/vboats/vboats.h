@@ -2,161 +2,93 @@
 #define ROBOCOMMANDER_ALGORITHMS_VBOATS_H_
 
 #include <string>
+#include <chrono>
 #include <vector>
+#include <thread>
+#include <mutex>
 
-#include "base/definitions.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/version.hpp> /* For OpenCV backwards compatibility */
+
 #include "utilities/image_utils.h"
-#include "algorithms/vboats/obstacle.h"
-#include "algorithms/vboats/umap_processing_params.h"
-#include "algorithms/vboats/vmap_processing_params.h"
-#include "algorithms/vboats/vboats_processing_images.h"
-
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 
 using namespace std;
 
-typedef pcl::PointCloud<pcl::PointXYZ> cloudxyz_t;
-
-typedef enum ContourFilterMethod{
-	PERIMETER_BASED = 1,
-	AREA_BASED = 2,
-}ContourFilterMethod;
-typedef enum UvMapFilterMethod{
-	STRIPPING_METHOD = 0,
-	SOBELIZED_METHOD = 1,
-}UvMapFilterMethod;
-typedef enum ImageAngleCorrectionType{
-	ROLL_CORRECTION = 0,
-	PITCH_CORRECTION = 1,
-	YAW_CORRECTION = 2,
-}ImageAngleCorrectionType;
-
-class Vboats{
+class Obstacle{
 public:
-	UmapProcessingParams umapParams;
-	VmapProcessingParams vmapParams;
-	VboatsProcessingImages processingDebugger;
-public:
-	/** Constructors */
-	Vboats();
-	~Vboats();
+    Obstacle(vector<cv::Point> pts, vector<int> dBounds);
+    int dMin;
+    int dMax;
+    cv::Point maxXY;
+    cv::Point minXY;
+    double angle;
+    float distance;
+    cv::Point3f location;
+    void update(bool depth_based, float cam_baseline = 0, float cam_dscale = 0,
+         float* cam_focal = nullptr, float* cam_principal_point = nullptr,
+         float dtype_gain = 0, float aux_dist_factor = 0, bool verbose = true
+    );
+};
 
-	/** Startup - Shutdown - Initialization Functions */
-	void init();
-	void update();
-
-	cv::Mat remove_umap_deadzones(const cv::Mat& umap);
-	cv::Mat remove_vmap_deadzones(const cv::Mat& vmap);
-	cv::Mat generate_disparity_from_depth(const cv::Mat& depth);
-	cloudxyz_t::Ptr generate_pointcloud_from_depth(const cv::Mat& depth, bool debug_timing = false);
-
-	int process(const cv::Mat& depth, cv::Mat* filtered_input,
-		std::vector<Obstacle>* found_obstacles = nullptr,
-		std::vector<float>* line_coefficients = nullptr,
-		cv::Mat* disparity_output = nullptr,
-		cv::Mat* umap_output = nullptr, cv::Mat* vmap_output = nullptr,
-		cv::Mat* umap_input = nullptr, cv::Mat* vmap_input = nullptr,
-		bool verbose_obstacles = false, bool debug = false
-	);
-
-	// Runtime Setters
-	void set_camera_info(cv::Mat K, float depth_scale, float baseline, bool verbose = false);
-	void set_camera_info(float fx, float fy, float px, float py, float depth_scale, float baseline, bool verbose = false);
-	void set_camera_orientation(double roll, double pitch, double yaw, bool verbose = false);
-	void set_camera_orientation(double x, double y, double z, double w, bool verbose = false);
-	void set_camera_angle_offset(double offset_degrees);
-	void set_depth_denoising_kernel_size(int size);
-	void set_absolute_minimum_depth(float value);
-	void set_absolute_maximum_depth(float value);
-	void set_object_dimension_limits_x(float min, float max);
-	void set_object_dimension_limits_y(float min, float max);
-	void flip_object_dimension_x_limits(bool flag = false);
-	void flip_object_dimension_y_limits(bool flag = false);
-	void set_gnd_line_slope_error_threshold(float value);
-	void set_gnd_line_intercept_error_threshold(int value);
-
-	// Config Setters
-	void set_contour_filtering_method(std::string method);
-	void set_umap_processing_method(std::string method);
-	void set_vmap_processing_method(std::string method);
-	void set_image_angle_correction_type(std::string method);
-
-	// Runtime Togglers
-	void enable_angle_correction(bool flag = true);
-	void enable_correction_angle_sign_flip(bool flag = true);
-	void enable_filtered_depth_denoising(bool flag = true);
-	void enable_obstacle_data_extraction(bool flag = true);
-	void enable_noisy_gnd_line_filtering(bool flag = true);
-	void toggle_disparity_generation_debug_verbosity(bool flag = true);
-
-	// Getters
-	bool is_obstacle_data_extraction_performed();
-	bool is_depth_denoising_performed();
-	bool is_angle_correction_performed();
-	double get_depth_absolute_min();
-	double get_depth_absolute_max();
-	double get_correction_angle(bool in_degrees = false, bool flip_sign = false);
-	ImageAngleCorrectionType get_angle_correction_type();
-	std::vector<double> get_camera_angles();
-
+class VBOATS{
 private:
-	std::string classLbl = txt_bold_magenta() + "Vboats" + txt_reset_color();
-	// Counters
-	int _cam_info_count = 0;
+     // Counters
+     int nObs = 0;
+     // Operational Flags
+     bool _is_ground_present = true;
 
-	// TODO: Section Name
-	float _hard_min_depth = 0.01;
-	float _hard_max_depth = 20.0;
-	float _object_min_dimension_x = 0.0;
-	float _object_max_dimension_x = 0.0;
-	float _object_min_dimension_y = 0.0;
-	float _object_max_dimension_y = 0.0;
-	bool _flip_object_dimension_x_limits = false;
-	bool _flip_object_dimension_y_limits = false;
+     // Debug Flags
+     bool _debug = false;
+     bool _flag_simulation = false;
+     bool _debug_contours = false;
+     bool _debug_windows = false;
+     bool _debug_obstacle_search = false;
+public:
+     /** Constructors */
+     VBOATS();
+     ~VBOATS();
 
-	// TODO: Section Name
-	float _fx                     = 0;
-	float _fy                     = 0;
-	float _px                     = 0;
-	float _py                     = 0;
-	float _baseline               = 0;
-	float _depth_scale            = 0;
-	float _Tx                     = 0;
-	float _depth2disparityFactor  = 0;
-	float _depth_deproject_gain   = 0;
+     /** Startup - Shutdown - Initialization Functions */
+     void init();
+     void update();
 
-	// TODO: Section Name
-	double _cam_roll    = 0.0;
-	double _cam_pitch   = 0.0;
-	double _cam_yaw     = 0.0;
-	double _cam_angle_offset     = 0.0;
-	int _filtered_depth_denoising_size = 2;
+     void filter_disparity_vmap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool debug = false, bool visualize = false);
+     void filter_disparity_umap(const cv::Mat& input, cv::Mat* output, vector<float>* thresholds, bool verbose = false, bool debug = false, bool visualize = false);
 
-	// TODO: Section Name
-	float _prev_gnd_line_slope    		= 0.0;
-	float _delta_gnd_line_slope_thresh		= 1.5;
-	int _prev_gnd_line_intercept     		= 0;
-	int _delta_gnd_line_intercept_thresh	= 300;
+     bool is_ground_present();
+     int find_ground_lines(const cv::Mat& vmap, cv::Mat* rhos, cv::Mat* thetas, int hough_thresh = 100, bool verbose = false);
+     int find_ground_lines(const cv::Mat& vmap, cv::Mat* found_lines, int hough_thresh = 100, bool verbose = false);
+     int find_ground_lines(const cv::Mat& vmap, vector<cv::Vec2f>* found_lines, int hough_thresh = 100, bool verbose = false);
+     void get_hough_line_params(const float& rho, const float& theta, float* slope, int* intercept);
+     int estimate_ground_line(const vector<cv::Vec2f>& lines, float* best_slope, int* best_intercept, float* worst_slope, int* worst_intercept,
+          double gnd_deadzone = 2.0, double minDeg = 26.0, double maxDeg = 89.0, bool verbose = false, bool debug_timing = false
+     );
+     bool find_ground_line(const cv::Mat& vmap, float* best_slope, int* best_intercept,
+          double minDeg = 26.0, double maxDeg = 89.0, int hough_thresh = 100,
+          double gnd_deadzone = 2.0, bool verbose = false, bool debug_timing = false, bool visualize = false
+     );
 
-	// TODO: Section Name
-	ContourFilterMethod _contourFiltMeth = PERIMETER_BASED;
-	UvMapFilterMethod _umapFiltMeth = SOBELIZED_METHOD;
-	UvMapFilterMethod _vmapFiltMeth = SOBELIZED_METHOD;
-	ImageAngleCorrectionType _angleCorrectionType = ROLL_CORRECTION;
+     void extract_contour_bounds(const vector<cv::Point>& contour, vector<int>* xbounds, vector<int>* dbounds, bool verbose = false);
+     void find_contours(const cv::Mat& umap, vector<vector<cv::Point>>* found_contours,
+          int filter_method = 1, float min_threshold = 30.0, int* offsets = nullptr,
+          float max_threshold = -1, bool verbose = false, bool visualize = false,
+          bool debug = false, bool debug_timing = false
+     );
 
-	// Operational Flags
-	bool _have_cam_info = false;
-	bool _is_ground_present = true;
-	bool _do_angle_correction = true;
-	bool _denoise_filtered_depth = true;
-	bool _do_obstacle_data_extraction = true;
-	bool _angle_correction_performed = false;
-	bool _flip_correction_angle_sign = false;
-	bool _check_gnd_line_noise = false;
+     int obstacle_search_disparity(const cv::Mat& vmap, const vector<int>& xLimits, vector<int>* yLimits,
+          int* pixel_thresholds = nullptr, int* window_size = nullptr,
+          std::vector<float> line_params = {}, vector<cv::Rect>* obs_windows = nullptr,
+          bool verbose = true, bool visualize = false, bool debug = false, bool debug_timing = false
+     );
+     int find_obstacles_disparity(const cv::Mat& vmap, const vector<vector<cv::Point>>& contours,
+           vector<Obstacle>* found_obstacles, std::vector<float> line_params, vector< vector<cv::Rect> >* obstacle_windows = nullptr,
+           bool verbose = false, bool debug_timing = false
+     );
 
-	// Debug Objects
-	bool _debug_disparity_gen = false;
+     int pipeline_disparity(const cv::Mat& disparity, const cv::Mat& umap, const cv::Mat& vmap,
+          vector<Obstacle>* obstacles, cv::Mat* uMorphElement = nullptr,
+          bool verbose = false, bool debug_timing = false, bool visualize = false
+     );
 };
 
 #endif // ROBOCOMMANDER_ALGORITHMS_VBOATS_H_

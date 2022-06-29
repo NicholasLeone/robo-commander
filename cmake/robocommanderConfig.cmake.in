@@ -12,3 +12,31 @@ set(robocommander_INCLUDE_DIR "@CONF_INC_DEST_DIR@")
 set(robocommander_EXECUTABLES_DIR "@CONF_EXEC_DEST_DIR@")
 
 include("${robocommander_CMAKE_DIR}/robocommanderTargets.cmake")
+
+# Debugging
+# --------
+# message(STATUS "robocommanderConfig Source Code Root Directory ------ ${robocommander_ROOT}")
+# message(STATUS "robocommanderConfig Installed CMake Files Directory ------ ${robocommander_INSTALLED_CMAKE_DIR}")
+# message(STATUS "robocommanderConfig Installed Libraries Directory ------ ${robocommander_INSTALLED_LIBRARIES_DIR}")
+# message(STATUS "robocommanderConfig Installed Include Directory ------ ${robocommander_INSTALLED_INCLUDES_DIR}")
+# message(STATUS "robocommanderConfig Installed Executables Directory ------ ${robocommander_EXECUTABLES_DIR}")
+
+# message(STATUS "robocommanderConfig Install Destinations ------")
+# foreach(dir ${robocommander_DESTS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+#
+# message(STATUS "robocommanderConfig Headers to install ------")
+# foreach(dir ${robocommander_HEADERS})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+#
+# message(STATUS "robocommanderConfig Libraries to install ------")
+# foreach(dir ${robocommander_LIBRARIES})
+#      message(STATUS "         included='${dir}'")
+# endforeach()
+#
+# message(STATUS "robocommanderConfig Include Directories to install ------")
+# foreach(dir ${robocommander_INCLUDES})
+#      message(STATUS "         included='${dir}'")
+# endforeach()

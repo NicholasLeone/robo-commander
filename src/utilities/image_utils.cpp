@@ -1,18 +1,11 @@
 #include <stdio.h>
 #include <iostream>
 
-#define WITH_OPENCV
-#include "utilities/matplotlibcpp.h"
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-
 #include "base/definitions.h"
 #include "utilities/utils.h"
 #include "utilities/image_utils.h"
 
 using namespace std;
-namespace plt = matplotlibcpp;
 
 std::string cvtype2str(int type){
      std::string r;
@@ -225,58 +218,6 @@ int imshowCmap(const cv::Mat& img, std::string title){
      cv::Mat display = imCvtCmap(img);
      if(!display.empty()) cv::imshow(title.c_str(), display);
      else return -2;
-     return 0;
-}
-
-int pplot(cv::Mat image, std::string title, bool blocking){
-     cv::Mat display;
-     if(image.empty()) return -1;
-     else display = image.clone();
-
-     if(!title.empty()) plt::figure(title);
-     else plt::figure(-1);
-
-     std::vector<std::string> tks = {};
-     std::map<std::string, double> figArgs;
-     figArgs.insert(std::make_pair("top", 1.0)); figArgs.insert(std::make_pair("bottom", 0.0));
-     figArgs.insert(std::make_pair("left", 0.0)); figArgs.insert(std::make_pair("right", 1.0));
-     figArgs.insert(std::make_pair("wspace", 0.0)); figArgs.insert(std::make_pair("hspace", 0.0));
-     plt::subplots_adjust(figArgs);
-
-     std::map<std::string, std::string> imgArgs;
-     imgArgs.insert(std::make_pair("interpolation", "bilinear"));
-     plt::imshow(display, imgArgs);
-     plt::xticks(tks); plt::yticks(tks);
-     plt::show(blocking);
-     return 0;
-}
-int pplots(std::vector<cv::Mat> images, long cols, long rows, std::string title, bool blocking){
-     if(images.empty()) return -1;
-
-     if(!title.empty()) plt::figure(title);
-     else plt::figure(-1);
-
-     std::vector<std::string> tks = {};
-     std::map<std::string, std::string> imgArgs; imgArgs.insert(std::make_pair("interpolation", "bilinear"));
-     std::map<std::string, double> figArgs;
-     figArgs.insert(std::make_pair("top", 1.0)); figArgs.insert(std::make_pair("bottom", 0.0));
-     figArgs.insert(std::make_pair("left", 0.0)); figArgs.insert(std::make_pair("right", 1.0));
-     figArgs.insert(std::make_pair("wspace", 0.0)); figArgs.insert(std::make_pair("hspace", 0.0));
-
-     long row = 0, col = 0;
-     for(cv::Mat img : images){
-          plt::subplot2grid(rows, cols, row, col);
-          plt::subplots_adjust(figArgs);
-          plt::xticks(tks); plt::yticks(tks);
-
-          cv::Mat display;
-          if(!img.empty()){
-               display = img.clone();
-               plt::imshow(display, imgArgs);
-          }
-          if(row < rows){ if(col < cols-1){ col++; } else{ row++; col = 0; } }
-     }
-     plt::show(blocking);
      return 0;
 }
 
