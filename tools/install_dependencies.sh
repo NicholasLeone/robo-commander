@@ -31,13 +31,16 @@ read -n1 -p "Do you need to install the pigpiod library? Enter (y) or (n)" doit
 echo
 if [[ $doit == "Y" || $doit == "y" ]]; then
      cd $libs_root
-     wget abyz.me.uk/rpi/pigpio/pigpio.zip
-     unzip pigpio.zip
-     cd PIGPIO
+     # wget abyz.me.uk/rpi/pigpio/pigpio.zip
+     # unzip pigpio.zip
+     # cd PIGPIO
+
+     git clone https://github.com/joan2937/pigpio.git
+     cd pigpio
      make -j4
      sudo make install
 
-     rm $libs_root/pigpio.zip
+     # rm $libs_root/pigpio.zip
 fi
 
 read -n1 -p "Do you need to install other dependencies? Enter (y) or (n)" doit

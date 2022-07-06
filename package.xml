@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+     <name>robocommander</name>
+     <version>0.1.0</version>
+     <description>Package algorithms used for the Swanson platform</description>
+     <maintainer email="hunter.lw.young@gmail.com">Hunter Young</maintainer>
+
+     <license>GNU</license>
+
+     <buildtool_depend>cmake</buildtool_depend>
+
+     <!-- The export tag contains other, unspecified, tags -->
+     <export>
+          <!-- Other tools can request additional information be placed here -->
+     </export>
+</package>
