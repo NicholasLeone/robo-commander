@@ -4,7 +4,8 @@
 #include <vector>
 #include <chrono>
 #include <mutex>
-#include "devices/roboclaw.h"
+//#include "devices/roboclaw.h"
+#include "devices/roboclaw_unix.h"
 
 using namespace std;
 using namespace chrono;
@@ -14,6 +15,10 @@ private:
      std::mutex _lock;
      /** Communication Variables */
      int _pi;
+//     const char *_port = "/dev/ttyACM0";
+//     uint8_t _address = 128;
+//     uint32_t _timeout = 1000; // 1 second
+//     bool _doack = false; // do ack for writes
      vector<int> _ser_handles;
 
      /** Roboclaw Config Parameters */
@@ -36,7 +41,7 @@ private:
 
      /** Odometry Update Related Variables */
      uint32_t _prev_encoder_positions[2] = {0,0};
-     float _odom_changes[2] = {0.0,0.0};
+     float _odom_changes[4] = {0.0,0.0,0.0,0.0};
      float _cur_pose[3] = {0.0, 0.0, 0.0};
      float _linear_vel;
      float _angular_vel;
@@ -49,22 +54,23 @@ public:
      /**RoboClaw* leftclaw;
      RoboClaw* rightclaw;**/
 
-	 RoboClaw* claw;
+	 RoboclawUnix* claw;
 
      /** Constructors / Deconstructors */
-     DiffDriveClaw();
-     DiffDriveClaw(int pi);
-     DiffDriveClaw(const char* config_file);
-     DiffDriveClaw(int pi, const char* config_file);
+       DiffDriveClaw();
+//     DiffDriveClaw(int pi);
+//     DiffDriveClaw(const char* config_file);
+//     DiffDriveClaw(int pi, const char* config_file);
      ~DiffDriveClaw();
 
      /** Device Startup Functions */
-     int init(const char* config_file);
-     /** int init(const char* serial_device, int baud, int left_claw_addr = 128, int right_claw_addr = 129);*/
-	int init(const char* serial_device, int baud, int claw_addr = 128);
-     /** int init(int baud, const char* serial_device_left, const char* serial_device_right, int left_claw_addr = 128, int right_claw_addr = 129);*/
-	int init(int buad, const char* serial_device, int claw_addr = 128);
-
+//     int init(const char* config_file);
+//     /** int init(const char* serial_device, int baud, int left_claw_addr = 128, int right_claw_addr = 129);*/
+//	int init(const char* serial_device, int baud, int claw_addr = 128);
+//     /** int init(int baud, const char* serial_device_left, const char* serial_device_right, int left_claw_addr = 128, int right_claw_addr = 129);*/
+//	int init(int buad, const char* serial_device, int claw_addr = 128);
+    int init(bool doack, const char* port, uint8_t claw_addr = 128, uint32_t timeout=1000);
+    int init(const char* port, bool doack, uint8_t claw_addr = 128, uint32_t timeout=1000);
      /** Device Motion Control Functions */
      vector<int32_t> get_target_speeds(float v, float w);
      void drive(float v, float w);

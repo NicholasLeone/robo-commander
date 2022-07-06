@@ -11,13 +11,6 @@ using namespace chrono;
 *
 */
 DiffDriveClaw::DiffDriveClaw(){
-     int pi = pigpio_start(NULL, NULL);
-     if(pi < 0){
-          printf("[ERROR] DiffDriveClaw() --- Could not initialize pigpiod \r\n");
-          exit(0);
-     }
-     this->_pi = pi;
-
      this->_cmd_turn_dir_sign = 1;
      this->_odom_turn_dir_sign = 1;
      this->_left_dir = 1;
@@ -30,56 +23,56 @@ DiffDriveClaw::DiffDriveClaw(){
      this->_wheel_diameter = 0.1905;
      this->_prev_enc_time = high_resolution_clock::now();
 }
-DiffDriveClaw::DiffDriveClaw(int pi){
-     this->_pi = pi;
-
-     this->_cmd_turn_dir_sign = 1;
-     this->_odom_turn_dir_sign = 1;
-     this->_left_dir = 1;
-     this->_right_dir = 1;
-
-     this->_base_width = 0.219;
-     this->_max_speed = 2.0;
-
-     this->_qpps_per_meter = 9596;
-     this->_wheel_diameter = 0.1905;
-     this->_prev_enc_time = high_resolution_clock::now();
-}
-DiffDriveClaw::DiffDriveClaw(int pi, const char* config_file){
-     this->_pi = pi;
-
-     this->_cmd_turn_dir_sign = 1;
-     this->_odom_turn_dir_sign = 1;
-     this->_left_dir = 1;
-     this->_right_dir = 1;
-
-     int err = this->init(config_file);
-     if(err < 0){
-          printf("[ERROR] DiffDriveClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
-          exit(0);
-     }
-     this->_prev_enc_time = high_resolution_clock::now();
-}
-DiffDriveClaw::DiffDriveClaw(const char* config_file){
-     int pi = pigpio_start(NULL, NULL);
-     if(pi < 0){
-          printf("[ERROR] DiffDriveClaw() --- Could not initialize pigpiod \r\n");
-          exit(0);
-     }
-     this->_pi = pi;
-
-     this->_cmd_turn_dir_sign = 1;
-     this->_odom_turn_dir_sign = 1;
-     this->_left_dir = 1;
-     this->_right_dir = 1;
-
-     int err = this->init(config_file);
-     if(err < 0){
-          printf("[ERROR] DiffDriveClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
-          exit(0);
-     }
-     this->_prev_enc_time = high_resolution_clock::now();
-}
+//DiffDriveClaw::DiffDriveClaw(int pi){
+//     this->_pi = pi;
+//
+//     this->_cmd_turn_dir_sign = 1;
+//     this->_odom_turn_dir_sign = 1;
+//     this->_left_dir = 1;
+//     this->_right_dir = 1;
+//
+//     this->_base_width = 0.219;
+//     this->_max_speed = 2.0;
+//
+//     this->_qpps_per_meter = 9596;
+//     this->_wheel_diameter = 0.1905;
+//     this->_prev_enc_time = high_resolution_clock::now();
+//}
+//DiffDriveClaw::DiffDriveClaw(int pi, const char* config_file){
+//     this->_pi = pi;
+//
+//     this->_cmd_turn_dir_sign = 1;
+//     this->_odom_turn_dir_sign = 1;
+//     this->_left_dir = 1;
+//     this->_right_dir = 1;
+//
+//     int err = this->init(config_file);
+//     if(err < 0){
+//          printf("[ERROR] DiffDriveClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
+//          exit(0);
+//     }
+//     this->_prev_enc_time = high_resolution_clock::now();
+//}
+//DiffDriveClaw::DiffDriveClaw(const char* config_file){
+//     int pi = pigpio_start(NULL, NULL);
+//     if(pi < 0){
+//          printf("[ERROR] DiffDriveClaw() --- Could not initialize pigpiod \r\n");
+//          exit(0);
+//     }
+//     this->_pi = pi;
+//
+//     this->_cmd_turn_dir_sign = 1;
+//     this->_odom_turn_dir_sign = 1;
+//     this->_left_dir = 1;
+//     this->_right_dir = 1;
+//
+//     int err = this->init(config_file);
+//     if(err < 0){
+//          printf("[ERROR] DiffDriveClaw() --- Could not initialize communication with one or more RoboClaws. Error code = %d\r\n",err);
+//          exit(0);
+//     }
+//     this->_prev_enc_time = high_resolution_clock::now();
+//}
 DiffDriveClaw::~DiffDriveClaw(){
      int err;
      printf("[INFO] DiffDriveClaw() --- Shutting Down...\r\n");
@@ -99,147 +92,187 @@ DiffDriveClaw::~DiffDriveClaw(){
 /** SECTION: Device Startup Functions
 *
 */
-int DiffDriveClaw::init(const char* config_file){
-     /**************************************************************************
-     * LOAD CONFIG FILE
-     **************************************************************************/
-     std::map<std::string, std::string> variables;
-     LoadStringVariables(config_file, variables);
+//int DiffDriveClaw::init(const char* config_file){
+//     /**************************************************************************
+//     * LOAD CONFIG FILE
+//     **************************************************************************/
+//     std::map<std::string, std::string> variables;
+//     LoadStringVariables(config_file, variables);
+//
+//     string _ser_path = variables["dev"];
+//     char* ser_path = (char*) _ser_path.c_str();
+//     int baud = stoi(variables["baud"]);
+//     this->_base_width = stof(variables["base_width"]);
+//     this->_max_speed = stof(variables["max_speed"]);
+//     this->_qpps_per_meter = stoi(variables["qpps_per_meter"]);
+//     this->_wheel_diameter = stof(variables["wheel_diameter"]);
+//
+//     // TODO: Add more tune-able parameters
+//
+//     // printf("%d %d %d %d %d %d %d %d\r\n",fr_pwm,fr_dir,fl_pwm,fl_dir,rr_pwm,rr_dir,rl_pwm,rl_dir);
+//     printf("ROBOCLAW SETTINGS: \r\n");
+//     printf("       Device Address: %s\r\n", ser_path);
+//     printf("       Claw Baud Rate: %d\r\n", baud);
+//     printf("       Base Width: %.4f\r\n", this->_base_width);
+//     printf("       Max Speed (m/s): %.3f\r\n", this->_max_speed);
+//     printf("       QPPS per Meter: %d\r\n", this->_qpps_per_meter);
+//     printf("       Wheel Diameter (m): %f\r\n", this->_wheel_diameter);
+//     printf("\r\n");
+//
+//     /**************************************************************************
+//     * END LOAD CONFIG FILE
+//     **************************************************************************/
+//
+//     int h = serial_open(this->_pi, ser_path, baud, 0);
+//     if(h < 0){
+//          printf("[ERROR] Could not initialize pigpiod serial device %s using baud of %d\r\n",ser_path,baud);
+//          return -1;
+//     }
+//     this->_ser_handles.push_back(h);
+//
+//     /**this->leftclaw = new RoboClaw(this->_pi, h, 128);
+//     this->rightclaw = new RoboClaw(this->_pi, h, 129);**/
+//
+//	this->claw = new RoboClaw(this->_pi, h, 128);
+//
+//     float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
+//     /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+//     this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+//     this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+//     this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
+//	this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+//     this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+//
+//     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
+//     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+//     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+//     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+//     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+//     printf("\r\n");
+//     return 0;
+//}
+//int DiffDriveClaw::init(const char* serial_device, int baud,int claw_addr){
+//     int h = serial_open(this->_pi, const_cast <char*>(serial_device), baud, 0);
+//     if(h < 0){
+//          printf("[ERROR] Could not initialize pigpiod serial device %s using baud of %d\r\n",serial_device,baud);
+//          return -1;
+//     }
+//     this->_ser_handles.push_back(h);
+//
+//     /**this->leftclaw = new RoboClaw(this->_pi, h, left_claw_addr);
+//     this->rightclaw = new RoboClaw(this->_pi, h, right_claw_addr);**/
+//
+//	this->claw = new RoboClaw(this->_pi, h, claw_addr);
+//
+//     float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
+//     /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+//     this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+//     this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+//     this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
+//	this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+//     this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+//
+//     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
+//     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+//     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+//     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+//     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+//     printf("\r\n");
+//     return 0;
+//}
+//int DiffDriveClaw::init(int baud, const char* serial_device, int claw_addr){
+//     int err = 0;
+//     /**int hleft = serial_open(this->_pi, const_cast <char*>(serial_device_left), baud, 0);
+//     if(hleft < 0){
+//          printf("[WARNING] DiffDriveClaw::init() --- pigpiod could not initialize left serial device \'%s\' using baud of %d\r\n",serial_device_left,baud);
+//          err -= 1;
+//     }
+//     int hright = serial_open(this->_pi, const_cast <char*>(serial_device_right), baud, 0);
+//     if(hright < 0){
+//          printf("[WARNING] DiffDriveClaw::init() --- pigpiod could not initialize right serial device \'%s\' using baud of %d\r\n",serial_device_right,baud);
+//          err -= 1;
+//     }
+//     if(err < 0){
+//          printf("[ERROR] DiffDriveClaw::init() --- Unable to successfully establish communication with one, or more, Roboclaw devices, exiting.\r\n");
+//          return err;
+//     }
+//     this->_ser_handles.push_back(hleft);
+//     this->_ser_handles.push_back(hright);**/
+//
+//	int h = serial_open(this->_pi, const_cast <char*>(serial_device), baud, 0);
+//
+//	if(h < 0){
+//          printf("[WARNING] DiffDriveClaw::init() --- pigpiod could not initialize serial device \'%s\' using baud of %d\r\n",serial_device,baud);
+//          err -= 1;
+//     }
+//     if(err < 0){
+//          printf("[ERROR] DiffDriveClaw::init() --- Unable to successfully establish communication with Roboclaw device, exiting.\r\n");
+//          return err;
+//     }
+//
+//	this->_ser_handles.push_back(h);
+//
+//
+//     /**this->leftclaw = new RoboClaw(this->_pi, h, left_claw_addr);
+//     this->rightclaw = new RoboClaw(this->_pi, h, right_claw_addr);**/
+//
+//	this->claw = new RoboClaw(this->_pi, h, claw_addr);
+//
+//     float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
+//     /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+//     this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+//     this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+//     this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
+//	this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+//     this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+//
+//     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
+//     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+//     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+//     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+//     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+//     printf("\r\n");
+//     return 0;
+//}
 
-     string _ser_path = variables["dev"];
-     char* ser_path = (char*) _ser_path.c_str();
-     int baud = stoi(variables["baud"]);
-     this->_base_width = stof(variables["base_width"]);
-     this->_max_speed = stof(variables["max_speed"]);
-     this->_qpps_per_meter = stoi(variables["qpps_per_meter"]);
-     this->_wheel_diameter = stof(variables["wheel_diameter"]);
+int DiffDriveClaw::init(bool doack, const char* port, uint8_t claw_addr, uint32_t timeout) {
+    this->claw = new RoboclawUnix(port, claw_addr, timeout, doack);
 
-     // TODO: Add more tune-able parameters
+    float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
+    /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+    this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+    this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+    this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
+    this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+    this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
 
-     // printf("%d %d %d %d %d %d %d %d\r\n",fr_pwm,fr_dir,fl_pwm,fl_dir,rr_pwm,rr_dir,rl_pwm,rl_dir);
-     printf("ROBOCLAW SETTINGS: \r\n");
-     printf("       Device Address: %s\r\n", ser_path);
-     printf("       Claw Baud Rate: %d\r\n", baud);
-     printf("       Base Width: %.4f\r\n", this->_base_width);
-     printf("       Max Speed (m/s): %.3f\r\n", this->_max_speed);
-     printf("       QPPS per Meter: %d\r\n", this->_qpps_per_meter);
-     printf("       Wheel Diameter (m): %f\r\n", this->_wheel_diameter);
-     printf("\r\n");
-
-     /**************************************************************************
-     * END LOAD CONFIG FILE
-     **************************************************************************/
-
-     int h = serial_open(this->_pi, ser_path, baud, 0);
-     if(h < 0){
-          printf("[ERROR] Could not initialize pigpiod serial device %s using baud of %d\r\n",ser_path,baud);
-          return -1;
-     }
-     this->_ser_handles.push_back(h);
-
-     /**this->leftclaw = new RoboClaw(this->_pi, h, 128);
-     this->rightclaw = new RoboClaw(this->_pi, h, 129);**/
-
-	this->claw = new RoboClaw(this->_pi, h, 128);
-
-     float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
-     /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
-     this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
-     this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
-     this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
-	this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
-     this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
-
-     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
-     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
-     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
-     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
-     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
-     printf("\r\n");
-     return 0;
+    printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
+    printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+    printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+    printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+    printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+    printf("\r\n");
+    return 0;
 }
-int DiffDriveClaw::init(const char* serial_device, int baud,int claw_addr){
-     int h = serial_open(this->_pi, const_cast <char*>(serial_device), baud, 0);
-     if(h < 0){
-          printf("[ERROR] Could not initialize pigpiod serial device %s using baud of %d\r\n",serial_device,baud);
-          return -1;
-     }
-     this->_ser_handles.push_back(h);
 
-     /**this->leftclaw = new RoboClaw(this->_pi, h, left_claw_addr);
-     this->rightclaw = new RoboClaw(this->_pi, h, right_claw_addr);**/
-	
-	this->claw = new RoboClaw(this->_pi, h, claw_addr);
+int DiffDriveClaw::init(const char* port, bool doack, uint8_t claw_addr, uint32_t timeout) {
+    this->claw = new RoboclawUnix(port, claw_addr, timeout, doack);
 
-     float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
-     /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
-     this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
-     this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
-     this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
-	this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
-     this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+    float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
+    /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+    this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
+    this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
+    this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
+    this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
+    this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
 
-     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
-     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
-     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
-     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
-     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
-     printf("\r\n");
-     return 0;
-}
-int DiffDriveClaw::init(int baud, const char* serial_device, int claw_addr){
-     int err = 0;
-     /**int hleft = serial_open(this->_pi, const_cast <char*>(serial_device_left), baud, 0);
-     if(hleft < 0){
-          printf("[WARNING] DiffDriveClaw::init() --- pigpiod could not initialize left serial device \'%s\' using baud of %d\r\n",serial_device_left,baud);
-          err -= 1;
-     }
-     int hright = serial_open(this->_pi, const_cast <char*>(serial_device_right), baud, 0);
-     if(hright < 0){
-          printf("[WARNING] DiffDriveClaw::init() --- pigpiod could not initialize right serial device \'%s\' using baud of %d\r\n",serial_device_right,baud);
-          err -= 1;
-     }
-     if(err < 0){
-          printf("[ERROR] DiffDriveClaw::init() --- Unable to successfully establish communication with one, or more, Roboclaw devices, exiting.\r\n");
-          return err;
-     }
-     this->_ser_handles.push_back(hleft);
-     this->_ser_handles.push_back(hright);**/
-
-	int h = serial_open(this->_pi, const_cast <char*>(serial_device), baud, 0);
-	
-	if(h < 0){
-          printf("[WARNING] DiffDriveClaw::init() --- pigpiod could not initialize serial device \'%s\' using baud of %d\r\n",serial_device,baud);
-          err -= 1;
-     }
-     if(err < 0){
-          printf("[ERROR] DiffDriveClaw::init() --- Unable to successfully establish communication with Roboclaw device, exiting.\r\n");
-          return err;
-     }
-
-	this->_ser_handles.push_back(h);
-	
-
-     /**this->leftclaw = new RoboClaw(this->_pi, h, left_claw_addr);
-     this->rightclaw = new RoboClaw(this->_pi, h, right_claw_addr);**/
-	
-	this->claw = new RoboClaw(this->_pi, h, claw_addr);
-
-     float kp[4]; float ki[4]; float kd[4]; uint32_t qpps[4];
-     /**this->leftclaw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
-     this->leftclaw->ReadM2VelocityPID(kp[1],ki[1],kd[1],qpps[1]);
-     this->rightclaw->ReadM1VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
-     this->rightclaw->ReadM2VelocityPID(kp[3],ki[3],kd[3],qpps[3]);**/
-	this->claw->ReadM1VelocityPID(kp[0],ki[0],kd[0],qpps[0]);
-     this->claw->ReadM2VelocityPID(kp[2],ki[2],kd[2],qpps[2]);
-
-     printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
-     printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
-     printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
-     printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
-     printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
-     printf("\r\n");
-     return 0;
+    printf("Current Pose [X (m), Y (m), Yaw (rad)]: %.3f     |    %.3f   |       %.3f\r\n",this->_cur_pose[0],this->_cur_pose[1],this->_cur_pose[2]);
+    printf("[MOTOR 1]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[0],ki[0],kd[0],qpps[0]);
+    printf("[MOTOR 2]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[1],ki[1],kd[1],qpps[1]);
+    printf("[MOTOR 3]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[2],ki[2],kd[2],qpps[2]);
+    printf("[MOTOR 4]   KP, KI, KD, QPPS:     %.3f   |    %.3f |    %.3f    |    %d\r\n",kp[3],ki[3],kd[3],qpps[3]);
+    printf("\r\n");
+    return 0;
 }
 
 /** SECTION: Device Motion Control Functions
@@ -435,12 +468,15 @@ void DiffDriveClaw::update_odometry(bool verbose){
           dTheta = 0.0;
           dX = linDistTraveled * cos(curYaw);
           dY = linDistTraveled * sin(curYaw);
-          dYaw = curYaw;
+          dYaw = 0;
      } else{
-          float r = linDistTraveled / dTheta;
-          dX = r * (sin(curYaw + dTheta) - sin(curYaw));
-          dY = -r * (cos(curYaw + dTheta) - cos(curYaw));
-          dYaw = this->normalize_heading(curYaw + dTheta);
+//          float r = linDistTraveled / dTheta;
+//          dX = r * (sin(curYaw + dTheta) - sin(curYaw));
+//          dY = -r * (cos(curYaw + dTheta) - cos(curYaw));
+          dX = linDistTraveled * cos(curYaw + (dTheta / 2));
+          dY = linDistTraveled * sin(curYaw + (dTheta / 2));
+//          dYaw = this->normalize_heading(curYaw + dTheta);
+         dYaw = this->normalize_heading(dTheta);
      }
      // Prevent wrong odometry from any potential data corruption
      if(isnan(dX)) dX = 0.0;
